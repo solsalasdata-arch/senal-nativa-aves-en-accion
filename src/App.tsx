@@ -14,6 +14,7 @@ import { OptionsModal } from './components/OptionsModal';
 import { QuizConsignasModal } from './components/QuizConsignasModal';
 import { GoogleDriveModal } from './components/GoogleDriveModal';
 import { SquadsAndSeasonsModal } from './components/SquadsAndSeasonsModal';
+import { MiroFlowAndAvatarModal } from './components/MiroFlowAndAvatarModal';
 import { PACK_EXTRA_BIRDS_DATA } from './data/birdsData';
 import {
   loadProfilesList,
@@ -53,6 +54,8 @@ export default function App() {
   const [showQuizConsignasModal, setShowQuizConsignasModal] = useState(false);
   const [showDriveModal, setShowDriveModal] = useState(false);
   const [showSquadsModal, setShowSquadsModal] = useState(false);
+  const [showMiroModal, setShowMiroModal] = useState(false);
+  const [miroModalInitialMode, setMiroModalInitialMode] = useState<'yo_jugadores' | 'miro_flow' | 'character_study'>('yo_jugadores');
 
   // Sync profile update helper
   const handleUpdateProfile = (updates: Partial<PlayerProfile>) => {
@@ -400,6 +403,10 @@ export default function App() {
               onAdvanceToScreen4={() => setCurrentScreen('screen4')}
               onTakePhoto={() => setShowPhotoModal(true)}
               onBackToSplash={() => setCurrentScreen('screen1')}
+              onOpenMiroAvatar={() => {
+                setMiroModalInitialMode('yo_jugadores');
+                setShowMiroModal(true);
+              }}
             />
           )}
 
@@ -410,6 +417,10 @@ export default function App() {
               onAdvanceToMainHub={() => setCurrentScreen('screen4')}
               onBack={() => setCurrentScreen('screen2')}
               onChangePlayer={() => setCurrentScreen('screen2')}
+              onOpenMiroAvatar={() => {
+                setMiroModalInitialMode('yo_jugadores');
+                setShowMiroModal(true);
+              }}
             />
           )}
 
@@ -431,6 +442,14 @@ export default function App() {
               onOpenBadge={() => setShowLevelUpModal(true)}
               onOpenDrive={() => setShowDriveModal(true)}
               onOpenSquadsAndSeasons={() => setShowSquadsModal(true)}
+              onOpenMiroAvatar={() => {
+                setMiroModalInitialMode('yo_jugadores');
+                setShowMiroModal(true);
+              }}
+              onOpenMiroFlow={() => {
+                setMiroModalInitialMode('miro_flow');
+                setShowMiroModal(true);
+              }}
               onChangePlayer={() => setCurrentScreen('screen2')}
               onBackToSplash={() => setCurrentScreen('screen1')}
             />
@@ -543,17 +562,21 @@ export default function App() {
           </div>
         )}
 
-        {/* MODAL DE MAPA DE SENDEROS Y 8 PUNTOS DE CONTROL (PASO 14) */}
+        {/* MODAL DE MAPA DE SENDEROS Y 8 ESTACIONES DIGITALES */}
         <TrailMapModal
           isOpen={showMapModal}
           onClose={() => setShowMapModal(false)}
           playerProfile={activeProfile}
           onValidateCheckpoint={handleValidateCheckpoint}
           onOpenXRVision={() => setShowSightingModal(true)}
+          onOpenBirdsCatalog={() => {
+            setBirdsInitialTab('catalog');
+            setShowBirdsModal(true);
+          }}
           onOpenSquadsAndSeasons={() => setShowSquadsModal(true)}
         />
 
-        {/* MODAL DE TIENDA (PASO 9 / PASO 4: PRENDAS Y SOBRES DE SILUETAS) */}
+        {/* MODAL DE TIENDA (PRENDAS Y SOBRES DE SILUETAS) */}
         <ShopModal
           isOpen={showShopModal}
           onClose={() => setShowShopModal(false)}
@@ -566,7 +589,7 @@ export default function App() {
           }}
         />
 
-        {/* MODAL PASO 15: CUADRILLAS ESCOLARES, TEMPORADAS DE AVES MIGRANTES Y RANKING AMIGABLE */}
+        {/* MODAL: CUADRILLAS ESCOLARES, TEMPORADAS DE AVES MIGRANTES Y RANKING AMIGABLE */}
         <SquadsAndSeasonsModal
           isOpen={showSquadsModal}
           onClose={() => setShowSquadsModal(false)}
@@ -575,6 +598,30 @@ export default function App() {
           onRegisterMigrantBird={handleRegisterMigrantBird}
           onUnlockSpecialEvent={handleUnlockSpecialEvent}
           onClaimSquadGoalReward={handleClaimSquadGoalReward}
+        />
+
+        {/* MODAL OFICIAL DEL TABLERO DE MIRO: PERFIL "YO / JUGADORES", ESTUDIO 3D Y FLUJO DE PANTALLAS */}
+        <MiroFlowAndAvatarModal
+          isOpen={showMiroModal}
+          initialMode={miroModalInitialMode}
+          onClose={() => setShowMiroModal(false)}
+          activeProfile={activeProfile}
+          profiles={profiles}
+          onSelectProfile={handleSelectProfile}
+          onSelectCompanionBird={handleSelectCompanionBird}
+          onUpdateAvatar={(avatarId, avatarIcon) => {
+            handleUpdateProfile({ avatarId, avatarIcon });
+          }}
+          onNavigateToScreen={(scr) => setCurrentScreen(scr)}
+          onOpenMap={() => setShowMapModal(true)}
+          onOpenSighting={() => setShowSightingModal(true)}
+          onOpenBirds={() => {
+            setBirdsInitialTab('catalog');
+            setShowBirdsModal(true);
+          }}
+          onOpenShop={() => setShowShopModal(true)}
+          onOpenSquads={() => setShowSquadsModal(true)}
+          onOpenQuiz={() => setShowQuizConsignasModal(true)}
         />
 
         {/* MODAL DE CELEBRACIÓN DE NIVEL */}

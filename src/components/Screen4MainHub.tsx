@@ -34,6 +34,8 @@ interface Screen4MainHubProps {
   onOpenBadge?: () => void;
   onOpenDrive: () => void;
   onOpenSquadsAndSeasons: () => void;
+  onOpenMiroAvatar?: () => void;
+  onOpenMiroFlow?: () => void;
   onChangePlayer: () => void;
   onBackToSplash: () => void;
 }
@@ -51,6 +53,8 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
   onOpenBadge,
   onOpenDrive,
   onOpenSquadsAndSeasons,
+  onOpenMiroAvatar,
+  onOpenMiroFlow,
   onChangePlayer,
   onBackToSplash
 }) => {
@@ -69,21 +73,29 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
     >
       {/* 1. TOP BAR */}
       <div className="relative z-20 flex items-center justify-between p-2.5 sm:p-3 bg-slate-950/75 backdrop-blur-md border-b border-teal-800/40 gap-1.5">
-        {/* Left: Active Player Pill + "Cambiar Jugador" */}
+        {/* Left: Active Player Pill ("YO / JUGADORES" Miro Screen) + "Flujo Miro" */}
         <div className="flex items-center gap-1 min-w-0">
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-teal-950/90 border border-teal-400/50 text-white shadow min-w-0">
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              if (onOpenMiroAvatar) onOpenMiroAvatar();
+              else onChangePlayer();
+            }}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-teal-950/90 hover:bg-teal-900 border border-amber-400/60 text-white shadow min-w-0 cursor-pointer active:scale-95 transition-all"
+            title={tx('Abrir Perfil YO / JUGADORES y Avatar con Ave Compañera', 'Open ME / PLAYERS Profile & Companion Bird Avatar')}
+          >
             <span className="text-sm shrink-0">{playerProfile.avatarIcon || '🧢'}</span>
-            <span className="text-[11px] font-black text-amber-300 truncate max-w-[60px]">
+            <span className="text-[11px] font-black text-amber-300 truncate max-w-[58px]">
               {playerProfile.name}
             </span>
             <span className="text-teal-400">·</span>
-            <span className="text-[10px] text-teal-200 truncate max-w-[55px]">
+            <span className="text-[10px] text-teal-200 truncate max-w-[52px]">
               {playerProfile.favoriteBird}
             </span>
             {(playerProfile.equippedItems || ['visera-oficial']).length > 0 && (
-              <span className="flex items-center gap-0.5 text-[10px] pl-0.5">
+              <span className="hidden xs:flex items-center gap-0.5 text-[10px] pl-0.5">
                 {SHOP_ITEMS.filter(it => (playerProfile.equippedItems || ['visera-oficial']).includes(it.id))
-                  .slice(0, 3)
+                  .slice(0, 2)
                   .map(it => (
                     <span key={it.id} title={it.name}>
                       {it.icon}
@@ -91,19 +103,21 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                   ))}
               </span>
             )}
-          </div>
-
-          <button
-            onClick={() => {
-              soundManager.playClick();
-              onChangePlayer();
-            }}
-            className="flex items-center gap-1 px-2 py-1 rounded-full bg-teal-800/90 hover:bg-teal-700 text-teal-100 text-[10px] font-bold border border-teal-500/50 shadow shrink-0 active:scale-95 transition-all"
-            title={tx('Cambiar de Jugador', 'Switch Player')}
-          >
-            <Users className="w-3 h-3 text-amber-300" />
-            <span className="hidden xs:inline">{tx('Cambiar', 'Switch')}</span>
           </button>
+
+          {onOpenMiroFlow && (
+            <button
+              onClick={() => {
+                soundManager.playClick();
+                onOpenMiroFlow();
+              }}
+              className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-400/90 hover:bg-amber-300 text-slate-950 text-[10px] font-black border border-amber-200 shadow shrink-0 active:scale-95 transition-all cursor-pointer"
+              title={tx('Ver Arquitectura de Estaciones Digitales y Tablero Miro', 'View Digital Stations Architecture & Miro Board')}
+            >
+              <span>🗺️</span>
+              <span className="hidden xs:inline">{tx('Miro', 'Miro')}</span>
+            </button>
+          )}
         </div>
 
         {/* Right: Level/XP + Language Selector (ES | EN) + PWA Install + Opciones (gear) + Consejos (?) */}
@@ -209,30 +223,44 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
           <ChevronDown className="w-4 h-4 text-amber-300 group-hover:translate-y-0.5 transition-transform" />
         </button>
 
-        {/* Acceso Destacado: "Cuadrillas y Temporadas" (Sin etiqueta interna Paso 15) */}
-        <button
-          onClick={() => {
-            soundManager.playClick();
-            onOpenSquadsAndSeasons();
-          }}
-          className="mt-1.5 w-full max-w-xs py-1.5 px-3 rounded-2xl bg-gradient-to-r from-amber-500/90 via-orange-500/90 to-amber-600/90 backdrop-blur-md border-2 border-amber-200 shadow-xl flex items-center justify-between cursor-pointer hover:brightness-105 active:scale-98 transition-all"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-base">🛡️</span>
-            <div className="text-left">
-              <div className="text-[11px] font-black text-slate-950 tracking-wide uppercase">
-                {tx('Cuadrillas y Temporadas', 'Squads & Seasons')}
+        {/* Acceso Destacado: "YO / JUGADORES" (Avatar con Ave Compañera en Hombro) + "Cuadrillas y Temporadas" */}
+        <div className="mt-1.5 w-full max-w-xs grid grid-cols-2 gap-1.5">
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              if (onOpenMiroAvatar) onOpenMiroAvatar();
+            }}
+            className="py-1.5 px-2.5 rounded-2xl bg-gradient-to-r from-[#FDF6E2] to-[#F2D58B] border-2 border-amber-400 shadow-lg flex items-center justify-between cursor-pointer hover:brightness-105 active:scale-98 transition-all text-slate-950"
+          >
+            <div className="text-left min-w-0">
+              <div className="text-[10px] font-black uppercase tracking-tight truncate">
+                {tx('YO / JUGADORES', 'ME / PLAYERS')}
               </div>
-              <div className="text-[9px] font-bold text-amber-950">
-                {tx(
-                  'Equipos Escolares (5) · Aves Migrantes · Ranking Amigable',
-                  'School Teams (5) · Migrant Birds · Friendly Ranking'
-                )}
+              <div className="text-[8px] font-bold text-amber-900 truncate">
+                {playerProfile.name} &amp; {playerProfile.favoriteBird.split(' ')[0]}
               </div>
             </div>
-          </div>
-          <Users className="w-4 h-4 text-slate-950 shrink-0" />
-        </button>
+            <span className="text-sm shrink-0">🦜</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              onOpenSquadsAndSeasons();
+            }}
+            className="py-1.5 px-2.5 rounded-2xl bg-gradient-to-r from-amber-500/95 to-orange-500/95 border-2 border-amber-200 shadow-lg flex items-center justify-between cursor-pointer hover:brightness-105 active:scale-98 transition-all text-slate-950"
+          >
+            <div className="text-left min-w-0">
+              <div className="text-[10px] font-black uppercase tracking-tight truncate">
+                {tx('Cuadrillas', 'Squads')}
+              </div>
+              <div className="text-[8px] font-bold text-amber-950 truncate">
+                {tx('Temporadas y Ranking', 'Seasons & Ranking')}
+              </div>
+            </div>
+            <Users className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+          </button>
+        </div>
 
         {/* Badge shortcut if unlocked */}
         {playerProfile.hasRisingObserverBadge && (

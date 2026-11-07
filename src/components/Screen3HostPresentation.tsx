@@ -9,13 +9,15 @@ interface Screen3HostPresentationProps {
   onAdvanceToMainHub: () => void;
   onBack: () => void;
   onChangePlayer: () => void;
+  onOpenMiroAvatar?: () => void;
 }
 
 export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = ({
   activeProfile,
   onAdvanceToMainHub,
   onBack,
-  onChangePlayer
+  onChangePlayer,
+  onOpenMiroAvatar
 }) => {
   const { tx } = useLanguage();
   const [showSilhouettesModal, setShowSilhouettesModal] = useState(false);
@@ -40,11 +42,19 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
             <ArrowLeft className="w-4 h-4" />
           </button>
 
-          {/* Active Player Chip */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-950/90 border border-teal-400/40 text-[10px] text-white min-w-0">
+          {/* Active Player Chip -> Opens YO / JUGADORES Miro Avatar Screen */}
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              if (onOpenMiroAvatar) onOpenMiroAvatar();
+              else onChangePlayer();
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-950/90 hover:bg-teal-900 border border-amber-400/50 text-[10px] text-white min-w-0 cursor-pointer"
+            title={tx('Abrir Perfil YO / JUGADORES', 'Open ME / PLAYERS Profile')}
+          >
             <span className="shrink-0">{activeProfile.avatarIcon || '🧢'}</span>
             <span className="font-bold text-amber-300 truncate max-w-[65px]">{activeProfile.name}</span>
-          </div>
+          </button>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">

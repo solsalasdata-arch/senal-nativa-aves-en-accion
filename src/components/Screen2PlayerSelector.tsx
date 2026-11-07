@@ -25,6 +25,7 @@ interface Screen2PlayerSelectorProps {
   onAdvanceToScreen4: () => void;
   onTakePhoto: () => void;
   onBackToSplash: () => void;
+  onOpenMiroAvatar?: () => void;
 }
 
 export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
@@ -36,7 +37,8 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
   onAdvanceToScreen3,
   onAdvanceToScreen4,
   onTakePhoto,
-  onBackToSplash
+  onBackToSplash,
+  onOpenMiroAvatar
 }) => {
   const { tx } = useLanguage();
 
@@ -117,13 +119,23 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
           </div>
         </div>
 
-        {/* Active Player Mini Badge */}
+        {/* Active Player Mini Badge -> Opens "YO / JUGADORES" Miro Avatar Screen */}
         {activeProfile && (
-          <div className="mt-1 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-teal-950/80 border border-teal-500/40 text-[10px] text-teal-200">
-            <span>{tx('Activo:', 'Active:')}</span>
-            <span className="font-bold text-white">{activeProfile.name}</span>
-            <span className="text-amber-400">· {activeProfile.favoriteBird}</span>
-          </div>
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              if (onOpenMiroAvatar) onOpenMiroAvatar();
+              else setActiveModal('returning_player');
+            }}
+            className="mt-1 flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-950/90 hover:bg-teal-900 border border-amber-400/60 text-[10px] text-teal-200 shadow cursor-pointer active:scale-95 transition-all"
+          >
+            <span>{activeProfile.avatarIcon || '🧢'}</span>
+            <span className="font-black text-amber-300">{activeProfile.name}</span>
+            <span className="text-white font-bold">&amp; {activeProfile.favoriteBird}</span>
+            <span className="px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black text-[8px] uppercase">
+              {tx('YO / JUGADORES', 'ME / PLAYERS')}
+            </span>
+          </button>
         )}
       </div>
 
