@@ -40,6 +40,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
   const { lang, tx } = useLanguage();
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<CheckPoint>(CHECKPOINTS_DATA[0]);
   const [activeStationLayer, setActiveStationLayer] = useState<1 | 2 | 3>(1);
+  const [mapVisualMode, setMapVisualMode] = useState<'circuit_3d' | 'physical_plan'>('circuit_3d');
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [selectedChallengeOption, setSelectedChallengeOption] = useState<number | null>(null);
   const [challengeSubmitted, setChallengeSubmitted] = useState(false);
@@ -138,6 +139,13 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
     }
   };
 
+  const circuitMapBgImage =
+    completedCount >= 3
+      ? '/assets/aistudio/Toucan_speaking_in_jungle_1ddde10b.jpg'
+      : completedCount >= 1
+      ? '/assets/aistudio/Buttons_with_padlocks_9c3df4ab.jpg'
+      : '/assets/aistudio/Buttons_with_padlocks_2b5ce3b6.jpg';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
       <div className="relative w-full max-w-sm max-h-[95vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-teal-500 shadow-2xl">
@@ -215,45 +223,53 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
           </div>
         </div>
 
-        {/* Mapa Interactivo con Sendero Azul Serpenteante, Cartel Rojo "DESVÍO" y Puntos "X" (Fiel al Tablero de Miro) */}
-        <div className="relative h-52 bg-[#D9E6B8] overflow-hidden border-b-2 border-teal-800 shrink-0">
-          {/* Marco Verde Oscuro del Plano Físico del Parque Botánico */}
-          <div className="absolute inset-0 border-8 border-[#166534] pointer-events-none z-10" />
-
-          {/* Vegetación de Yungas y Sendero Azul Serpenteante idéntico al Plano del Tablero de Miro */}
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            {/* Manchas de Bosques y Copas de Árboles del Parque */}
-            <circle cx="24" cy="30" r="12" fill="#3F6212" opacity="0.35" />
-            <circle cx="66" cy="24" r="14" fill="#365314" opacity="0.35" />
-            <circle cx="32" cy="60" r="15" fill="#3F6212" opacity="0.35" />
-            <circle cx="75" cy="68" r="14" fill="#365314" opacity="0.35" />
-
-            {/* SENDERO AZUL SERPENTEANTE OFICIAL DEL PLANO MIRO */}
-            <path
-              d="M 10 90 Q 14 85 18 82 Q 22 75 28 70 Q 34 78 42 75 Q 49 68 55 62 Q 62 52 68 48 Q 60 40 50 38 Q 42 32 38 26 Q 52 18 74 16 L 85 14"
-              fill="none"
-              stroke="#1E3A8A"
-              strokeWidth="4.6"
-              strokeLinecap="round"
+        {/* Mapa Interactivo con Conmutador entre Circuito 3D con Candados (public/assets/aistudio/) y Plano Físico */}
+        <div className="relative h-56 bg-[#D9E6B8] overflow-hidden border-b-2 border-teal-800 shrink-0">
+          {mapVisualMode === 'circuit_3d' ? (
+            <img
+              src={circuitMapBgImage}
+              alt="Circuito 3D con Candados"
+              className="absolute inset-0 w-full h-full object-cover object-top"
             />
-            <path
-              d="M 10 90 Q 14 85 18 82 Q 22 75 28 70 Q 34 78 42 75 Q 49 68 55 62 Q 62 52 68 48 Q 60 40 50 38 Q 42 32 38 26 Q 52 18 74 16 L 85 14"
-              fill="none"
-              stroke="#2563EB"
-              strokeWidth="2.8"
-              strokeLinecap="round"
-            />
-          </svg>
+          ) : (
+            <>
+              {/* Marco Verde Oscuro del Plano Físico del Parque Botánico */}
+              <div className="absolute inset-0 border-8 border-[#166534] pointer-events-none z-10" />
 
-          {/* Cartel Rojo "DESVÍO" del Plano Oficial en el Tablero de Miro */}
-          <div
-            className="absolute z-20 px-1.5 py-0.5 rounded bg-red-600 text-white font-black text-[8px] tracking-wider uppercase shadow-md border border-white transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ left: '54%', top: '46%' }}
-          >
-            {tx('DESVÍO', 'DETOUR')}
-          </div>
+              {/* Vegetación de Yungas y Sendero Azul Serpenteante idéntico al Plano del Tablero de Miro */}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <circle cx="24" cy="30" r="12" fill="#3F6212" opacity="0.35" />
+                <circle cx="66" cy="24" r="14" fill="#365314" opacity="0.35" />
+                <circle cx="32" cy="60" r="15" fill="#3F6212" opacity="0.35" />
+                <circle cx="75" cy="68" r="14" fill="#365314" opacity="0.35" />
 
-          {/* Marcadores de las 8 Estaciones Digitales (Con "X" roja como en el plano de Miro o "✓" al validar) */}
+                <path
+                  d="M 10 90 Q 14 85 18 82 Q 22 75 28 70 Q 34 78 42 75 Q 49 68 55 62 Q 62 52 68 48 Q 60 40 50 38 Q 42 32 38 26 Q 52 18 74 16 L 85 14"
+                  fill="none"
+                  stroke="#1E3A8A"
+                  strokeWidth="4.6"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 10 90 Q 14 85 18 82 Q 22 75 28 70 Q 34 78 42 75 Q 49 68 55 62 Q 62 52 68 48 Q 60 40 50 38 Q 42 32 38 26 Q 52 18 74 16 L 85 14"
+                  fill="none"
+                  stroke="#2563EB"
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+
+              {/* Cartel Rojo "DESVÍO" del Plano Oficial en el Tablero de Miro */}
+              <div
+                className="absolute z-20 px-1.5 py-0.5 rounded bg-red-600 text-white font-black text-[8px] tracking-wider uppercase shadow-md border border-white transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ left: '54%', top: '46%' }}
+              >
+                {tx('DESVÍO', 'DETOUR')}
+              </div>
+            </>
+          )}
+
+          {/* Marcadores Interactivos de las 8 Estaciones Digitales (Con Candados/Check) */}
           {CHECKPOINTS_DATA.map((cp) => {
             const isSelected = selectedCheckpoint.id === cp.id;
             const isDone = playerProfile.completedCheckpoints?.includes(cp.id);
@@ -279,18 +295,33 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                       ? 'bg-emerald-600 text-white border-white shadow-md'
                       : isSelected
                       ? 'bg-amber-400 text-slate-950 border-slate-950'
-                      : 'bg-red-600 text-white border-white shadow'
+                      : 'bg-slate-950/90 text-amber-300 border-amber-400 shadow'
                   }`}
                 >
-                  {isDone ? '✓' : cp.id}
+                  {isDone ? '✓' : `🔒${cp.id}`}
                 </div>
               </button>
             );
           })}
 
-          {/* Rosa de los Vientos y Leyenda del Plano */}
-          <div className="absolute top-2.5 left-3 z-20 px-2 py-0.5 rounded-full bg-slate-950/85 text-[9px] text-teal-200 font-bold border border-teal-500/40">
-            🧭 {tx('Plano Físico + Estaciones Digitales', 'Physical Trail + Digital Stations')}
+          {/* Conmutador Superior entre Circuito 3D con Candados y Plano Físico */}
+          <div className="absolute top-2 inset-x-2.5 z-30 flex items-center justify-between gap-1">
+            <span className="px-2 py-0.5 rounded-full bg-slate-950/90 text-[9px] text-amber-300 font-black border border-amber-400/50 shadow">
+              {mapVisualMode === 'circuit_3d'
+                ? tx('🔒 Circuito 3D con Candados', '🔒 3D Padlock Circuit')
+                : tx('🧭 Plano de Senderos', '🧭 Physical Trail Plan')}
+            </span>
+            <button
+              onClick={() => {
+                soundManager.playClick();
+                setMapVisualMode(prev => (prev === 'circuit_3d' ? 'physical_plan' : 'circuit_3d'));
+              }}
+              className="px-2.5 py-0.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[9px] font-black uppercase border border-slate-950 shadow cursor-pointer"
+            >
+              {mapVisualMode === 'circuit_3d'
+                ? tx('Ver Plano Sendero', 'View Trail Plan')
+                : tx('Ver Circuito 3D', 'View 3D Circuit')}
+            </button>
           </div>
         </div>
 

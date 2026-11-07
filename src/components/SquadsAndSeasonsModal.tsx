@@ -832,10 +832,34 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
         )}
 
         {/* ============================================================== */}
-        {/* PESTAÑA C: RANKING AMIGABLE (CONSTANCIA Y VARIEDAD BIOLÓGICA) */}
+        {/* PESTAÑA C: RANKING AMIGABLE E INSTITUCIONES DE JUJUY */}
         {/* ============================================================== */}
         {activeTab === 'ranking' && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+            {/* Láminas Oficiales "RANKING DE INSTITUCIONES - JUJUY" y "RESULTADOS ESCUELA PROFESIONAL N° 6" de public/assets/aistudio/ */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-2xl overflow-hidden border-2 border-amber-400/80 bg-slate-950 shadow-lg">
+                <img
+                  src="/assets/aistudio/Institution_ranking_and_toucan_d…_bbc71eae.jpg"
+                  alt="Ranking de Instituciones Jujuy"
+                  className="w-full h-40 object-cover object-top"
+                />
+                <div className="p-1.5 text-center bg-slate-950 text-[9px] font-black text-amber-300 uppercase">
+                  🏆 Ranking Instituciones Jujuy
+                </div>
+              </div>
+              <div className="rounded-2xl overflow-hidden border-2 border-teal-400/80 bg-slate-950 shadow-lg">
+                <img
+                  src="/assets/aistudio/Institution_ranking_and_toucan_d…_d0e39451.jpg"
+                  alt="Resultados por Institución"
+                  className="w-full h-40 object-cover object-top"
+                />
+                <div className="p-1.5 text-center bg-slate-950 text-[9px] font-black text-teal-300 uppercase">
+                  📊 Resultados Escolares
+                </div>
+              </div>
+            </div>
+
             {/* Friendly Ranking Rule Banner */}
             <div className="p-3 rounded-2xl bg-gradient-to-r from-teal-950 via-slate-950 to-emerald-950 border border-teal-500/70 space-y-1.5 text-white">
               <div className="flex items-center gap-1.5 text-xs font-black text-amber-300 uppercase">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Users,
@@ -66,7 +66,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
   const [selectedStudyAngle, setSelectedStudyAngle] = useState<'flight' | 'frontal' | 'side' | 'back'>('flight');
   const [zoomBoard, setZoomBoard] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       setTopSection(initialMode);
     }
@@ -291,76 +291,55 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                   </div>
                 </div>
 
-                {/* Escena Central: Avatar de Cuerpo Entero con Ave en el Hombro (Izquierda) + Tucán Guía con Globo (Derecha) */}
+                {/* Escena Central con Lámina Oficial "YO / JUGADORES" y "HISTORIAL DE AVES" de public/assets/aistudio/ */}
                 <div className="relative z-10 grid grid-cols-12 gap-2 items-center my-1">
-                  {/* Columna Izquierda (7 cols): Explorador de Cuerpo Entero + Ave Compañera en el hombro */}
+                  {/* Columna Izquierda (7 cols): Vista Oficial de Avatar de Cuerpo Entero con Ave en el Hombro */}
                   <div className="col-span-7 flex flex-col items-center">
-                    <div className="relative w-40 h-56 rounded-3xl bg-gradient-to-b from-emerald-900/15 via-teal-900/10 to-amber-900/20 border-2 border-amber-600/30 flex flex-col items-center justify-center p-2 shadow-inner overflow-hidden">
-                      {/* Ilustración SVG de Explorador de las Yungas de Cuerpo Entero con Mochila y Ave en el Hombro */}
-                      <svg viewBox="0 0 180 240" className="w-36 h-48 drop-shadow-md">
-                        {/* Sombra en el suelo */}
-                        <ellipse cx="85" cy="226" rx="42" ry="8" fill="rgba(15, 23, 42, 0.22)" />
-
-                        {/* Ave Compañera Posada en el Hombro Derecho del Explorador (Como en el Miro) */}
-                        <g transform="translate(105, 42)">
-                          {/* Cola larga del ave compañera */}
-                          <path d="M18 32 L26 56 L14 52 Z" fill="#1E293B" />
-                          {/* Cuerpo del ave */}
-                          <ellipse cx="14" cy="22" rx="11" ry="15" fill="#0F172A" />
-                          {/* Pecho / Garganta amarilla-dorada */}
-                          <ellipse cx="11" cy="20" rx="6" ry="8" fill="#FACC15" />
-                          {/* Pico prominente */}
-                          <path d="M18 10 Q32 8 34 16 Q24 18 17 16 Z" fill="#F97316" />
-                          {/* Ojo celeste */}
-                          <circle cx="14" cy="13" r="2.2" fill="#38BDF8" />
-                        </g>
-
-                        {/* Mochila de Campo Verde Yungas */}
-                        <rect x="46" y="74" width="76" height="68" rx="14" fill="#115E59" stroke="#042F2E" strokeWidth="2.5" />
-                        {/* Botas de Senderismo */}
-                        <rect x="58" y="198" width="22" height="24" rx="6" fill="#1E293B" />
-                        <rect x="90" y="198" width="22" height="24" rx="6" fill="#1E293B" />
-                        {/* Pantalones Cargo de Explorador */}
-                        <rect x="59" y="142" width="21" height="58" rx="6" fill="#1F2937" />
-                        <rect x="90" y="142" width="21" height="58" rx="6" fill="#1F2937" />
-                        {/* Campera / Remera de Campo Azul-Acero y Chaleco */}
-                        <path d="M52 78 C52 70 116 70 116 78 L122 144 L46 144 Z" fill="#3B82F6" stroke="#1E3A8A" strokeWidth="2" />
-                        {/* Correas de la Mochila */}
-                        <rect x="60" y="76" width="8" height="55" rx="3" fill="#0F766E" />
-                        <rect x="100" y="76" width="8" height="55" rx="3" fill="#0F766E" />
-                        {/* Binoculares en el pecho */}
-                        <rect x="74" y="98" width="20" height="14" rx="3" fill="#0F172A" stroke="#FBBF24" strokeWidth="1.5" />
-                        {/* Cabeza y Rostro del Explorador */}
-                        <circle cx="84" cy="48" r="20" fill="#FDE68A" stroke="#78350F" strokeWidth="2" />
-                        {/* Ojos y sonrisa */}
-                        <circle cx="77" cy="47" r="2.2" fill="#1E293B" />
-                        <circle cx="91" cy="47" r="2.2" fill="#1E293B" />
-                        <path d="M78 55 Q84 60 90 55" fill="none" stroke="#78350F" strokeWidth="2" strokeLinecap="round" />
-                        {/* Gorra / Visera Oficial del Parque Botánico */}
-                        <path d="M62 40 C62 24 106 24 106 40 Z" fill="#15803D" stroke="#052E16" strokeWidth="2" />
-                        <path d="M60 39 Q84 34 114 42" fill="none" stroke="#FACC15" strokeWidth="4" strokeLinecap="round" />
-                      </svg>
-
+                    <div className="relative w-full h-56 rounded-3xl bg-slate-950 border-2 border-amber-500/70 flex flex-col items-center justify-center overflow-hidden shadow-xl">
+                      <img
+                        src={
+                          selectedStudyAngle === 'frontal'
+                            ? '/assets/aistudio/Replace_clothing_store_with_birds_e4924cc4.jpg'
+                            : '/assets/aistudio/Editing_icons_and_background_colors_c78a8c38.jpg'
+                        }
+                        alt="Avatar YO / JUGADORES"
+                        className="w-full h-full object-cover object-top"
+                      />
+                      <div className="absolute top-1.5 right-1.5 flex gap-1">
+                        <button
+                          onClick={() => {
+                            soundManager.playClick();
+                            setSelectedStudyAngle(
+                              selectedStudyAngle === 'frontal' ? 'flight' : 'frontal'
+                            );
+                          }}
+                          className="px-2 py-0.5 rounded-full bg-slate-950/90 text-amber-300 border border-amber-400/70 text-[8px] font-black uppercase shadow"
+                        >
+                          {selectedStudyAngle === 'frontal'
+                            ? tx('Ver Avatar YO', 'View ME Avatar')
+                            : tx('Ver Historial Aves', 'View Bird History')}
+                        </button>
+                      </div>
                       {/* Etiqueta del Ave Compañera en el hombro */}
-                      <div className="absolute bottom-1.5 inset-x-2 px-2 py-0.5 rounded-full bg-slate-900/85 text-amber-300 text-[9px] font-black text-center truncate">
+                      <div className="absolute bottom-1.5 inset-x-2 px-2 py-0.5 rounded-full bg-slate-900/90 text-amber-300 text-[9px] font-black text-center truncate border border-amber-400/50">
                         🦜 {tx('Compañera:', 'Companion:')} {activeProfile.favoriteBird}
                       </div>
                     </div>
                   </div>
 
-                  {/* Columna Derecha (5 cols): Globo de Diálogo + Tucán Guía (Exacto al Tablero de Miro) */}
+                  {/* Columna Derecha (5 cols): Globo de Diálogo + Tucán Guía + 3 Botones Circulares del Tablero ("HISTORIAL DE AVES", "DIARIO", "ACCESORIOS") */}
                   <div className="col-span-5 flex flex-col items-center justify-between h-full space-y-2">
-                    <div className="relative bg-white text-slate-900 p-2.5 rounded-2xl border-2 border-slate-900 shadow-lg text-center">
-                      <p className="text-[10px] font-black leading-snug">
+                    <div className="relative bg-white text-slate-900 p-2 rounded-2xl border-2 border-slate-900 shadow-lg text-center">
+                      <p className="text-[9.5px] font-black leading-snug">
                         {tx(
                           '"Puedes hacer tu propio avatar teniendo como compañera a una de las aves"',
                           '"You can create your own avatar having one of the birds as your companion"'
                         )}
                       </p>
-                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
                     </div>
 
-                    <div className="relative w-24 h-24 rounded-full border-3 border-amber-500 overflow-hidden shadow-xl bg-teal-950">
+                    <div className="relative w-20 h-20 rounded-full border-3 border-amber-500 overflow-hidden shadow-xl bg-teal-950">
                       <img
                         src="/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg"
                         alt="Tucán Guía"
@@ -368,17 +347,54 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                       />
                     </div>
 
-                    <button
-                      onClick={() => {
-                        soundManager.playClick();
-                        onClose();
-                        onOpenShop();
-                      }}
-                      className="w-full py-1.5 px-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] uppercase shadow border border-amber-700/40 flex items-center justify-center gap-1"
-                    >
-                      <ShoppingBag className="w-3 h-3" />
-                      <span>{tx('Equipar Avatar', 'Equip Avatar')}</span>
-                    </button>
+                    {/* 3 Botones Circulares Oficiales del Prototipo: HISTORIAL DE AVES | DIARIO | ACCESORIOS */}
+                    <div className="grid grid-cols-3 gap-1 w-full pt-0.5">
+                      <button
+                        onClick={() => {
+                          soundManager.playClick();
+                          setSelectedStudyAngle(
+                            selectedStudyAngle === 'frontal' ? 'flight' : 'frontal'
+                          );
+                        }}
+                        className="flex flex-col items-center p-1 rounded-xl bg-teal-700 hover:bg-teal-600 text-white border border-amber-300 shadow"
+                        title={tx('Historial de Aves', 'Bird History')}
+                      >
+                        <BookOpen className="w-3.5 h-3.5 text-amber-300" />
+                        <span className="text-[7px] font-black uppercase leading-tight mt-0.5 text-center">
+                          {tx('HISTORIAL', 'BIRDS')}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          soundManager.playClick();
+                          onClose();
+                          onOpenBirds();
+                        }}
+                        className="flex flex-col items-center p-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-700 shadow"
+                        title={tx('Diario de Aventuras', 'Adventure Diary')}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span className="text-[7px] font-black uppercase leading-tight mt-0.5 text-center">
+                          {tx('DIARIO', 'DIARY')}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          soundManager.playClick();
+                          onClose();
+                          onOpenShop();
+                        }}
+                        className="flex flex-col items-center p-1 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-amber-200 border border-amber-400 shadow"
+                        title={tx('Tienda de Ropa y Accesorios', 'Clothing & Accessories Shop')}
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                        <span className="text-[7px] font-black uppercase leading-tight mt-0.5 text-center">
+                          {tx('ACCESORIOS', 'GEAR')}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -851,12 +867,17 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
               </div>
             </div>
 
-            {/* Lámina Visual Original del Tablero de Miro ("Aves en Acción") */}
-            <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+            {/* Galería Interactiva de las Pantallas Oficiales del Tablero de Miro */}
+            <div className="p-3 rounded-2xl bg-slate-900 border border-teal-700/60 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-white uppercase">
-                  {tx('LÁMINA OFICIAL DEL TABLERO MIRO', 'OFFICIAL MIRO BOARD REFERENCE')}
-                </span>
+                <div>
+                  <span className="text-[10px] font-black text-amber-300 uppercase block">
+                    {tx('PANTALLAS OFICIALES DEL TABLERO DE MIRO', 'OFFICIAL MIRO BOARD SCREENS')}
+                  </span>
+                  <span className="text-[9px] text-teal-300">
+                    {tx('Explora cada vista original del flujo de diseño', 'Explore every original screen from the design flow')}
+                  </span>
+                </div>
                 <button
                   onClick={() => setZoomBoard(!zoomBoard)}
                   className="px-2 py-1 rounded-lg bg-slate-800 text-teal-300 text-[10px] font-bold flex items-center gap-1"
@@ -865,12 +886,127 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                   <span>{zoomBoard ? tx('Ajustar', 'Fit') : tx('Ampliar', 'Zoom')}</span>
                 </button>
               </div>
-              <div className={`rounded-xl overflow-auto border border-teal-800/60 bg-white ${zoomBoard ? 'max-h-72' : 'max-h-48'}`}>
+
+              {/* Lámina General de Referencias Visuales */}
+              <div className={`rounded-xl overflow-auto border border-teal-800/60 bg-white ${zoomBoard ? 'max-h-72' : 'max-h-44'}`}>
                 <img
                   src="/assets/aistudio/Aves_en_Acci_n_5f43966c.jpg"
                   alt="Tablero Oficial Miro - Aves en Acción"
                   className={zoomBoard ? 'w-[640px] max-w-none' : 'w-full h-auto object-contain'}
                 />
+              </div>
+
+              {/* Grilla de Pantallas del Flujo Oficial de Miro con Acceso Directo */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {[
+                  {
+                    titleEs: '1. Bienvenida al Parque',
+                    titleEn: '1. Park Welcome',
+                    img: '/assets/aistudio/En_el_dialogo_que_diga_c420835e.jpg',
+                    action: () => { onClose(); onNavigateToScreen('screen1'); }
+                  },
+                  {
+                    titleEs: '2. Acceso / Escuelas',
+                    titleEn: '2. Login / Schools',
+                    img: '/assets/aistudio/Update_button_text_and_dialogue_4d2f4b29.jpg',
+                    action: () => { onClose(); onNavigateToScreen('screen2'); }
+                  },
+                  {
+                    titleEs: '3. Menú Principal (Hub)',
+                    titleEn: '3. Main Menu (Hub)',
+                    img: '/assets/aistudio/Updating_game_dialogue_and_align…_defb1fbd.jpg',
+                    action: () => { onClose(); onNavigateToScreen('screen4'); }
+                  },
+                  {
+                    titleEs: '4. Circuitos y Candados',
+                    titleEn: '4. Circuits & Padlocks',
+                    img: '/assets/aistudio/Buttons_with_padlocks_9c3df4ab.jpg',
+                    action: () => { onClose(); onOpenMap(); }
+                  },
+                  {
+                    titleEs: '5. Avistamiento XR Chinchero',
+                    titleEn: '5. XR Woodcreeper Sighting',
+                    img: '/assets/aistudio/Toucan_asking_user_question_1451548d.jpg',
+                    action: () => { onClose(); onOpenSighting(); }
+                  },
+                  {
+                    titleEs: '6. Avistamiento XR Benteveo',
+                    titleEn: '6. XR Kiskadee Sighting',
+                    img: '/assets/aistudio/Toucan_presenting_benteveo_data_…_1e5a6f2b.jpg',
+                    action: () => { onClose(); onOpenSighting(); }
+                  },
+                  {
+                    titleEs: '7. Catálogo y Siluetas',
+                    titleEn: '7. Catalog & Silhouettes',
+                    img: '/assets/aistudio/Editing_bird_images_and_silhouettes_b4122078.jpg',
+                    action: () => { onClose(); onOpenBirds(); }
+                  },
+                  {
+                    titleEs: '8. Ficha y Canto Bioacústico',
+                    titleEn: '8. Bioacoustic Call Sheet',
+                    img: '/assets/aistudio/Add_bird_song_interface_data_9b786ba3.jpg',
+                    action: () => { onClose(); onOpenBirds(); }
+                  },
+                  {
+                    titleEs: '9. Diario de Aventuras',
+                    titleEn: '9. Adventure Journal',
+                    img: '/assets/aistudio/Toucan_writing_adventure_diary_9f3bf558.jpg',
+                    action: () => { onClose(); onOpenBirds(); }
+                  },
+                  {
+                    titleEs: '10. Historial de Aves / Avatar',
+                    titleEn: '10. Bird History / Avatar',
+                    img: '/assets/aistudio/Replace_clothing_store_with_birds_e4924cc4.jpg',
+                    action: () => { setTopSection('yo_jugadores'); }
+                  },
+                  {
+                    titleEs: '11. Tienda de Ropa y Equipo',
+                    titleEn: '11. Clothing & Gear Store',
+                    img: '/assets/aistudio/Clothing_store_fc9dbebd.jpg',
+                    action: () => { onClose(); onOpenShop(); }
+                  },
+                  {
+                    titleEs: '12. Tienda de Souvenirs',
+                    titleEn: '12. Souvenir Store',
+                    img: '/assets/aistudio/Change_bird_avatar_to_store_10abc5a2.jpg',
+                    action: () => { onClose(); onOpenShop(); }
+                  },
+                  {
+                    titleEs: '13. Trivia del Circuito',
+                    titleEn: '13. Circuit Trivia',
+                    img: '/assets/aistudio/Redesigning_toucan_and_trivia_la…_5d8ba7b2.jpg',
+                    action: () => { onClose(); onOpenQuiz(); }
+                  },
+                  {
+                    titleEs: '14. Ranking de Instituciones',
+                    titleEn: '14. Institutions Ranking',
+                    img: '/assets/aistudio/Institution_ranking_and_toucan_d…_bbc71eae.jpg',
+                    action: () => { onClose(); onOpenSquads(); }
+                  }
+                ].map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      soundManager.playClick();
+                      item.action();
+                    }}
+                    className="p-1.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-amber-400 text-left transition-all group flex flex-col"
+                  >
+                    <div className="w-full h-36 rounded-xl overflow-hidden bg-slate-900 mb-1 border border-slate-800">
+                      <img
+                        src={item.img}
+                        alt={item.titleEs}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <span className="text-[10px] font-black text-amber-300 truncate w-full">
+                      {tx(item.titleEs, item.titleEn)}
+                    </span>
+                    <span className="text-[8px] text-teal-300 font-bold">
+                      {tx('Toca para ir al módulo →', 'Tap to open module →')}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>

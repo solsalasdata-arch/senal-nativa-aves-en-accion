@@ -645,6 +645,15 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               </div>
             </div>
 
+            {/* Vista Oficial del Catálogo de Siluetas (Editing_bird_images_and_silhouettes_b4122078.jpg) */}
+            <div className="rounded-2xl overflow-hidden border-2 border-teal-200/70 bg-slate-950 shadow-lg">
+              <img
+                src="/assets/aistudio/Editing_bird_images_and_silhouettes_b4122078.jpg"
+                alt="Catálogo Oficial de Siluetas Chinchero Chico"
+                className="w-full h-36 object-cover object-top"
+              />
+            </div>
+
             {/* Quick Access to Bioacoustic Mode */}
             <button
               onClick={() => {
@@ -817,6 +826,15 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* ============================================================== */}
         {activeTab === 'audio' && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+            {/* Lámina Oficial Bioacústica (Add_bird_song_interface_data_9b786ba3.jpg) */}
+            <div className="rounded-2xl overflow-hidden border-2 border-teal-400/80 bg-slate-950 shadow-lg">
+              <img
+                src="/assets/aistudio/Add_bird_song_interface_data_9b786ba3.jpg"
+                alt="Interfaz Oficial de Canto y Onda Sonora"
+                className="w-full h-40 object-cover object-center"
+              />
+            </div>
+
             {/* Header & Bioacoustic Synth Info */}
             <div className="rounded-2xl p-3 bg-slate-950/90 border border-teal-500/60 space-y-2 text-white">
               <div className="flex items-center justify-between">
@@ -977,6 +995,15 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* ============================================================== */}
         {activeTab === 'journal' && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+            {/* Lámina Oficial "DIARIO DE AVENTURAS: ¡Anota tus aventuras del día!" (Toucan_writing_adventure_diary_9f3bf558.jpg) */}
+            <div className="rounded-2xl overflow-hidden border-2 border-amber-400/80 bg-slate-950 shadow-xl">
+              <img
+                src="/assets/aistudio/Toucan_writing_adventure_diary_9f3bf558.jpg"
+                alt="Diario de Aventuras Oficial"
+                className="w-full h-44 object-cover object-top"
+              />
+            </div>
+
             {/* Observer of Details Badge Tracker */}
             <div className="rounded-2xl p-3 bg-slate-950/90 border border-amber-500/60 space-y-2 text-white">
               <div className="flex items-center justify-between">

@@ -110,8 +110,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         birdName,
         photoUrl:
           selectedBirdKey === 'chinchero'
-            ? '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg'
-            : '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg'
+            ? '/assets/aistudio/Toucan_asking_user_question_1451548d.jpg'
+            : '/assets/aistudio/Toucan_presenting_benteveo_data_…_1e5a6f2b.jpg'
       });
 
       soundManager.playSuccess();
@@ -173,7 +173,11 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             <div
               className="absolute inset-0 bg-cover bg-center transition-all duration-300"
               style={{
-                backgroundImage: `url('/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg')`,
+                backgroundImage: `url('${
+                  selectedBirdKey === 'chinchero'
+                    ? '/assets/aistudio/Toucan_asking_user_question_1451548d.jpg'
+                    : '/assets/aistudio/Toucan_presenting_benteveo_data_…_1e5a6f2b.jpg'
+                }')`,
                 filter: `blur(${Math.max(0, Math.abs(80 - focusSlider) / 12)}px)`
               }}
             />

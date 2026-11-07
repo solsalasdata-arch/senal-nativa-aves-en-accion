@@ -22,11 +22,17 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
   const { tx } = useLanguage();
   const [showSilhouettesModal, setShowSilhouettesModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [welcomeScene, setWelcomeScene] = useState<'entrance' | 'branch'>('entrance');
+
+  const bgImage =
+    welcomeScene === 'entrance'
+      ? '/assets/aistudio/En_el_dialogo_que_diga_c420835e.jpg'
+      : '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg';
 
   return (
     <div
-      className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-cover bg-center select-none"
-      style={{ backgroundImage: `url('/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg')` }}
+      className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-cover bg-center select-none transition-all duration-300"
+      style={{ backgroundImage: `url('${bgImage}')` }}
     >
       {/* Top Header controls with Active Player Chip, LanguageSelector and "Cambiar Jugador" */}
       <div className="relative z-10 flex items-center justify-between p-3 bg-slate-950/65 backdrop-blur-md border-b border-teal-800/40 gap-1.5">
@@ -59,6 +65,18 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
 
         <div className="flex items-center gap-1.5 shrink-0">
           <LanguageSelector />
+
+          {/* Toggle Escena Entrada del Parque vs Dosel */}
+          <button
+            onClick={() => {
+              soundManager.playClick();
+              setWelcomeScene(prev => (prev === 'entrance' ? 'branch' : 'entrance'));
+            }}
+            className="px-2 py-1 rounded-full bg-amber-400/90 hover:bg-amber-300 text-slate-950 text-[9px] font-black border border-slate-900 shadow"
+            title={tx('Alternar vista Entrada del Parque / Dosel', 'Toggle Park Entrance / Canopy view')}
+          >
+            {welcomeScene === 'entrance' ? tx('🌿 Dosel', '🌿 Canopy') : tx('🏛️ Entrada', '🏛️ Entrance')}
+          </button>
 
           {/* "Cambiar Jugador" button */}
           <button
@@ -96,18 +114,21 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
         </div>
       </div>
 
-      {/* Center Empty Area to let the Toucan illustration shine */}
+      {/* Center Area */}
       <div className="flex-1" />
 
       {/* Bottom Translucent Info Panel */}
       <div className="relative z-10 p-4 pb-6 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent">
         {/* Title & Subtitle Card */}
-        <div className="w-full bg-teal-900/60 backdrop-blur-md border-2 border-teal-400/60 rounded-3xl p-3.5 shadow-2xl text-center mb-3">
-          <h2 className="text-2xl font-black text-white tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-            {tx('TUCÁN GRANDE', 'TOCO TOUCAN')}
+        <div className="w-full bg-teal-900/65 backdrop-blur-md border-2 border-teal-400/60 rounded-3xl p-3 shadow-2xl text-center mb-3">
+          <h2 className="text-xl font-black text-white tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+            {tx('TUCÁN GRANDE · BIENVENIDA', 'TOCO TOUCAN · WELCOME')}
           </h2>
-          <div className="text-xs font-bold text-teal-200 tracking-widest uppercase drop-shadow">
-            {tx('NATURALEZA · GUÍA ANFITRIÓN', 'NATURE · HOST GUIDE')}
+          <div className="text-[10px] font-bold text-amber-200 leading-snug mt-0.5">
+            {tx(
+              '«¡Bienvenidos! Deben prestar atención al guía para luego responder las preguntas de la trivia y ganar puntos!»',
+              '"Welcome! Pay close attention to the guide so you can answer the trivia questions and earn points!"'
+            )}
           </div>
         </div>
 

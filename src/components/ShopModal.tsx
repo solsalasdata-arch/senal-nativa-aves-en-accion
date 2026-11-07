@@ -31,13 +31,46 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   onBuySilhouettePack,
   onOpenBirdsCatalog
 }) => {
-  const [activeSection, setActiveSection] = useState<'gear' | 'packs'>('gear');
+  const [activeSection, setActiveSection] = useState<'gear' | 'souvenirs' | 'packs'>('gear');
+  const [reservedSouvenirs, setReservedSouvenirs] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(`senal_nativa_souvenirs_${playerState.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [packRevealResult, setPackRevealResult] = useState<{
     mode: 'hints' | 'silhouettes';
     birds: CatalogBird[];
   } | null>(null);
 
   if (!isOpen) return null;
+
+  const SOUVENIR_ITEMS = [
+    { id: 'peluche-tucan', name: 'Peluches Aves Yungas', cost: 100, icon: '🦜' },
+    { id: 'gorra-parque', name: 'Gorras Bordadas Schuel', cost: 100, icon: '🧢' },
+    { id: 'agenda-campo', name: 'Agendas de Campo', cost: 200, icon: '📓' },
+    { id: 'camiseta-aves', name: 'Camisetas Aves en Acción', cost: 100, icon: '👕' },
+    { id: 'boligrafo-eco', name: 'Bolígrafos Ecológicos', cost: 50, icon: '🖊️' },
+    { id: 'llavero-tucan', name: 'Llaveros Artesanales', cost: 80, icon: '🔑' },
+    { id: 'taza-botanico', name: 'Tazas del Parque Botánico', cost: 100, icon: '☕' },
+    { id: 'vaso-termico', name: 'Vasos Reutilizables', cost: 120, icon: '🥤' },
+    { id: 'alimento-aves', name: 'Alimento Néctar / Semillas', cost: 150, icon: '🌻' }
+  ];
+
+  const handleReserveSouvenir = (itemId: string, cost: number) => {
+    if (reservedSouvenirs.includes(itemId) || playerState.xp < cost) return;
+    soundManager.playSuccess();
+    onEquipItem(itemId, cost);
+    const updated = [...reservedSouvenirs, itemId];
+    setReservedSouvenirs(updated);
+    try {
+      localStorage.setItem(`senal_nativa_souvenirs_${playerState.id}`, JSON.stringify(updated));
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   const purchasedList = playerState.purchasedGear || ['visera-oficial'];
   const equippedList = playerState.equippedItems || ['visera-oficial'];
@@ -71,7 +104,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                   TIENDA BOTÁNICA SCHUEL
                 </h3>
                 <p className="text-[10px] text-teal-300 font-semibold">
-                  Canje de Recompensas y Equipo Oficial
+                  Ropa de Avatar, Kiosco de Souvenirs y Sobres
                 </p>
               </div>
             </div>
@@ -87,9 +120,9 @@ export const ShopModal: React.FC<ShopModalProps> = ({
           </div>
 
           {/* Player Avatar Preview + Active XP Balance */}
-          <div className="mt-2.5 p-2.5 rounded-2xl bg-gradient-to-r from-teal-950 via-slate-900 to-teal-950 border border-teal-700/60 flex items-center justify-between gap-2">
+          <div className="mt-2 p-2 rounded-2xl bg-gradient-to-r from-teal-950 via-slate-900 to-teal-950 border border-teal-700/60 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-teal-900/90 border border-amber-400/70 flex items-center justify-center text-xl shrink-0 shadow">
+              <div className="w-9 h-9 rounded-xl bg-teal-900/90 border border-amber-400/70 flex items-center justify-center text-lg shrink-0 shadow">
                 {playerState.avatarIcon || '🧢'}
               </div>
               <div className="min-w-0">
@@ -110,8 +143,8 @@ export const ShopModal: React.FC<ShopModalProps> = ({
               </div>
             </div>
 
-            <div className="text-right shrink-0 bg-amber-500/20 border border-amber-400/70 px-3 py-1.5 rounded-xl">
-              <span className="text-[9px] font-black text-amber-200 block uppercase">
+            <div className="text-right shrink-0 bg-amber-500/20 border border-amber-400/70 px-3 py-1 rounded-xl">
+              <span className="text-[8px] font-black text-amber-200 block uppercase">
                 SALDO DISPONIBLE
               </span>
               <span className="text-sm font-black text-amber-300">
@@ -120,50 +153,71 @@ export const ShopModal: React.FC<ShopModalProps> = ({
             </div>
           </div>
 
-          {/* Section Switcher: Prendas y Equipo vs Sobres de Siluetas */}
-          <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-900 rounded-xl border border-teal-900/80 mt-2.5 text-[10px] font-black">
+          {/* Section Switcher: Tienda de Ropa | Tienda de Souvenirs | Sobres de Siluetas */}
+          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900 rounded-xl border border-teal-900/80 mt-2 text-[9.5px] font-black">
             <button
               onClick={() => {
                 soundManager.playClick();
                 setActiveSection('gear');
               }}
-              className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
                 activeSection === 'gear'
                   ? 'bg-teal-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🧢 Prendas y Equipo</span>
+              <span>🧢 Ropa y Equipo</span>
+            </button>
+            <button
+              onClick={() => {
+                soundManager.playClick();
+                setActiveSection('souvenirs');
+              }}
+              className={`py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
+                activeSection === 'souvenirs'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>🎁 Souvenirs</span>
             </button>
             <button
               onClick={() => {
                 soundManager.playClick();
                 setActiveSection('packs');
               }}
-              className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
                 activeSection === 'packs'
                   ? 'bg-amber-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <PackageOpen className="w-3.5 h-3.5" />
-              <span>Sobres de Siluetas</span>
+              <PackageOpen className="w-3 h-3" />
+              <span>Sobres</span>
             </button>
           </div>
         </div>
 
         {/* ============================================================== */}
-        {/* SECCIÓN A: PRENDAS Y EQUIPO PARA EL AVATAR */}
+        {/* SECCIÓN A: TIENDA DE ROPA Y EQUIPO PARA EL AVATAR */}
         {/* ============================================================== */}
         {activeSection === 'gear' && (
           <div className="p-3.5 space-y-2.5 flex-1 overflow-y-auto">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] font-black text-teal-300 uppercase tracking-wider">
-                a) Prendas y Equipo para el Avatar
-              </span>
-              <span className="text-[10px] text-amber-300 font-bold">
-                {purchasedList.length}/{SHOP_ITEMS.length} desbloqueados
-              </span>
+            {/* Lámina Oficial "TIENDA DE ROPA" de public/assets/aistudio/ */}
+            <div className="relative rounded-2xl overflow-hidden border-2 border-amber-400/70 bg-slate-950 shadow-lg">
+              <img
+                src="/assets/aistudio/Clothing_store_fc9dbebd.jpg"
+                alt="Tienda de Ropa Oficial"
+                className="w-full h-44 object-cover object-top"
+              />
+              <div className="p-2 bg-slate-950/90 border-t border-teal-800/70 flex items-center justify-between text-[10px]">
+                <span className="font-black text-amber-300 uppercase">
+                  "¡Aquí puedes comprar ropa y accesorios para tu aventura!"
+                </span>
+                <span className="text-teal-300 font-bold shrink-0 ml-1">
+                  {purchasedList.length}/{SHOP_ITEMS.length}
+                </span>
+              </div>
             </div>
 
             {SHOP_ITEMS.map((item) => {
@@ -234,13 +288,70 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                         }`}
                       >
                         {!canAfford && <Lock className="w-3 h-3" />}
-                        <span>{canAfford ? 'Canjear' : `${item.cost} XP`}</span>
+                        <span>{canAfford ? 'Comprar' : `${item.cost} XP`}</span>
                       </button>
                     )}
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* SECCIÓN NUEVA: TIENDA DE SOUVENIRS DEL PARQUE BOTÁNICO */}
+        {/* ============================================================== */}
+        {activeSection === 'souvenirs' && (
+          <div className="p-3.5 space-y-2.5 flex-1 overflow-y-auto">
+            {/* Lámina Oficial "TIENDA DE SOUVENIRS" de public/assets/aistudio/ */}
+            <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-400/80 bg-slate-950 shadow-xl">
+              <img
+                src="/assets/aistudio/Change_bird_avatar_to_store_10abc5a2.jpg"
+                alt="Tienda de Souvenirs Parque Botánico"
+                className="w-full h-48 object-cover object-top"
+              />
+              <div className="p-2.5 bg-slate-950/95 border-t border-emerald-800 text-[10px] text-emerald-200 font-bold leading-snug">
+                🦜 "¡Hola {playerState.name}! Puedes reservar cualquiera de los productos de la Tienda de Souvenirs para recogerlos a la salida del Parque Botánico."
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {SOUVENIR_ITEMS.map((souv) => {
+                const isReserved = reservedSouvenirs.includes(souv.id);
+                const canAfford = playerState.xp >= souv.cost;
+                return (
+                  <div
+                    key={souv.id}
+                    className={`p-2 rounded-2xl border flex flex-col items-center justify-between text-center transition-all ${
+                      isReserved
+                        ? 'bg-emerald-950/90 border-amber-400 shadow-md'
+                        : 'bg-slate-950/90 border-teal-900/70'
+                    }`}
+                  >
+                    <div className="text-2xl my-1">{souv.icon}</div>
+                    <div className="text-[9.5px] font-black text-white leading-tight line-clamp-2">
+                      {souv.name}
+                    </div>
+                    <div className="text-[9px] font-black text-amber-300 my-1">
+                      ⭐ {souv.cost} XP
+                    </div>
+                    <button
+                      disabled={isReserved || !canAfford}
+                      onClick={() => handleReserveSouvenir(souv.id, souv.cost)}
+                      className={`w-full py-1 rounded-lg text-[9px] font-black uppercase ${
+                        isReserved
+                          ? 'bg-emerald-700 text-white'
+                          : canAfford
+                          ? 'game-btn-orange text-white cursor-pointer'
+                          : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {isReserved ? '✓ Reservado' : 'Reservar'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

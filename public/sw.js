@@ -1,6 +1,6 @@
-const CACHE_NAME = 'senal-nativa-pwa-v2';
+const CACHE_NAME = 'senal-nativa-pwa-v3';
 
-// Core static assets and illustrations to pre-cache for 100% offline trail usage
+// Core static assets and illustrations to pre-cache for offline trail usage
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -10,29 +10,25 @@ const PRECACHE_ASSETS = [
   '/pwa-512x512.png',
   '/pwa-maskable-512x512.png',
   '/apple-touch-icon.png',
-  '/assets/aistudio/Screen_1_22a39e8c_1f7c711e.jpg',
-  '/assets/aistudio/Screen_2_d0032cf0_1ee10bf1.jpg',
-  '/assets/aistudio/Screen_3_8e6fa6b7_1755264f.jpg',
-  '/assets/aistudio/Screen_4_73a89551_b68fdca2.jpg',
-  '/assets/aistudio/Screen_5_06f6ef05_52d6377a.jpg',
+  '/assets/aistudio/Aves_en_Acci_n_5f43966c.jpg',
+  '/assets/aistudio/Botanical_park_start_screen_logo_11198c3d_2d966cdf.jpg',
+  '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
+  '/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg',
   '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
-  '/assets/aistudio/Bird_1_5f9f602b_3d8fd6a9.jpg',
-  '/assets/aistudio/Bird_2_d0fb2eb9_d5a798d6.jpg',
-  '/assets/aistudio/Bird_3_268b1279_c5b0c7ea.jpg',
-  '/assets/aistudio/Bird_4_363f952c_086d60d9.jpg'
+  '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return Promise.allSettled(
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(
         PRECACHE_ASSETS.map((url) =>
           cache.add(url).catch(() => {
             // Ignore individual asset failure during install
           })
         )
-      );
-    })
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -56,8 +52,14 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Skip external API calls (e.g., Google Drive API / OAuth)
+  // Never intercept Vite dev-server module requests or external Google APIs
+  // to prevent mismatched React chunks during hot/dev reloads
   if (
+    url.pathname.startsWith('/node_modules/') ||
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.searchParams.has('v') ||
+    url.searchParams.has('t') ||
     url.hostname.includes('googleapis.com') ||
     url.hostname.includes('accounts.google.com')
   ) {
@@ -80,26 +82,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets, scripts, styles, images, fonts: Stale-While-Revalidate for fast offline response
+  // Static production assets (/assets/*, images, fonts, manifest): Network-first with cache fallback
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
-        .then((networkResponse) => {
-          if (
-            networkResponse &&
-            networkResponse.status === 200 &&
-            (networkResponse.type === 'basic' || networkResponse.type === 'cors')
-          ) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse);
-
-      return cachedResponse || fetchPromise;
-    })
+    fetch(request)
+      .then((networkResponse) => {
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          (networkResponse.type === 'basic' || networkResponse.type === 'cors')
+        ) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseClone);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(request))
   );
 });

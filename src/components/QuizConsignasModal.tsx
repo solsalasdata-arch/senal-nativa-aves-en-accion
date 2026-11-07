@@ -127,17 +127,20 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
           {!isQuizCompleted ? (
             /* ACTIVE QUIZ SCREEN */
             <div className="space-y-3">
-              {/* Question Progress bar */}
-              <div className="bg-slate-950/80 rounded-2xl p-2.5 border border-teal-900/50">
-                <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                  <span className="text-teal-300">Consigna {currentIdx + 1} de {TUCAN_CONSIGNAS_QUESTIONS.length}</span>
-                  <span className="text-amber-400">Aciertos: {score}/{TUCAN_CONSIGNAS_QUESTIONS.length}</span>
-                </div>
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-teal-400 to-amber-400 h-full transition-all duration-300"
-                    style={{ width: `${((currentIdx + 1) / TUCAN_CONSIGNAS_QUESTIONS.length) * 100}%` }}
-                  />
+              {/* Official Circuit Trivia Header Banner */}
+              <div className="relative h-32 rounded-2xl overflow-hidden border border-teal-500/60 shadow-lg">
+                <img
+                  src="/assets/aistudio/Redesigning_toucan_and_trivia_la…_5d8ba7b2.jpg"
+                  alt="Trivia del Circuito"
+                  className="w-full h-full object-cover object-top"
+                />
+                <div className="absolute bottom-1.5 inset-x-2 px-2.5 py-1 rounded-xl bg-slate-950/85 backdrop-blur-sm border border-teal-500/50 flex items-center justify-between text-[11px] font-bold">
+                  <span className="text-teal-300">
+                    {tx('Consigna', 'Question')} {currentIdx + 1} / {TUCAN_CONSIGNAS_QUESTIONS.length}
+                  </span>
+                  <span className="text-amber-400">
+                    {tx('Aciertos:', 'Correct:')} {score}/{TUCAN_CONSIGNAS_QUESTIONS.length}
+                  </span>
                 </div>
               </div>
 
@@ -245,12 +248,12 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
                 <span className="absolute top-10 right-4 text-xl animate-bounce">🎊</span>
               </div>
 
-              {/* Tucán Abriendo las Alas Feliz */}
-              <div className="relative w-28 h-28 mx-auto rounded-full border-4 border-amber-400 p-1 bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-2xl overflow-hidden ring-4 ring-amber-400/40">
+              {/* Ilustración Oficial de Victoria e Insignia */}
+              <div className="relative w-full h-48 mx-auto rounded-2xl border-2 border-amber-400 shadow-2xl overflow-hidden">
                 <img
-                  src="/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg"
-                  alt="Tucán feliz abriendo alas"
-                  className="w-full h-full object-cover object-[center_18%] scale-125"
+                  src="/assets/aistudio/Toucan_image_prompt_translation_ed4d9490.jpg"
+                  alt="Insignia de Observador en Ascenso"
+                  className="w-full h-full object-cover object-center"
                 />
               </div>
 
@@ -305,12 +308,12 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
           ) : (
             /* BIFURCACIÓN 2: FEEDBACK AMABLE 8B (FALLÓ ALGUNA PREGUNTA O FALTA AVISTAMIENTO) */
             <div className="bg-slate-950/95 rounded-3xl p-5 border-2 border-teal-600/70 text-center space-y-3.5 animate-fadeIn">
-              {/* Tucán con Mirada Empática */}
-              <div className="relative w-24 h-24 mx-auto rounded-full border-3 border-teal-400/70 p-0.5 bg-slate-900 shadow-xl overflow-hidden">
+              {/* Ilustración Oficial del Tucán con Mirada Empática */}
+              <div className="relative w-full h-44 mx-auto rounded-2xl border-2 border-teal-400/70 bg-slate-900 shadow-xl overflow-hidden">
                 <img
-                  src="/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg"
+                  src="/assets/aistudio/Modify_toucan_and_UI_buttons_e3aebd9e.jpg"
                   alt="Tucán con mirada empática"
-                  className="w-full h-full object-cover scale-110"
+                  className="w-full h-full object-cover object-top"
                 />
               </div>
 
