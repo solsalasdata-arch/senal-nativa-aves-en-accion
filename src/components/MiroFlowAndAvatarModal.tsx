@@ -627,7 +627,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                   >
                     <div className="relative w-full h-24 rounded-xl overflow-hidden bg-white mb-1.5 border border-slate-700">
                       <img
-                        src="/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg"
+                        src="/assets/aistudio/chinchero_chico_portrait.jpg"
                         alt={ang.title}
                         className="w-full h-full object-cover"
                       />

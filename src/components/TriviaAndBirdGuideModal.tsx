@@ -137,7 +137,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
       loreOrFact: 'Trepa ágilmente los troncos de tipas y laureles en espiral buscando larvas.'
     },
     soundType: 'chinchero',
-    image: '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg',
+    image: '/assets/aistudio/chinchero_chico_portrait.jpg',
     silhouetteIcon: '🪵'
   };
 

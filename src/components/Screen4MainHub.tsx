@@ -179,9 +179,9 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
         <div className="relative flex items-center justify-center">
           <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-amber-400 p-0.5 shadow-2xl overflow-hidden bg-teal-950 ring-4 ring-teal-400/40 relative">
             <img
-              src="/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg"
+              src="/assets/aistudio/toucan_guide_portrait.jpg"
               alt={tx('Tucán Grande Guía con visera verde y mochila', 'Toco Toucan Guide with green visor and backpack')}
-              className="w-full h-full object-cover object-[center_18%] scale-125"
+              className="w-full h-full object-cover"
             />
           </div>
 
