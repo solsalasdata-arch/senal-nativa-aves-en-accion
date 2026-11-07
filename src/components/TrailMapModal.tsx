@@ -26,6 +26,7 @@ interface TrailMapModalProps {
   onValidateCheckpoint: (checkpointId: number, xpReward: number) => void;
   onOpenRareBirdDetails?: (bird: BirdSpecies) => void;
   onOpenXRVision?: () => void;
+  onOpenSquadsAndSeasons?: () => void;
 }
 
 export const TrailMapModal: React.FC<TrailMapModalProps> = ({
@@ -34,7 +35,8 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
   playerProfile,
   onValidateCheckpoint,
   onOpenRareBirdDetails,
-  onOpenXRVision
+  onOpenXRVision,
+  onOpenSquadsAndSeasons
 }) => {
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<CheckPoint>(CHECKPOINTS_DATA[0]);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
@@ -89,9 +91,9 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 soundManager.playClick();
                 onClose();
               }}
-              className="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700"
+              className="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-teal-200 hover:text-white text-[10px] font-bold flex items-center gap-1 border border-teal-700/60 shrink-0 shadow active:scale-95 transition-all"
             >
-              <X className="w-4 h-4" />
+              <span>← Volver al Menú</span>
             </button>
           </div>
 
@@ -268,11 +270,11 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
             </div>
           </div>
 
-          {/* Botón: Validar Punto (Escanear QR / GPS) */}
-          <div className="pt-1 flex gap-2">
+          {/* Botón: Validar Punto (Escanear QR / GPS) + Acceso Paso 15 */}
+          <div className="pt-1 space-y-1.5">
             <button
               onClick={handleOpenChallenge}
-              className={`flex-1 py-2.5 px-3 rounded-2xl text-xs font-black tracking-wide uppercase flex items-center justify-center gap-2 transition-all ${
+              className={`w-full py-2.5 px-3 rounded-2xl text-xs font-black tracking-wide uppercase flex items-center justify-center gap-2 transition-all ${
                 isCurrentCheckpointCompleted
                   ? 'bg-slate-800 text-teal-200 border border-teal-700/60 hover:bg-slate-700'
                   : 'game-btn-orange text-white shadow-lg'
@@ -285,6 +287,19 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                   : 'Validar Punto (Escanear QR / GPS)'}
               </span>
             </button>
+
+            {onOpenSquadsAndSeasons && (
+              <button
+                onClick={() => {
+                  soundManager.playClick();
+                  onClose();
+                  onOpenSquadsAndSeasons();
+                }}
+                className="w-full py-2 px-3 rounded-2xl game-btn-mint text-emerald-950 text-[11px] font-black tracking-wide uppercase flex items-center justify-center gap-1.5 shadow"
+              >
+                <span>🛡️ Cuadrillas y Temporadas (Paso 15)</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

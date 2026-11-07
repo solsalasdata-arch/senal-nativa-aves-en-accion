@@ -111,7 +111,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         photoUrl:
           selectedBirdKey === 'chinchero'
             ? '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg'
-            : '/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg'
+            : '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg'
       });
 
       soundManager.playSuccess();
@@ -305,9 +305,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
                   <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-sky-300 shadow-xl bg-slate-900/60">
                     <img
-                      src="/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg"
+                      src="/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg"
                       alt="Benteveo"
-                      className="w-full h-full object-cover scale-110"
+                      className="w-full h-full object-cover object-[center_18%] scale-110"
                     />
                   </div>
                 </div>

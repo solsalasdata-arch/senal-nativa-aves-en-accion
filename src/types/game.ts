@@ -16,6 +16,37 @@ export interface JournalEntry {
   weather?: 'Soleado' | 'Nublado' | 'Llovizna de Yungas';
 }
 
+export interface ShopItem {
+  id: string;
+  name: string;
+  category: string;
+  cost: number;
+  description: string;
+  icon: string;
+  defaultEquipped?: boolean;
+}
+
+export interface SquadMember {
+  id: string;
+  name: string;
+  avatarIcon: string;
+  favoriteBird: CompanionBirdId;
+  isDeviceProfile?: boolean;
+  contributedSpecies: string[];
+  journalCount: number;
+}
+
+export interface Squad {
+  id: string;
+  name: string;
+  schoolOrGroup?: string;
+  members: SquadMember[]; // max 5 players
+  sharedSightings: string[];
+  goalTarget: number;
+  goalRewardClaimed?: boolean;
+  createdAt: number;
+}
+
 export interface PlayerProfile {
   id: string;
   name: string;
@@ -35,6 +66,13 @@ export interface PlayerProfile {
   unlockedRareBirds: string[]; // e.g. 'urutau', 'jote-real'
   unlockedSilhouettes: string[]; // IDs of illuminated birds in catalog
   unlockedAcoustics: string[]; // IDs of bird songs identified
+  addedPackBirdIds?: string[]; // Extra silhouettes added via Sobre Selva Montana
+  freeSilhouetteHints?: number; // Free hints from Sobre Selva Montana
+  packsOpenedCount?: number; // Number of Sobre Selva Montana packs opened
+  purchasedGear?: string[]; // IDs of shop items unlocked
+  equippedItems?: string[]; // IDs of shop items currently equipped on avatar
+  unlockedSpecialEvents?: string[]; // 'global-big-day' | 'qmi-raymi'
+  registeredMigrantIds?: string[]; // IDs of Season Migrant birds registered
   missions: Mission[]; // 3 daily missions
   fieldJournal: JournalEntry[]; // 0/10 entries
   unlockedPhotos: string[];

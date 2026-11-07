@@ -241,9 +241,9 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
               {/* Tucán Abriendo las Alas Feliz */}
               <div className="relative w-28 h-28 mx-auto rounded-full border-4 border-amber-400 p-1 bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-2xl overflow-hidden ring-4 ring-amber-400/40">
                 <img
-                  src="/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg"
+                  src="/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg"
                   alt="Tucán feliz abriendo alas"
-                  className="w-full h-full object-cover scale-125 translate-y-1"
+                  className="w-full h-full object-cover object-[center_18%] scale-125"
                 />
               </div>
 

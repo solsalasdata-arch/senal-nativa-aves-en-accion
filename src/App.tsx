@@ -12,6 +12,9 @@ import { ShopModal } from './components/ShopModal';
 import { LevelUpCelebrationModal } from './components/LevelUpCelebrationModal';
 import { OptionsModal } from './components/OptionsModal';
 import { QuizConsignasModal } from './components/QuizConsignasModal';
+import { GoogleDriveModal } from './components/GoogleDriveModal';
+import { SquadsAndSeasonsModal } from './components/SquadsAndSeasonsModal';
+import { PACK_EXTRA_BIRDS_DATA } from './data/birdsData';
 import {
   loadProfilesList,
   getActiveProfile,
@@ -21,7 +24,7 @@ import {
   updateActiveProfile
 } from './utils/storage';
 import { soundManager } from './utils/audio';
-import { PlayerProfile, CompanionBirdId, JournalEntry } from './types/game';
+import { PlayerProfile, CompanionBirdId, JournalEntry, CatalogBird } from './types/game';
 
 type ScreenId = 'screen1' | 'screen2' | 'screen3' | 'screen4';
 
@@ -46,6 +49,8 @@ export default function App() {
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [showQuizConsignasModal, setShowQuizConsignasModal] = useState(false);
+  const [showDriveModal, setShowDriveModal] = useState(false);
+  const [showSquadsModal, setShowSquadsModal] = useState(false);
 
   // Sync profile update helper
   const handleUpdateProfile = (updates: Partial<PlayerProfile>) => {
@@ -223,7 +228,7 @@ export default function App() {
     }
   };
 
-  // Paso 13: Registro Científico en Diario de Campo (4 Toques)
+  // Paso 13: Registro Científico en Diario de Campo (4 Toques) (+30 XP)
   const handleAddJournalEntry = (entry: Omit<JournalEntry, 'id' | 'timestamp'>) => {
     const newEntry: JournalEntry = {
       ...entry,
@@ -236,10 +241,10 @@ export default function App() {
     const newCount = updatedJournal.length;
     const shouldAwardDetailBadge = newCount >= 10 && !activeProfile.hasDetailObserverBadge;
 
-    const updated = handleUpdateProfile({
+    handleUpdateProfile({
       fieldJournal: updatedJournal,
       hasDetailObserverBadge: activeProfile.hasDetailObserverBadge || shouldAwardDetailBadge,
-      xp: activeProfile.xp + (shouldAwardDetailBadge ? 120 : 35)
+      xp: activeProfile.xp + 30 + (shouldAwardDetailBadge ? 100 : 0)
     });
 
     if (shouldAwardDetailBadge) {
@@ -248,16 +253,91 @@ export default function App() {
     }
   };
 
-  // Equip Item from Shop
+  // Paso 9 / Paso 4: Comprar y Equipar Prendas y Equipo del Avatar en Tienda
   const handleEquipItem = (itemId: string, cost: number) => {
+    const prevPurchased = activeProfile.purchasedGear || ['visera-oficial'];
+    const prevEquipped = activeProfile.equippedItems || ['visera-oficial'];
+    const alreadyOwned = prevPurchased.includes(itemId);
+
+    const nextPurchased = alreadyOwned
+      ? prevPurchased
+      : Array.from(new Set([...prevPurchased, itemId]));
+
+    let nextEquipped: string[];
+    if (alreadyOwned && cost === 0) {
+      // Toggle equip if already owned (keep at least 1 item equipped)
+      if (prevEquipped.includes(itemId) && prevEquipped.length > 1) {
+        nextEquipped = prevEquipped.filter(id => id !== itemId);
+      } else {
+        nextEquipped = Array.from(new Set([...prevEquipped, itemId]));
+      }
+    } else {
+      nextEquipped = Array.from(new Set([...prevEquipped, itemId]));
+    }
+
     handleUpdateProfile({
       xp: Math.max(0, activeProfile.xp - cost),
+      purchasedGear: nextPurchased,
+      equippedItems: nextEquipped,
       equippedGear: {
         ...activeProfile.equippedGear,
         hat: itemId.includes('visera') ? itemId : activeProfile.equippedGear.hat,
-        backpack: itemId.includes('mochila') ? itemId : activeProfile.equippedGear.backpack,
-        binoculars: itemId.includes('prismaticos') ? itemId : activeProfile.equippedGear.binoculars
+        backpack: itemId.includes('chaleco') ? itemId : activeProfile.equippedGear.backpack,
+        binoculars: itemId.includes('binoculares') ? itemId : activeProfile.equippedGear.binoculars
       }
+    });
+  };
+
+  // Paso 4: Canjear "Sobre Selva Montana" (100 XP)
+  const handleBuySilhouettePack = (mode: 'hints' | 'silhouettes', cost: number): CatalogBird[] => {
+    const prevAdded = activeProfile.addedPackBirdIds || [];
+    const remaining = PACK_EXTRA_BIRDS_DATA.filter(b => !prevAdded.includes(b.id));
+    const newlyUnlocked = mode === 'silhouettes' ? remaining.slice(0, 3) : [];
+    const newAddedIds = Array.from(new Set([...prevAdded, ...newlyUnlocked.map(b => b.id)]));
+
+    handleUpdateProfile({
+      xp: Math.max(0, activeProfile.xp - cost),
+      addedPackBirdIds: newAddedIds,
+      freeSilhouetteHints: (activeProfile.freeSilhouetteHints || 0) + 2,
+      packsOpenedCount: (activeProfile.packsOpenedCount || 0) + 1
+    });
+
+    return newlyUnlocked;
+  };
+
+  // Consumir pistas gratis del Sobre Selva Montana al abrir una Silueta Misteriosa
+  const handleConsumeFreeHints = (usedCount: number) => {
+    const currentHints = activeProfile.freeSilhouetteHints || 0;
+    if (currentHints <= 0) return;
+    handleUpdateProfile({
+      freeSilhouetteHints: Math.max(0, currentHints - usedCount)
+    });
+  };
+
+  // Paso 15: Registrar especie de la Temporada de Aves Migrantes
+  const handleRegisterMigrantBird = (migrantId: string, xpReward: number) => {
+    const prev = activeProfile.registeredMigrantIds || ['mig-loro-alisero'];
+    if (prev.includes(migrantId)) return;
+    handleUpdateProfile({
+      registeredMigrantIds: [...prev, migrantId],
+      xp: activeProfile.xp + xpReward
+    });
+  };
+
+  // Paso 15: Desbloquear Ficha Exclusiva de Evento Especial (Global Big Day / Q'MI RAYMI)
+  const handleUnlockSpecialEvent = (eventId: string, xpReward: number) => {
+    const prev = activeProfile.unlockedSpecialEvents || [];
+    if (prev.includes(eventId)) return;
+    handleUpdateProfile({
+      unlockedSpecialEvents: [...prev, eventId],
+      xp: activeProfile.xp + xpReward
+    });
+  };
+
+  // Paso 15: Reclamar recompensa de Meta Grupal Cooperativa de Cuadrilla
+  const handleClaimSquadGoalReward = (xpReward: number) => {
+    handleUpdateProfile({
+      xp: activeProfile.xp + xpReward
     });
   };
 
@@ -345,6 +425,8 @@ export default function App() {
               onOpenSighting={() => setShowSightingModal(true)}
               onOpenCamera={() => setShowSightingModal(true)}
               onOpenBadge={() => setShowLevelUpModal(true)}
+              onOpenDrive={() => setShowDriveModal(true)}
+              onOpenSquadsAndSeasons={() => setShowSquadsModal(true)}
               onChangePlayer={() => setCurrentScreen('screen2')}
               onBackToSplash={() => setCurrentScreen('screen1')}
             />
@@ -416,6 +498,11 @@ export default function App() {
           questionsAnsweredCount={activeProfile.questionsAnswered}
           onQuestionsAnsweredUpdate={handleQuestionsAnsweredUpdate}
           initialTab={birdsInitialTab}
+          onOpenDrive={() => {
+            setShowBirdsModal(false);
+            setShowDriveModal(true);
+          }}
+          onConsumeFreeHints={handleConsumeFreeHints}
         />
 
         {/* MODAL DE CELEBRACIÓN: INSIGNIA OBSERVADOR DE DETALLES (10 ENTRADAS) */}
@@ -459,14 +546,31 @@ export default function App() {
           playerProfile={activeProfile}
           onValidateCheckpoint={handleValidateCheckpoint}
           onOpenXRVision={() => setShowSightingModal(true)}
+          onOpenSquadsAndSeasons={() => setShowSquadsModal(true)}
         />
 
-        {/* MODAL DE TIENDA */}
+        {/* MODAL DE TIENDA (PASO 9 / PASO 4: PRENDAS Y SOBRES DE SILUETAS) */}
         <ShopModal
           isOpen={showShopModal}
           onClose={() => setShowShopModal(false)}
           playerState={activeProfile}
           onEquipItem={handleEquipItem}
+          onBuySilhouettePack={handleBuySilhouettePack}
+          onOpenBirdsCatalog={() => {
+            setBirdsInitialTab('catalog');
+            setShowBirdsModal(true);
+          }}
+        />
+
+        {/* MODAL PASO 15: CUADRILLAS ESCOLARES, TEMPORADAS DE AVES MIGRANTES Y RANKING AMIGABLE */}
+        <SquadsAndSeasonsModal
+          isOpen={showSquadsModal}
+          onClose={() => setShowSquadsModal(false)}
+          activeProfile={activeProfile}
+          allProfiles={profiles}
+          onRegisterMigrantBird={handleRegisterMigrantBird}
+          onUnlockSpecialEvent={handleUnlockSpecialEvent}
+          onClaimSquadGoalReward={handleClaimSquadGoalReward}
         />
 
         {/* MODAL DE CELEBRACIÓN DE NIVEL */}
@@ -488,6 +592,17 @@ export default function App() {
           onChangePlayer={() => setCurrentScreen('screen2')}
           onChangeCompanionOrPhoto={() => setShowPhotoModal(true)}
           onBackToSplash={() => setCurrentScreen('screen1')}
+          onOpenDrive={() => setShowDriveModal(true)}
+        />
+
+        {/* MODAL DE GOOGLE DRIVE: SINCRONIZACIÓN, EXPORTACIÓN Y ARCHIVOS */}
+        <GoogleDriveModal
+          isOpen={showDriveModal}
+          onClose={() => setShowDriveModal(false)}
+          activeProfile={activeProfile}
+          onRestoreProfileData={(restored) => {
+            handleUpdateProfile(restored);
+          }}
         />
       </div>
     </div>

@@ -21,10 +21,11 @@ import {
   Check,
   Star,
   Play,
-  RotateCcw
+  RotateCcw,
+  Cloud
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
-import { CATALOG_BIRDS_DATA, TRIVIA_QUESTIONS, CHECKPOINTS_DATA } from '../data/birdsData';
+import { CATALOG_BIRDS_DATA, PACK_EXTRA_BIRDS_DATA, TRIVIA_QUESTIONS, CHECKPOINTS_DATA } from '../data/birdsData';
 import { CatalogBird, JournalEntry, PlayerProfile } from '../types/game';
 
 interface TriviaAndBirdGuideModalProps {
@@ -37,6 +38,8 @@ interface TriviaAndBirdGuideModalProps {
   questionsAnsweredCount: number;
   onQuestionsAnsweredUpdate: (newCount: number) => void;
   initialTab?: 'catalog' | 'audio' | 'journal' | 'trivia';
+  onOpenDrive?: () => void;
+  onConsumeFreeHints?: (usedCount: number) => void;
 }
 
 export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = ({
@@ -48,7 +51,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   onAddJournalEntry,
   questionsAnsweredCount,
   onQuestionsAnsweredUpdate,
-  initialTab = 'catalog'
+  initialTab = 'catalog',
+  onOpenDrive,
+  onConsumeFreeHints
 }) => {
   const [activeTab, setActiveTab] = useState<'catalog' | 'audio' | 'journal' | 'trivia'>('catalog');
 
@@ -82,6 +87,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [correctAnswersList, setCorrectAnswersList] = useState<number[]>([]);
   const [triviaFinished, setTriviaFinished] = useState(false);
+
+  // Toast feedback when saving a 4-Toque journal entry
+  const [journalSavedToast, setJournalSavedToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialTab) {
@@ -133,7 +141,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
       loreOrFact: 'Trepa ágilmente los troncos de tipas y laureles en espiral buscando larvas.'
     },
     soundType: 'chinchero',
-    image: '/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg',
+    image: '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg',
     silhouetteIcon: '🪵'
   };
 
@@ -145,11 +153,20 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     return (playerProfile.unlockedAcoustics || []).includes(birdId);
   };
 
-  // Start Silhouette Mystery Game
+  // Start Silhouette Mystery Game (automatically reveals 2 free hints if player has Sobre Selva Montana hints)
   const handleOpenSilhouetteGame = (bird: CatalogBird) => {
     soundManager.playClick();
     setSilhouetteGameBird(bird);
-    setHintsRevealed(1);
+    const availableFreeHints = playerProfile.freeSilhouetteHints || 0;
+    if (availableFreeHints >= 2) {
+      setHintsRevealed(3);
+      if (onConsumeFreeHints) onConsumeFreeHints(2);
+    } else if (availableFreeHints === 1) {
+      setHintsRevealed(2);
+      if (onConsumeFreeHints) onConsumeFreeHints(1);
+    } else {
+      setHintsRevealed(1);
+    }
     setSelectedSilhouetteAnswer(null);
     setSilhouetteResult(null);
   };
@@ -176,17 +193,27 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     }
   };
 
-  // Open 4-Toque Field Journal form
+  // Open 4-Toque Field Journal form with automatic active checkpoint detection
   const handleOpenJournalForm = (bird: CatalogBird) => {
     soundManager.playClick();
     setJournalModalBird(bird);
     setStratum(bird.stratum);
+    const completedIds = playerProfile.completedCheckpoints || [];
+    if (completedIds.length > 0) {
+      const lastId = completedIds[completedIds.length - 1];
+      const cpObj = CHECKPOINTS_DATA.find((c) => c.id === lastId);
+      if (cpObj) {
+        setSelectedTrailPoint(`${cpObj.name} (${cpObj.distanceMeters} m)`);
+      }
+    }
   };
 
   // Save 4-Toque Field Journal entry
   const handleSaveJournalEntry = () => {
     if (!journalModalBird) return;
     soundManager.playSuccess();
+
+    const nextCount = Math.min(10, (playerProfile.fieldJournal || []).length + 1);
 
     onAddJournalEntry({
       birdName: journalModalBird.commonName,
@@ -201,6 +228,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     });
 
     setJournalModalBird(null);
+    setJournalSavedToast(`+30 XP · Observación guardada en Diario de Campo (${nextCount}/10)`);
+    setTimeout(() => {
+      setJournalSavedToast(null);
+    }, 3500);
   };
 
   // Bioacoustic Recognition Game Handlers
@@ -269,8 +300,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     setTriviaFinished(false);
   };
 
+  // Combine base catalog (011-018) with any extra species unlocked via Sobre Selva Montana (019-024)
+  const addedPackIds = playerProfile.addedPackBirdIds || [];
+  const extraPackBirds = PACK_EXTRA_BIRDS_DATA.filter((b) => addedPackIds.includes(b.id));
+  const allCatalogBirds = [...CATALOG_BIRDS_DATA, ...extraPackBirds];
+
   // Filtered bird list for the collection grid
-  const filteredBirds = CATALOG_BIRDS_DATA.filter((b) => {
+  const filteredBirds = allCatalogBirds.filter((b) => {
     const unlocked = isBirdUnlocked(b.id);
     if (catalogFilter === 'silhouettes') return !unlocked;
     if (catalogFilter === 'illuminated') return unlocked;
@@ -281,59 +317,93 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   const journalCount = journalEntries.length;
   const hasDetailBadge = playerProfile.hasDetailObserverBadge || journalCount >= 10;
 
-  // Render SVG Silhouette for each species
-  const renderBirdSilhouetteSvg = (catalogNumber: string) => {
+  // Render Black SVG Silhouette for each species (011 to 018)
+  const renderBirdSilhouetteSvg = (catalogNumber: string, sizeClass = 'w-20 h-16') => {
     switch (catalogNumber) {
-      case '011': // Jote Real - soaring raptor
+      case '011': // Jote Real - soaring condor/raptor in flight
         return (
-          <svg viewBox="0 0 100 80" className="w-20 h-16 fill-slate-900 drop-shadow-md">
-            <path d="M50 35 C42 22, 25 15, 5 18 C3 25, 12 30, 26 34 C35 37, 44 40, 48 45 L50 48 L52 45 C56 40, 65 37, 74 34 C88 30, 97 25, 95 18 C75 15, 58 22, 50 35 Z M47 48 L46 68 L54 68 L53 48 Z M47 32 C47 28, 53 28, 53 32 Z" />
+          <svg viewBox="0 0 100 80" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
+            <path d="M50 35 C42 20, 22 12, 4 16 C2 23, 12 29, 26 34 C35 37, 44 40, 47 46 L50 50 L53 46 C56 40, 65 37, 74 34 C88 29, 98 23, 96 16 C78 12, 58 20, 50 35 Z M46 49 L43 70 L57 70 L54 49 Z M50 24 C46 24, 46 33, 50 35 C54 33, 54 24, 50 24 Z" />
           </svg>
         );
-      case '012': // Loro Alisero - perched parrot
+      case '012': // Loro Alisero - perched parrot with curved hooked beak
         return (
-          <svg viewBox="0 0 80 90" className="w-16 h-18 fill-slate-900 drop-shadow-md">
-            <path d="M42 15 C34 14, 30 22, 32 30 C34 38, 30 48, 34 60 L38 85 L42 85 L44 65 C48 55, 55 45, 52 32 C50 22, 48 16, 42 15 Z M32 24 C28 25, 27 29, 31 31 Z" />
+          <svg viewBox="0 0 80 90" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
+            <path d="M42 14 C33 14, 28 21, 31 30 C33 38, 29 48, 33 60 L37 86 L43 86 L45 64 C50 54, 56 44, 53 31 C51 21, 48 15, 42 14 Z M31 21 C24 22, 23 29, 29 31 L31 28 Z M22 62 L58 62 L58 65 L22 65 Z" />
           </svg>
         );
-      case '013': // Picaflor Cometa - hovering hummingbird with scissor streamers
+      case '013': // Picaflor Cometa - hovering hummingbird with long forked tail
         return (
-          <svg viewBox="0 0 90 90" className="w-18 h-18 fill-slate-900 drop-shadow-md">
-            <path d="M35 32 C42 24, 52 24, 56 30 C58 34, 55 42, 50 48 L58 85 L54 85 L46 54 L38 82 L34 82 L44 48 C38 42, 30 38, 35 32 Z M54 30 L78 28 L56 34 Z M35 32 L15 36 Z" />
+          <svg viewBox="0 0 95 90" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
+            <path d="M38 30 C44 22, 53 23, 57 29 C59 34, 55 42, 49 48 L64 86 L59 86 L46 55 L33 84 L28 84 L43 48 C37 42, 32 36, 38 30 Z M56 28 L82 24 L57 32 Z M40 28 C26 14, 14 14, 12 22 C18 28, 30 32, 40 28 Z" />
           </svg>
         );
-      case '014': // Urutaú - vertical cryptic nightjar on tree stump
+      case '014': // Urutaú - nocturnal bird perched upright on branch
         return (
-          <svg viewBox="0 0 80 95" className="w-16 h-18 fill-slate-900 drop-shadow-md">
-            <path d="M38 12 C30 14, 32 28, 34 40 C36 52, 35 70, 36 90 L44 90 C45 70, 46 52, 44 40 C42 28, 44 14, 38 12 Z M32 20 C30 20, 30 24, 34 24 Z" />
+          <svg viewBox="0 0 80 95" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
+            <path d="M39 12 C30 13, 29 26, 31 38 C33 50, 34 68, 35 88 L45 88 C46 68, 48 50, 46 38 C44 26, 46 13, 39 12 Z M30 19 L25 21 L30 23 Z M22 86 L58 86 L58 90 L22 90 Z" />
           </svg>
         );
-      case '015': // Chiricote - walking rail with long beak
+      case '015': // Chiricote - long-billed walking rail with long legs
         return (
-          <svg viewBox="0 0 90 90" className="w-18 h-18 fill-slate-900 drop-shadow-md">
-            <path d="M42 25 C35 25, 28 32, 28 42 C28 50, 35 56, 44 56 C52 56, 60 48, 62 40 L78 36 L62 34 C58 28, 50 25, 42 25 Z M36 56 L34 82 L38 82 L40 56 Z M48 56 L46 80 L50 80 L52 56 Z" />
+          <svg viewBox="0 0 95 90" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
+            <path d="M40 26 C32 26, 24 34, 24 44 C24 52, 32 58, 42 58 C52 58, 60 50, 62 40 L84 36 L62 33 C58 28, 49 26, 40 26 Z M35 58 L32 85 L36 85 L39 58 Z M47 58 L45 85 L49 85 L51 58 Z M24 44 L16 38 L20 48 Z" />
           </svg>
         );
-      case '016': // Benteveo - perched stout passerine
+      case '016': // Benteveo - perched passerine with stout bill
         return (
-          <svg viewBox="0 0 90 85" className="w-18 h-16 fill-slate-900 drop-shadow-md">
-            <path d="M40 22 C32 22, 28 28, 30 38 C32 48, 38 56, 48 58 L58 75 L62 75 L56 55 C64 48, 66 38, 62 30 C58 24, 48 22, 40 22 Z M62 30 L76 31 L62 35 Z" />
+          <svg viewBox="0 0 90 85" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
+            <path d="M40 20 C31 20, 27 28, 29 38 C31 48, 38 56, 48 58 L58 78 L63 78 L56 55 C64 48, 66 38, 62 29 C58 22, 48 20, 40 20 Z M61 28 L78 29 L61 34 Z M24 60 L66 60 L66 63 L24 63 Z" />
           </svg>
         );
-      case '017': // Hornero - ovenbird standing firmly
+      case '017': // Hornero - rufous ovenbird walking proudly
         return (
-          <svg viewBox="0 0 85 85" className="w-16 h-16 fill-slate-900 drop-shadow-md">
-            <path d="M40 25 C34 25, 30 32, 32 40 C34 50, 40 58, 50 58 L58 76 L62 76 L56 56 C62 50, 64 40, 60 32 C56 26, 48 25, 40 25 Z M60 32 L74 34 L60 36 Z" />
+          <svg viewBox="0 0 85 85" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
+            <path d="M38 24 C31 24, 27 31, 29 40 C31 50, 38 57, 48 57 L56 76 L61 76 L54 55 C60 49, 62 39, 58 31 C54 25, 46 24, 38 24 Z M57 30 L73 33 L57 35 Z M38 57 L36 78 L40 78 L42 57 Z M46 57 L45 78 L49 78 L50 57 Z" />
           </svg>
         );
-      case '018': // Zorzal Colorado - upright song thrush
+      case '018': // Zorzal Colorado - thrush perched
       default:
         return (
-          <svg viewBox="0 0 85 85" className="w-16 h-16 fill-slate-900 drop-shadow-md">
-            <path d="M42 20 C34 20, 30 28, 32 38 C34 50, 42 60, 52 60 L60 78 L64 78 L58 58 C64 50, 66 38, 62 28 C56 22, 48 20, 42 20 Z M62 28 L76 29 L62 32 Z" />
+          <svg viewBox="0 0 85 85" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
+            <path d="M41 19 C33 19, 29 27, 31 37 C33 49, 41 59, 51 59 L60 79 L65 79 L57 57 C63 49, 65 37, 61 27 C55 21, 47 19, 41 19 Z M60 26 L75 28 L60 31 Z M25 62 L65 62 L65 65 L25 65 Z" />
           </svg>
         );
     }
+  };
+
+  // Build deterministic 4 options for Silueta Misteriosa so correct answer isn't always first
+  const getSilhouetteOptions = (bird: CatalogBird): string[] => {
+    const distractorsMap: Record<string, [string, string, string]> = {
+      '011': ['Loro Alisero', 'Urutaú', 'Chiricote'],
+      '012': ['Jote Real', 'Benteveo', 'Picaflor Cometa'],
+      '013': ['Chinchero Chico', 'Hornero', 'Zorzal Colorado'],
+      '014': ['Jote Real', 'Chiricote', 'Loro Alisero'],
+      '015': ['Benteveo', 'Urutaú', 'Hornero'],
+      '016': ['Zorzal Colorado', 'Hornero', 'Chinchero Chico'],
+      '017': ['Zorzal Colorado', 'Benteveo', 'Chiricote'],
+      '018': ['Hornero', 'Benteveo', 'Picaflor Cometa']
+    };
+    const distractors = distractorsMap[bird.catalogNumber] || ['Benteveo', 'Hornero', 'Urutaú'];
+    const all = [bird.commonName, ...distractors];
+    // Deterministic rotation based on catalogNumber
+    const shift = parseInt(bird.catalogNumber, 10) % 4;
+    return [...all.slice(shift), ...all.slice(0, shift)];
+  };
+
+  // Build deterministic 3 options for Modo Bioacústico "Escucha el Canto"
+  const getAudioOptions = (bird: CatalogBird): string[] => {
+    const distractorsMap: Record<string, [string, string]> = {
+      '016': ['Chinchero Chico', 'Zorzal Colorado'],
+      '010': ['Benteveo', 'Hornero'],
+      '014': ['Zorzal Colorado', 'Urutaú' === bird.commonName ? 'Chinchero Chico' : 'Urutaú'],
+      '018': ['Benteveo', 'Hornero'],
+      '017': ['Chinchero Chico', 'Zorzal Colorado']
+    };
+    const distractors = distractorsMap[bird.catalogNumber] || ['Benteveo', 'Urutaú'];
+    const all = [bird.commonName, ...distractors];
+    const shift = parseInt(bird.catalogNumber, 10) % 3;
+    return [...all.slice(shift), ...all.slice(0, shift)];
   };
 
   return (
@@ -363,9 +433,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 soundManager.playClick();
                 onClose();
               }}
-              className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700 shrink-0"
+              className="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-teal-200 hover:text-white text-[10px] font-bold flex items-center gap-1 border border-teal-700/60 shrink-0 shadow active:scale-95 transition-all"
             >
-              <X className="w-4 h-4" />
+              <span>← Volver al Menú</span>
             </button>
           </div>
 
@@ -436,87 +506,137 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
           </div>
         </div>
 
+        {journalSavedToast && (
+          <div className="mx-3 mt-2 px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-400 text-emerald-200 text-[11px] font-black flex items-center justify-between shadow-lg animate-fadeIn">
+            <span>✓ {journalSavedToast}</span>
+            <Award className="w-4 h-4 text-amber-300 shrink-0" />
+          </div>
+        )}
+
         {/* ============================================================== */}
         {/* TAB 1: CATÁLOGO DE AVES (011 AL 018) */}
         {/* ============================================================== */}
         {activeTab === 'catalog' && (
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             
-            {/* UPPER HALF: CHINCHERO CHICO OVER CIRCULAR PARK SEAL */}
+            {/* UPPER HALF: CHINCHERO CHICO ILLUSTRATED IN COLOR OVER CIRCULAR PARK SEAL */}
             <div
               onClick={() => {
                 soundManager.playClick();
                 setInspectingBird(featuredChinchero);
               }}
-              className="relative rounded-3xl overflow-hidden border-2 border-teal-400/80 bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-950 p-3.5 shadow-xl cursor-pointer group"
+              className="relative rounded-3xl overflow-hidden border-2 border-teal-100/70 bg-gradient-to-b from-[#1AA693] via-[#138A79] to-[#0D6B5D] p-3.5 shadow-xl cursor-pointer group"
             >
-              {/* Circular Watermark Seal */}
-              <div
-                className="absolute inset-0 opacity-20 pointer-events-none bg-center bg-contain bg-no-repeat"
-                style={{
-                  backgroundImage: `url('/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg')`
-                }}
-              />
+              {/* Circular Seal of "PARQUE BOTÁNICO MUNICIPAL BARÓN CARLOS MARÍA SCHUEL" */}
+              <div className="relative flex flex-col items-center justify-center py-1">
+                <div className="relative w-36 h-36 flex items-center justify-center">
+                  <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+                    <defs>
+                      <path
+                        id="sealTopArc"
+                        d="M 24,100 A 76,76 0 1,1 176,100"
+                      />
+                      <path
+                        id="sealBottomArc"
+                        d="M 176,100 A 76,76 0 1,1 24,100"
+                      />
+                    </defs>
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="92"
+                      fill="rgba(12, 110, 90, 0.45)"
+                      stroke="rgba(140, 231, 211, 0.55)"
+                      strokeWidth="3"
+                    />
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="64"
+                      fill="rgba(20, 155, 126, 0.35)"
+                      stroke="rgba(140, 231, 211, 0.4)"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 3"
+                    />
+                    <text
+                      fill="#BDF7EA"
+                      fontSize="10.5"
+                      fontWeight="800"
+                      letterSpacing="1.8"
+                    >
+                      <textPath href="#sealTopArc" startOffset="50%" textAnchor="middle">
+                        PARQUE BOTÁNICO MUNICIPAL
+                      </textPath>
+                    </text>
+                    <text
+                      fill="#BDF7EA"
+                      fontSize="9.5"
+                      fontWeight="800"
+                      letterSpacing="1.4"
+                    >
+                      <textPath href="#sealBottomArc" startOffset="50%" textAnchor="middle">
+                        BARÓN CARLOS MARÍA SCHUEL
+                      </textPath>
+                    </text>
+                  </svg>
 
-              <div className="relative z-10 flex items-center gap-3">
-                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-400 shrink-0 bg-slate-900 shadow-lg">
-                  <img
-                    src={featuredChinchero.image}
-                    alt="Chinchero Chico"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <span className="absolute bottom-1 left-1 px-1.5 py-0.2 rounded bg-black/80 text-[8px] font-black text-amber-300">
-                    DESTACADA
-                  </span>
+                  {/* Chinchero Chico Color Illustration Centered Over the Seal */}
+                  <div className="relative z-10 w-24 h-24 rounded-full overflow-hidden border-3 border-amber-300 shadow-2xl bg-slate-900 group-hover:scale-105 transition-transform duration-300">
+                    <img
+                      src={featuredChinchero.image}
+                      alt="Chinchero Chico"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Sound Quick Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playSoundForBird(featuredChinchero);
+                    }}
+                    className="absolute bottom-1 right-1 z-20 w-8 h-8 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 border-2 border-slate-900 flex items-center justify-center shadow-lg active:scale-95"
+                    title="Escuchar Canto del Chinchero Chico"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-teal-950 text-teal-300 border border-teal-500/60 uppercase">
-                      Parque Barón Schuel
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        playSoundForBird(featuredChinchero);
-                      }}
-                      className="p-1.5 rounded-lg bg-teal-800 text-teal-200 border border-teal-500/70 hover:bg-teal-700 active:scale-95"
-                      title="Escuchar Trino"
-                    >
-                      <Volume2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <h4 className="text-base font-black text-white uppercase tracking-wide mt-0.5">
-                    {featuredChinchero.commonName}
+                {/* Title Banner Below the Seal */}
+                <div className="text-center mt-1">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-slate-950/60 border border-teal-300/40 text-[9px] font-black text-amber-300 uppercase tracking-widest">
+                    AVE DESTACADA · #010
+                  </span>
+                  <h4 className="text-lg font-black text-white uppercase tracking-wider drop-shadow mt-0.5">
+                    CHINCHERO CHICO
                   </h4>
-                  <p className="text-[10px] italic text-teal-200 font-serif">
-                    {featuredChinchero.scientificName} · {featuredChinchero.size}
+                  <p className="text-[10px] italic text-teal-100 font-serif">
+                    {featuredChinchero.scientificName} · {featuredChinchero.size} · {featuredChinchero.weight}
                   </p>
+                </div>
 
-                  <div className="mt-2 flex gap-1.5">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        soundManager.playClick();
-                        setInspectingBird(featuredChinchero);
-                      }}
-                      className="px-2.5 py-1 rounded-lg game-btn-mint text-emerald-950 text-[10px] font-black flex items-center gap-1 shadow"
-                    >
-                      <Eye className="w-3 h-3" />
-                      <span>Ficha Técnica</span>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenJournalForm(featuredChinchero);
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-teal-950 text-teal-200 border border-teal-500/60 hover:bg-teal-900 text-[10px] font-bold flex items-center gap-1"
-                    >
-                      <BookOpen className="w-3 h-3 text-amber-400" />
-                      <span>4 Toques</span>
-                    </button>
-                  </div>
+                <div className="mt-2 flex items-center justify-center gap-2 w-full">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      soundManager.playClick();
+                      setInspectingBird(featuredChinchero);
+                    }}
+                    className="flex-1 py-1.5 px-3 rounded-xl game-btn-mint text-emerald-950 text-[10px] font-black flex items-center justify-center gap-1 shadow"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Abrir Ficha Técnica</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenJournalForm(featuredChinchero);
+                    }}
+                    className="flex-1 py-1.5 px-3 rounded-xl bg-slate-950/85 text-amber-300 border border-amber-400/60 hover:bg-slate-900 text-[10px] font-black flex items-center justify-center gap-1 shadow"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Diario (4 Toques)</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -537,10 +657,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                  Guía Oficial de Especies (011 - 018)
+                  Guía Oficial de Especies (011 - {extraPackBirds.length > 0 ? '024' : '018'})
                 </span>
                 <span className="text-[10px] font-extrabold text-teal-950">
-                  {(playerProfile.unlockedSilhouettes || []).length}/{CATALOG_BIRDS_DATA.length} Iluminadas
+                  {(playerProfile.unlockedSilhouettes || []).length}/{allCatalogBirds.length} Iluminadas
                 </span>
               </div>
 
@@ -557,7 +677,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  Todas ({CATALOG_BIRDS_DATA.length})
+                  Todas ({allCatalogBirds.length})
                 </button>
                 <button
                   onClick={() => {
@@ -570,7 +690,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  Siluetas ({CATALOG_BIRDS_DATA.filter(b => !isBirdUnlocked(b.id)).length})
+                  Siluetas ({allCatalogBirds.filter(b => !isBirdUnlocked(b.id)).length})
                 </button>
                 <button
                   onClick={() => {
@@ -583,7 +703,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  Iluminadas ({CATALOG_BIRDS_DATA.filter(b => isBirdUnlocked(b.id)).length})
+                  Iluminadas ({allCatalogBirds.filter(b => isBirdUnlocked(b.id)).length})
                 </button>
               </div>
 
@@ -627,7 +747,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       </div>
 
                       {/* Silhouette or Color Image */}
-                      <div className="relative h-24 rounded-xl overflow-hidden bg-slate-900 flex items-center justify-center border border-slate-800/80 mb-2">
+                      <div className="relative h-24 rounded-xl overflow-hidden flex items-center justify-center border border-teal-500/40 mb-2">
                         {isUnlocked ? (
                           <img
                             src={bird.image}
@@ -635,15 +755,15 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                             className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 via-teal-950/40 to-slate-950">
-                            {renderBirdSilhouetteSvg(bird.catalogNumber)}
-                            <span className="text-[8px] font-black text-amber-300 tracking-wider uppercase mt-1">
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#9CF0E0] via-[#6BD9C6] to-[#38B8A4]">
+                            {renderBirdSilhouetteSvg(bird.catalogNumber, 'w-20 h-16')}
+                            <span className="text-[8px] font-black text-slate-950 bg-amber-300/90 px-1.5 py-0.2 rounded-full tracking-wider uppercase mt-0.5 shadow-xs">
                               Toca para Pistas
                             </span>
                           </div>
                         )}
 
-                        <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-[8px] text-teal-200">
+                        <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-[8px] text-teal-200 font-bold">
                           {bird.size}
                         </div>
                       </div>
@@ -778,38 +898,32 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
               {/* 3 Guess Options */}
               <div className="space-y-2">
-                {[
-                  audioTargetBird.commonName,
-                  audioTargetBird.catalogNumber === '016' ? 'Chinchero Chico' : 'Benteveo',
-                  audioTargetBird.catalogNumber === '014' ? 'Zorzal Colorado' : 'Urutaú'
-                ]
-                  .filter((v, i, a) => a.indexOf(v) === i)
-                  .map((optName, idx) => {
-                    const isSelected = audioGuess === optName;
-                    let style = 'bg-slate-900 border-slate-700 text-slate-200 hover:border-teal-500';
+                {getAudioOptions(audioTargetBird).map((optName, idx) => {
+                  const isSelected = audioGuess === optName;
+                  let style = 'bg-slate-900 border-slate-700 text-slate-200 hover:border-teal-500';
 
-                    if (audioResult !== null) {
-                      if (optName.toLowerCase() === audioTargetBird.commonName.toLowerCase()) {
-                        style = 'bg-emerald-950 border-emerald-400 text-emerald-200 font-bold';
-                      } else if (isSelected) {
-                        style = 'bg-rose-950 border-rose-500 text-rose-200';
-                      }
+                  if (audioResult !== null) {
+                    if (optName.toLowerCase() === audioTargetBird.commonName.toLowerCase()) {
+                      style = 'bg-emerald-950 border-emerald-400 text-emerald-200 font-bold';
+                    } else if (isSelected) {
+                      style = 'bg-rose-950 border-rose-500 text-rose-200';
                     }
+                  }
 
-                    return (
-                      <button
-                        key={idx}
-                        disabled={audioResult !== null}
-                        onClick={() => handleAudioGuess(optName)}
-                        className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-center justify-between ${style}`}
-                      >
-                        <span className="font-bold">{optName}</span>
-                        {audioResult === 'correct' && optName === audioTargetBird.commonName && (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        )}
-                      </button>
-                    );
-                  })}
+                  return (
+                    <button
+                      key={idx}
+                      disabled={audioResult !== null}
+                      onClick={() => handleAudioGuess(optName)}
+                      className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-center justify-between ${style}`}
+                    >
+                      <span className="font-bold">{optName}</span>
+                      {audioResult === 'correct' && optName === audioTargetBird.commonName && (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Audio Success Banner */}
@@ -891,17 +1005,31 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               )}
             </div>
 
-            {/* Quick Register Trigger */}
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-black text-slate-900 uppercase">
-                Observaciones Registradas ({journalCount})
+            {/* Quick Register & Google Drive Sync Triggers */}
+            <div className="flex items-center justify-between gap-2 px-1">
+              <span className="text-xs font-black text-slate-900 uppercase truncate">
+                Observaciones ({journalCount})
               </span>
-              <button
-                onClick={() => handleOpenJournalForm(CATALOG_BIRDS_DATA[5])}
-                className="px-2.5 py-1 rounded-xl game-btn-orange text-white text-[10px] font-black flex items-center gap-1 shadow"
-              >
-                <span>+ Registrar en Diario</span>
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {onOpenDrive && (
+                  <button
+                    onClick={() => {
+                      soundManager.playClick();
+                      onOpenDrive();
+                    }}
+                    className="px-2.5 py-1 rounded-xl bg-slate-950 text-teal-200 border border-teal-400 hover:bg-slate-900 text-[10px] font-black flex items-center gap-1 shadow"
+                  >
+                    <Cloud className="w-3 h-3 text-teal-300" />
+                    <span>Google Drive</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => handleOpenJournalForm(CATALOG_BIRDS_DATA[5])}
+                  className="px-2.5 py-1 rounded-xl game-btn-orange text-white text-[10px] font-black flex items-center gap-1 shadow"
+                >
+                  <span>+ Registrar</span>
+                </button>
+              </div>
             </div>
 
             {/* Entries List */}
@@ -1139,25 +1267,25 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
             <div className="flex-1 overflow-y-auto py-2.5 space-y-2.5">
               {/* Silhouette Stage */}
-              <div className="relative h-28 rounded-2xl bg-gradient-to-b from-slate-950 via-teal-950 to-slate-900 border border-teal-500/50 flex flex-col items-center justify-center p-2 text-center">
+              <div className="relative h-32 rounded-2xl bg-gradient-to-b from-[#9CF0E0] via-[#5CD2BF] to-[#2BB5A0] border-2 border-teal-300 flex flex-col items-center justify-center p-2 text-center shadow-inner">
                 {silhouetteResult === 'correct' ? (
                   <div className="flex flex-col items-center animate-scaleIn">
                     <img
                       src={silhouetteGameBird.image}
                       alt={silhouetteGameBird.commonName}
-                      className="w-18 h-18 rounded-full object-cover border-2 border-amber-400 shadow-xl"
+                      className="w-20 h-20 rounded-full object-cover border-3 border-amber-400 shadow-xl"
                     />
-                    <span className="text-xs font-black text-amber-300 mt-1 uppercase">
+                    <span className="text-xs font-black text-slate-950 bg-amber-300 px-2.5 py-0.5 rounded-full mt-1 uppercase shadow">
                       ¡{silhouetteGameBird.commonName} ILUMINADO!
                     </span>
                   </div>
                 ) : (
                   <>
-                    <div className="filter drop-shadow-lg">
-                      {renderBirdSilhouetteSvg(silhouetteGameBird.catalogNumber)}
+                    <div className="filter drop-shadow-md">
+                      {renderBirdSilhouetteSvg(silhouetteGameBird.catalogNumber, 'w-24 h-20')}
                     </div>
-                    <div className="text-[10px] font-black text-amber-300 mt-1">
-                      Recompensa activa: +{getSilhouetteXpReward()} XP
+                    <div className="text-[10px] font-black text-amber-300 bg-slate-950/85 px-2.5 py-0.5 rounded-full mt-1 border border-amber-400/50">
+                      Recompensa activa ({hintsRevealed} {hintsRevealed === 1 ? 'pista' : 'pistas'}): +{getSilhouetteXpReward()} XP
                     </div>
                   </>
                 )}
@@ -1173,9 +1301,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         soundManager.playClick();
                         setHintsRevealed(prev => Math.min(4, prev + 1));
                       }}
-                      className="px-2 py-0.5 rounded-lg bg-teal-800 text-teal-100 hover:bg-teal-700 text-[9px] font-bold border border-teal-600"
+                      className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 text-[10px] font-black border border-amber-300 shadow"
                     >
-                      Revelar Siguiente Pista
+                      + Revelar Pista {hintsRevealed + 1}
                     </button>
                   )}
                 </div>
@@ -1215,25 +1343,18 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               {silhouetteResult === null && (
                 <div className="space-y-1.5 pt-1">
                   <span className="text-[10px] font-black text-slate-300 block">
-                    ¿A qué ave pertenece esta silueta?
+                    Selecciona el nombre correcto entre las 4 opciones:
                   </span>
-                  {[
-                    silhouetteGameBird.commonName,
-                    silhouetteGameBird.catalogNumber === '014' ? 'Picaflor Cometa' : 'Urutaú',
-                    silhouetteGameBird.catalogNumber === '011' ? 'Loro Alisero' : 'Jote Real',
-                    silhouetteGameBird.catalogNumber === '017' ? 'Zorzal Colorado' : 'Hornero'
-                  ]
-                    .filter((v, i, a) => a.indexOf(v) === i)
-                    .map((optName, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleGuessSilhouette(optName)}
-                        className="w-full p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-left text-xs font-black text-white border border-slate-700 hover:border-teal-400 transition-all flex items-center justify-between"
-                      >
-                        <span>{optName}</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-teal-400" />
-                      </button>
-                    ))}
+                  {getSilhouetteOptions(silhouetteGameBird).map((optName, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleGuessSilhouette(optName)}
+                      className="w-full p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-left text-xs font-black text-white border border-slate-700 hover:border-teal-400 transition-all flex items-center justify-between"
+                    >
+                      <span>{optName}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-teal-400" />
+                    </button>
+                  ))}
                 </div>
               )}
 
@@ -1327,78 +1448,105 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             </div>
 
             <div className="flex-1 overflow-y-auto py-2.5 space-y-3">
-              {/* Photo & Pokemon-GO Style Top Arc */}
-              <div className="relative h-44 rounded-2xl overflow-hidden border border-teal-500/70 bg-emerald-950">
-                <img
-                  src={inspectingBird.image}
-                  alt={inspectingBird.commonName}
-                  className="w-full h-full object-cover"
-                />
+              {/* Prototype-Style Top Semicircular Arc with PC 2579, Avatar & 125 / 125 HP Bar */}
+              <div className="relative rounded-3xl overflow-hidden border-2 border-teal-400/70 bg-gradient-to-b from-[#0E6E5C] via-[#134E48] to-slate-950 p-3 text-center shadow-xl">
+                {/* PC 2579 Header */}
+                <div className="text-amber-300 font-black text-sm tracking-widest uppercase drop-shadow">
+                  PC <span className="text-xl text-white">{inspectingBird.cp || 2579}</span>
+                </div>
 
-                {/* Top Arc Stats: PC 2579 & 125/125 HP */}
-                <div className="absolute top-2 left-2 flex gap-1.5">
-                  <span className="px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-xs text-[10px] font-black text-amber-300 border border-amber-400">
-                    PC {inspectingBird.cp || 2579}
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-xs text-[10px] font-black text-emerald-300 border border-emerald-400">
+                {/* Semicircular Arc SVG + Bird Circular Portrait */}
+                <div className="relative w-44 h-32 mx-auto flex items-center justify-center">
+                  <svg viewBox="0 0 200 120" className="absolute inset-0 w-full h-full pointer-events-none">
+                    <path
+                      d="M 16 105 A 84 84 0 0 1 184 105"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.2)"
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M 16 105 A 84 84 0 0 1 172 68"
+                      fill="none"
+                      stroke="#5EEAD4"
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="172" cy="68" r="5" fill="#FDE047" />
+                  </svg>
+
+                  <div className="relative z-10 w-24 h-24 rounded-full overflow-hidden border-3 border-amber-300 shadow-2xl bg-slate-900 mt-3">
+                    <img
+                      src={inspectingBird.image}
+                      alt={inspectingBird.commonName}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* Name & HP Bar (125 / 125 HP) */}
+                <h3 className="text-base font-black text-white uppercase tracking-wide mt-1">
+                  {inspectingBird.commonName}
+                </h3>
+                <div className="w-40 mx-auto mt-1">
+                  <div className="h-2 rounded-full bg-slate-900 border border-emerald-500/60 overflow-hidden">
+                    <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-teal-300" />
+                  </div>
+                  <span className="text-[10px] font-black text-emerald-300 block mt-0.5">
                     {inspectingBird.hp || '125 / 125 HP'}
                   </span>
                 </div>
 
-                {/* Best Foto Perfecta Rating */}
-                <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-xs text-[10px] font-bold text-amber-300 border border-amber-400/40">
-                  Foto Perfecta: {'★'.repeat(playerProfile.birdPhotoStars?.[inspectingBird.id] || 3)}
+                {/* Best Foto Perfecta Rating Badge */}
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-950/85 border border-amber-400/60 text-[10px] font-bold text-amber-300">
+                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  <span>
+                    Mejor Foto Perfecta: {'★'.repeat(playerProfile.birdPhotoStars?.[inspectingBird.id] || 3)}
+                  </span>
                 </div>
-
-                <button
-                  onClick={() => playSoundForBird(inspectingBird)}
-                  className="absolute bottom-2 right-2 px-2.5 py-1 rounded-xl bg-teal-950/90 backdrop-blur-md border border-teal-400 text-teal-200 text-[10px] font-bold flex items-center gap-1.5 shadow"
-                >
-                  <Volume2 className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Canto</span>
-                </button>
               </div>
 
-              {/* Title & Biological Status Badges */}
-              <div>
-                <h3 className="text-base font-black text-white uppercase">
-                  {inspectingBird.commonName}
-                </h3>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-teal-800 text-[9px] font-bold text-teal-300">
-                    Familia: {inspectingBird.family}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${
+              {/* Biological Metrics Grid: Peso, Altura, Familia, Hábitat, Conservación, Presencia, Observación */}
+              <div className="grid grid-cols-3 gap-1.5 text-center text-xs bg-slate-950 p-2.5 rounded-2xl border border-teal-900">
+                <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
+                  <span className="text-[8px] text-slate-400 block font-bold uppercase">PESO</span>
+                  <span className="text-teal-300 font-black text-xs">{inspectingBird.weight}</span>
+                </div>
+                <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
+                  <span className="text-[8px] text-slate-400 block font-bold uppercase">ALTURA</span>
+                  <span className="text-amber-300 font-black text-xs">{inspectingBird.size}</span>
+                </div>
+                <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
+                  <span className="text-[8px] text-slate-400 block font-bold uppercase">FAMILIA</span>
+                  <span className="text-white font-black text-[10px] truncate block">{inspectingBird.family}</span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-2xl bg-slate-950 border border-teal-900/80 space-y-1.5 text-[10px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-bold">Hábitat / Estrato:</span>
+                  <span className="text-teal-200 font-bold text-right">{inspectingBird.habitat} ({inspectingBird.stratum})</span>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-slate-900">
+                  <span className={`px-2 py-0.5 rounded font-black border ${
                     inspectingBird.conservationStatus === 'AM'
                       ? 'bg-rose-950 text-rose-300 border-rose-600'
                       : inspectingBird.conservationStatus === 'VU'
                       ? 'bg-amber-950 text-amber-300 border-amber-600'
                       : 'bg-emerald-950 text-emerald-300 border-emerald-600'
                   }`}>
-                    {inspectingBird.conservationStatus === 'AM' ? 'Amenazada (AM)' : inspectingBird.conservationStatus === 'VU' ? 'Vulnerable (VU)' : 'No Amenazada (NA)'}
+                    Conservación: {inspectingBird.conservationStatus}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] text-slate-300 font-bold">
-                    Presencia: {inspectingBird.presence === 'M' ? 'Migrante (M)' : 'Residente (R)'}
+                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-bold">
+                    Presencia: {inspectingBird.presence}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] text-amber-300 font-bold">
-                    Observación: {inspectingBird.observationPossibility}
+                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-amber-300 font-bold">
+                    Obs.: {inspectingBird.observationPossibility}
                   </span>
                 </div>
               </div>
 
-              {/* Metrics Strip: Peso & Altura */}
-              <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-[9px] text-slate-400 block font-bold">ALTURA / TAMAÑO</span>
-                  <span className="text-amber-300 font-black text-xs">{inspectingBird.size}</span>
-                </div>
-                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-[9px] text-slate-400 block font-bold">PESO BIOLÓGICO</span>
-                  <span className="text-teal-300 font-black text-xs">{inspectingBird.weight}</span>
-                </div>
-              </div>
-
-              {/* Anatomical Details: Pico, Canto con Onda, Plumaje */}
+              {/* Anatomical Details: Pico, Canto con Onda Sonora Desbloqueada, Plumaje */}
               <div className="p-3 rounded-2xl bg-slate-950 border border-teal-900 space-y-2 text-xs">
                 <div>
                   <span className="font-black text-teal-300 block text-[10px]">TIPO DE PICO:</span>
@@ -1406,35 +1554,40 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 </div>
 
                 {/* Canto with Unlocked Sound Wave */}
-                <div className="pt-1 border-t border-slate-800">
+                <div className="pt-1.5 border-t border-slate-800">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-black text-amber-300 text-[10px] flex items-center gap-1">
                       <Music className="w-3 h-3" />
-                      REPRODUCTOR DE CANTO Y ONDA SONORA:
+                      <span>CANTO Y ONDA SONORA {isAcousticUnlocked(inspectingBird.id) ? '(DESBLOQUEADA ✓)' : ''}:</span>
                     </span>
                     <button
                       onClick={() => playSoundForBird(inspectingBird)}
-                      className="px-2 py-0.5 rounded bg-teal-800 hover:bg-teal-700 text-teal-100 text-[9px] font-bold flex items-center gap-1"
+                      className="px-2.5 py-0.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black flex items-center gap-1 shadow"
                     >
                       <Play className="w-2.5 h-2.5" />
-                      <span>Reproducir</span>
+                      <span>{audioIsPlaying ? 'Sonando...' : 'Escuchar'}</span>
                     </button>
                   </div>
                   
                   {/* Wave Visualizer Graphic */}
-                  <div className="h-8 rounded-lg bg-slate-900 border border-teal-950 p-1 flex items-center justify-center gap-1">
-                    {[8, 18, 12, 26, 20, 10, 24, 16, 28, 14, 22, 12].map((h, i) => (
-                      <div
-                        key={i}
-                        className="w-1 rounded-full bg-teal-400"
-                        style={{ height: `${h}px` }}
-                      />
-                    ))}
+                  <div className="h-9 rounded-lg bg-slate-900 border border-teal-950 p-1.5 flex items-center justify-center gap-1">
+                    {[8, 18, 12, 26, 20, 10, 24, 16, 28, 14, 22, 12, 19, 25, 11, 15].map((h, i) => {
+                      const barH = audioIsPlaying
+                        ? Math.min(28, Math.max(6, h * (1 + 0.5 * Math.sin(Date.now() / 100 + i))))
+                        : h;
+                      return (
+                        <div
+                          key={i}
+                          className="w-1 rounded-full bg-gradient-to-t from-teal-400 to-amber-300 transition-all duration-100"
+                          style={{ height: `${barH}px` }}
+                        />
+                      );
+                    })}
                   </div>
                   <p className="text-slate-300 text-[10px] italic mt-1">{inspectingBird.songDescription}</p>
                 </div>
 
-                <div className="pt-1 border-t border-slate-800">
+                <div className="pt-1.5 border-t border-slate-800">
                   <span className="font-black text-teal-300 block text-[10px]">DESCRIPCIÓN DE PLUMAJE:</span>
                   <p className="text-slate-200 text-[11px] leading-snug">{inspectingBird.plumageDescription}</p>
                 </div>
@@ -1553,7 +1706,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                           : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-emerald-700'
                       }`}
                     >
-                      {c === 'Bandada (3 o más)' ? 'Grupo (3+)' : c}
+                      {c === 'Bandada (3 o más)' ? 'Grupo/Bandada (3+)' : c}
                     </button>
                   ))}
                 </div>

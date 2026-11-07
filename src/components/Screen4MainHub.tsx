@@ -5,7 +5,6 @@ import {
   Map,
   ShoppingBag,
   Binoculars,
-  Home,
   Camera,
   Award,
   Sparkles,
@@ -15,10 +14,12 @@ import {
   Users,
   LogOut,
   Bird,
-  Compass
+  Compass,
+  Cloud
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { PlayerProfile, Mission } from '../types/game';
+import { SHOP_ITEMS } from '../data/birdsData';
 
 interface Screen4MainHubProps {
   playerProfile: PlayerProfile;
@@ -31,6 +32,8 @@ interface Screen4MainHubProps {
   onOpenSighting: () => void;
   onOpenCamera: () => void;
   onOpenBadge?: () => void;
+  onOpenDrive: () => void;
+  onOpenSquadsAndSeasons: () => void;
   onChangePlayer: () => void;
   onBackToSplash: () => void;
 }
@@ -46,6 +49,8 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
   onOpenSighting,
   onOpenCamera,
   onOpenBadge,
+  onOpenDrive,
+  onOpenSquadsAndSeasons,
   onChangePlayer,
   onBackToSplash
 }) => {
@@ -68,13 +73,24 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-950/90 border border-teal-400/50 text-white shadow min-w-0">
             <span className="text-sm shrink-0">{playerProfile.avatarIcon || '🧢'}</span>
-            <span className="text-[11px] font-black text-amber-300 truncate max-w-[70px]">
+            <span className="text-[11px] font-black text-amber-300 truncate max-w-[65px]">
               {playerProfile.name}
             </span>
             <span className="text-teal-400">·</span>
-            <span className="text-[10px] text-teal-200 truncate max-w-[75px]">
+            <span className="text-[10px] text-teal-200 truncate max-w-[65px]">
               {playerProfile.favoriteBird}
             </span>
+            {(playerProfile.equippedItems || ['visera-oficial']).length > 0 && (
+              <span className="flex items-center gap-0.5 text-[10px] pl-0.5">
+                {SHOP_ITEMS.filter(it => (playerProfile.equippedItems || ['visera-oficial']).includes(it.id))
+                  .slice(0, 3)
+                  .map(it => (
+                    <span key={it.id} title={it.name}>
+                      {it.icon}
+                    </span>
+                  ))}
+              </span>
+            )}
           </div>
 
           <button
@@ -90,7 +106,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
           </button>
         </div>
 
-        {/* Right: Level/XP and Circular Action Buttons */}
+        {/* Right: Level/XP and ONLY Opciones (gear) + Consejos (?) */}
         <div className="flex items-center gap-1.5 shrink-0">
           <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-900/90 border border-teal-500/30 text-[10px] text-white">
             <span className="font-extrabold text-amber-400">NV {playerProfile.level}</span>
@@ -121,18 +137,6 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
           >
             <HelpCircle className="w-4 h-4 text-sky-950 stroke-[2.5]" />
           </button>
-
-          {/* Botón circular "X" (Menú rápido de salida / cambio de pantalla) */}
-          <button
-            onClick={() => {
-              soundManager.playClick();
-              setShowQuickExitModal(true);
-            }}
-            className="w-8 h-8 rounded-full bg-rose-500/90 text-white game-btn-circle flex items-center justify-center hover:bg-rose-500 active:scale-95 cursor-pointer shadow-md"
-            title="Menú de Navegación y Salida"
-          >
-            <X className="w-4 h-4 text-white stroke-[2.5]" />
-          </button>
         </div>
       </div>
 
@@ -146,13 +150,13 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
           <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white border-r-3 border-b-3 border-teal-900 rotate-45" />
         </div>
 
-        {/* Toucan Host Character Greeting with Sound */}
+        {/* Toucan Host Character Greeting with Sound (Clean Toucan on Yungas background without social buttons) */}
         <div className="relative flex items-center justify-center">
-          <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full border-4 border-amber-400 p-0.5 shadow-2xl overflow-hidden bg-slate-900 ring-4 ring-teal-400/40 relative">
+          <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-amber-400 p-0.5 shadow-2xl overflow-hidden bg-teal-950 ring-4 ring-teal-400/40 relative">
             <img
-              src="/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg"
-              alt="Tucán Guía"
-              className="w-full h-full object-cover scale-125 translate-y-1"
+              src="/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg"
+              alt="Tucán Grande Guía con visera verde y mochila"
+              className="w-full h-full object-cover object-[center_18%] scale-125"
             />
           </div>
 
@@ -174,21 +178,43 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             soundManager.playClick();
             setShowMissionsModal(true);
           }}
-          className="mt-2.5 w-full max-w-xs py-2 px-3.5 rounded-2xl bg-gradient-to-r from-teal-900/90 via-teal-800/90 to-emerald-900/90 backdrop-blur-md border-2 border-amber-400/80 shadow-xl flex items-center justify-between cursor-pointer hover:border-amber-300 active:scale-98 transition-all group"
+          className="mt-2 w-full max-w-xs py-1.5 px-3 rounded-2xl bg-gradient-to-r from-teal-900/90 via-teal-800/90 to-emerald-900/90 backdrop-blur-md border-2 border-amber-400/80 shadow-xl flex items-center justify-between cursor-pointer hover:border-amber-300 active:scale-98 transition-all group"
         >
           <div className="flex items-center gap-2">
-            <span className="text-lg">🎯</span>
+            <span className="text-base">🎯</span>
             <div className="text-left">
-              <div className="text-xs font-black text-amber-300 tracking-wide uppercase flex items-center gap-1">
+              <div className="text-[11px] font-black text-amber-300 tracking-wide uppercase flex items-center gap-1">
                 <span>MISIONES DEL DÍA</span>
-                <span className="text-[10px] text-teal-200 font-bold">(20-40 min)</span>
+                <span className="text-[9px] text-teal-200 font-bold">(20-40 min)</span>
               </div>
-              <div className="text-[10px] text-teal-200">
+              <div className="text-[9px] text-teal-200">
                 {missions.filter(m => m.completed).length} de {missions.length} completadas hoy
               </div>
             </div>
           </div>
           <ChevronDown className="w-4 h-4 text-amber-300 group-hover:translate-y-0.5 transition-transform" />
+        </button>
+
+        {/* Acceso Destacado Paso 15: "Cuadrillas y Temporadas (Paso 15)" */}
+        <button
+          onClick={() => {
+            soundManager.playClick();
+            onOpenSquadsAndSeasons();
+          }}
+          className="mt-1.5 w-full max-w-xs py-1.5 px-3 rounded-2xl bg-gradient-to-r from-amber-500/90 via-orange-500/90 to-amber-600/90 backdrop-blur-md border-2 border-amber-200 shadow-xl flex items-center justify-between cursor-pointer hover:brightness-105 active:scale-98 transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">🛡️</span>
+            <div className="text-left">
+              <div className="text-[11px] font-black text-slate-950 tracking-wide uppercase">
+                Cuadrillas y Temporadas (Paso 15)
+              </div>
+              <div className="text-[9px] font-bold text-amber-950">
+                Equipos Escolares (5) · Aves Migrantes · Ranking Amigable
+              </div>
+            </div>
+          </div>
+          <Users className="w-4 h-4 text-slate-950 shrink-0" />
         </button>
 
         {/* Badge shortcut if unlocked */}
@@ -206,15 +232,14 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
         )}
       </div>
 
-      {/* 3. 4 BIG CIRCULAR BUTTONS IN LOWER AREA: MAPAS, TIENDA, AVES, AVISTAMIENTO */}
-      <div className="relative z-10 w-full max-w-xs mx-auto px-4 py-2">
-        <div className="grid grid-cols-4 gap-2.5 items-center justify-items-center">
+      {/* 3. 4 BIG CIRCULAR BUTTONS + SINGLE CENTERED CIRCULAR "X" BUTTON BELOW */}
+      <div className="relative z-10 w-full max-w-xs mx-auto px-4 pb-5 pt-1 flex flex-col items-center gap-3.5">
+        <div className="w-full grid grid-cols-4 gap-2.5 items-center justify-items-center">
           {/* 1) MAPAS */}
           <div className="flex flex-col items-center">
             <button
               onClick={() => {
                 soundManager.playClick();
-                setActiveTab('map');
                 onOpenMap();
               }}
               className="w-16 h-16 rounded-full bg-white text-teal-900 game-btn-circle flex items-center justify-center hover:bg-slate-50 cursor-pointer shadow-xl active:scale-90 transition-transform"
@@ -253,7 +278,6 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             <button
               onClick={() => {
                 soundManager.playClick();
-                setActiveTab('collection');
                 onOpenBirds();
               }}
               className="w-16 h-16 rounded-full bg-white text-teal-900 game-btn-circle flex items-center justify-center hover:bg-slate-50 cursor-pointer shadow-xl active:scale-90 transition-transform"
@@ -289,70 +313,18 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             </span>
           </div>
         </div>
-      </div>
 
-      {/* 4. FIXED BOTTOM NAVIGATION BAR WITH 4 TABS: Home, Map, Collection, Camera */}
-      <div className="relative z-20 w-full bg-slate-950/90 backdrop-blur-md border-t border-teal-800/60 pb-safe">
-        <div className="grid grid-cols-4 items-center h-14 max-w-sm mx-auto">
-          {/* TAB 1: Home */}
-          <button
-            onClick={() => {
-              soundManager.playClick();
-              setActiveTab('home');
-            }}
-            className={`flex flex-col items-center justify-center h-full transition-colors cursor-pointer ${
-              activeTab === 'home' ? 'text-amber-400 font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Home className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight mt-0.5">Home</span>
-          </button>
-
-          {/* TAB 2: Map */}
-          <button
-            onClick={() => {
-              soundManager.playClick();
-              setActiveTab('map');
-              onOpenMap();
-            }}
-            className={`flex flex-col items-center justify-center h-full transition-colors cursor-pointer ${
-              activeTab === 'map' ? 'text-amber-400 font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Map className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight mt-0.5">Map</span>
-          </button>
-
-          {/* TAB 3: Collection */}
-          <button
-            onClick={() => {
-              soundManager.playClick();
-              setActiveTab('collection');
-              onOpenBirds();
-            }}
-            className={`flex flex-col items-center justify-center h-full transition-colors cursor-pointer ${
-              activeTab === 'collection' ? 'text-amber-400 font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Award className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight mt-0.5">Collection</span>
-          </button>
-
-          {/* TAB 4: Camera */}
-          <button
-            onClick={() => {
-              soundManager.playClick();
-              setActiveTab('camera');
-              onOpenCamera();
-            }}
-            className={`flex flex-col items-center justify-center h-full transition-colors cursor-pointer ${
-              activeTab === 'camera' ? 'text-amber-400 font-bold' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Camera className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight mt-0.5">Camera</span>
-          </button>
-        </div>
+        {/* ÚNICO BOTÓN CIRCULAR "X" CENTRADO DEBAJO DE LOS 4 BOTONES PRINCIPALES */}
+        <button
+          onClick={() => {
+            soundManager.playClick();
+            setShowQuickExitModal(true);
+          }}
+          className="w-12 h-12 rounded-full bg-teal-900/90 hover:bg-teal-800 text-teal-100 border-2 border-teal-300/80 shadow-[0_0_16px_rgba(45,212,191,0.5)] flex items-center justify-center active:scale-90 transition-all cursor-pointer"
+          title="Cambiar de Jugador o Volver al Inicio"
+        >
+          <X className="w-5 h-5 text-teal-100 stroke-[2.5]" />
+        </button>
       </div>
 
       {/* MODAL RÁPIDO AL PULSAR "X": ACCIONES DE SALIDA Y RETORNO */}
@@ -402,6 +374,22 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                 <div className="text-left">
                   <div>Cambiar Ave Compañera / Foto</div>
                   <div className="text-[9px] text-teal-300 font-normal">Abre el selector de ave y la cámara sin flash</div>
+                </div>
+              </button>
+
+              {/* Google Drive Cloud Sync */}
+              <button
+                onClick={() => {
+                  soundManager.playClick();
+                  setShowQuickExitModal(false);
+                  onOpenDrive();
+                }}
+                className="w-full p-2.5 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 text-emerald-100 text-xs font-bold border border-emerald-500/60 flex items-center gap-2.5 transition-colors"
+              >
+                <Cloud className="w-4 h-4 text-emerald-300" />
+                <div className="text-left">
+                  <div>Sincronizar con Google Drive</div>
+                  <div className="text-[9px] text-emerald-300 font-normal">Exporta tu Diario Científico y respaldo en la nube</div>
                 </div>
               </button>
 

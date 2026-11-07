@@ -1,8 +1,9 @@
-import { PlayerProfile, CompanionBirdId } from '../types/game';
+import { PlayerProfile, CompanionBirdId, Squad } from '../types/game';
 import { INITIAL_MISSIONS, EXPLORER_AVATARS } from '../data/birdsData';
 
 const STORAGE_KEY_PROFILES = 'senial_nativa_profiles_list_v2';
 const STORAGE_KEY_ACTIVE_ID = 'senial_nativa_active_profile_id_v2';
+const STORAGE_KEY_SQUADS = 'senial_nativa_squads_list_v1';
 
 export function createDefaultProfile(
   name = 'Explorador Yungas',
@@ -30,6 +31,13 @@ export function createDefaultProfile(
     unlockedRareBirds: [],
     unlockedSilhouettes: ['016-benteveo'],
     unlockedAcoustics: [],
+    addedPackBirdIds: [],
+    freeSilhouetteHints: 0,
+    packsOpenedCount: 0,
+    purchasedGear: ['visera-oficial'],
+    equippedItems: ['visera-oficial'],
+    unlockedSpecialEvents: [],
+    registeredMigrantIds: ['mig-loro-alisero'],
     missions: JSON.parse(JSON.stringify(INITIAL_MISSIONS)),
     fieldJournal: [
       {
@@ -47,7 +55,7 @@ export function createDefaultProfile(
     ],
     unlockedPhotos: [],
     equippedGear: {
-      hat: 'visera-verde',
+      hat: 'visera-oficial',
       backpack: 'mochila-schuel',
       binoculars: 'prismaticos-oro'
     },
@@ -81,6 +89,13 @@ export function loadProfilesList(): PlayerProfile[] {
       hasDetailObserverBadge: p.hasDetailObserverBadge ?? false,
       unlockedSilhouettes: p.unlockedSilhouettes || ['016-benteveo'],
       unlockedAcoustics: p.unlockedAcoustics || [],
+      addedPackBirdIds: p.addedPackBirdIds || [],
+      freeSilhouetteHints: p.freeSilhouetteHints ?? 0,
+      packsOpenedCount: p.packsOpenedCount ?? 0,
+      purchasedGear: Array.from(new Set(['visera-oficial', ...(p.purchasedGear || [])])),
+      equippedItems: p.equippedItems && p.equippedItems.length > 0 ? p.equippedItems : ['visera-oficial'],
+      unlockedSpecialEvents: p.unlockedSpecialEvents || [],
+      registeredMigrantIds: p.registeredMigrantIds || ['mig-loro-alisero'],
       birdPhotoStars: p.birdPhotoStars || {},
       unlockedRareBirds: p.unlockedRareBirds || [],
       fieldJournal: p.fieldJournal || []
@@ -186,4 +201,78 @@ export function deleteProfile(profileId: string): PlayerProfile[] {
   saveProfilesList(profiles);
   setActiveProfileId(profiles[0].id);
   return profiles;
+}
+
+// ============================================================================
+// SQUADS (CUADRILLAS ESCOLARES / EQUIPO - HASTA 5 INTEGRANTES) PERSISTENCE
+// ============================================================================
+
+export function loadSquadsList(): Squad[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SQUADS);
+    if (!raw) {
+      const activeProf = getActiveProfile();
+      const defaultSquad: Squad = {
+        id: 'squad_init_1',
+        name: 'Exploradores Los Perales',
+        schoolOrGroup: 'Escuela Provincial · San Salvador de Jujuy',
+        members: [
+          {
+            id: activeProf.id,
+            name: activeProf.name,
+            avatarIcon: activeProf.avatarIcon || '🧢',
+            favoriteBird: activeProf.favoriteBird,
+            isDeviceProfile: true,
+            contributedSpecies: ['Benteveo', 'Chinchero Chico', activeProf.favoriteBird],
+            journalCount: (activeProf.fieldJournal || []).length
+          },
+          {
+            id: 'comp_1',
+            name: 'Sofía (Guardiana)',
+            avatarIcon: '🎒',
+            favoriteBird: 'Picaflor Cometa',
+            isDeviceProfile: false,
+            contributedSpecies: ['Picaflor Cometa', 'Zorzal Colorado'],
+            journalCount: 3
+          },
+          {
+            id: 'comp_2',
+            name: 'Lucas (Vigía)',
+            avatarIcon: '🔭',
+            favoriteBird: 'Loro Alisero' as unknown as CompanionBirdId,
+            isDeviceProfile: false,
+            contributedSpecies: ['Loro Alisero', 'Hornero'],
+            journalCount: 2
+          }
+        ],
+        sharedSightings: [
+          'Benteveo',
+          'Chinchero Chico',
+          'Tucán Grande',
+          'Picaflor Cometa',
+          'Zorzal Colorado',
+          'Loro Alisero',
+          'Hornero'
+        ],
+        goalTarget: 10,
+        goalRewardClaimed: false,
+        createdAt: Date.now()
+      };
+      localStorage.setItem(STORAGE_KEY_SQUADS, JSON.stringify([defaultSquad]));
+      return [defaultSquad];
+    }
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return [];
+    return parsed;
+  } catch {
+    return [];
+  }
+}
+
+export function saveSquadsList(squads: Squad[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_SQUADS, JSON.stringify(squads));
+  } catch {
+    // ignore
+  }
 }

@@ -9,7 +9,8 @@ import {
   RotateCcw,
   Users,
   Camera,
-  LogOut
+  LogOut,
+  Cloud
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 
@@ -24,6 +25,7 @@ interface OptionsModalProps {
   onChangePlayer: () => void;
   onChangeCompanionOrPhoto: () => void;
   onBackToSplash: () => void;
+  onOpenDrive: () => void;
 }
 
 export const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -36,7 +38,8 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
   onResetProgress,
   onChangePlayer,
   onChangeCompanionOrPhoto,
-  onBackToSplash
+  onBackToSplash,
+  onOpenDrive
 }) => {
   if (!isOpen) return null;
 
@@ -70,6 +73,22 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">
               ACCIONES DE EXPEDICIÓN
             </div>
+
+            {/* Google Drive Sync */}
+            <button
+              onClick={() => {
+                soundManager.playClick();
+                onClose();
+                onOpenDrive();
+              }}
+              className="w-full p-2.5 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 text-emerald-100 text-xs font-bold border border-emerald-500/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+            >
+              <Cloud className="w-4 h-4 text-emerald-300 shrink-0" />
+              <div className="text-left flex-1">
+                <div>Sincronizar con Google Drive</div>
+                <div className="text-[9px] text-emerald-300 font-normal">Exporta tu Diario Científico o restaura respaldos en la nube</div>
+              </div>
+            </button>
 
             {/* a) Cambiar de Jugador / Personaje */}
             <button

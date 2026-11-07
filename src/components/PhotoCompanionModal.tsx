@@ -26,7 +26,7 @@ const COMPANIONS = [
     scientific: 'Pitangus sulphuratus',
     badge: 'Centinela',
     color: 'from-yellow-400 to-amber-600',
-    asset: '/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg',
+    asset: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
     speech: '¡Bicho feo! No te muevas que capturamos la luz de la selva.'
   },
   {

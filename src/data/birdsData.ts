@@ -154,7 +154,7 @@ export const COMPANION_BIRDS_OPTIONS: {
     name: 'Benteveo',
     scientific: 'Pitangus sulphuratus',
     badge: 'Centinela',
-    asset: '/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg',
+    asset: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
     desc: 'Vigilante alegre de pecho amarillo y ceja blanca en los senderos.'
   },
   {
@@ -320,36 +320,45 @@ export const INITIAL_MISSIONS: Mission[] = [
 
 export const SHOP_ITEMS = [
   {
-    id: 'visera-verde',
-    name: 'Visera Verde de Guardaparque',
-    category: 'Gorra',
-    cost: 50,
-    description: 'La visera oficial con protección solar para avistar en las copas de los árboles sin deslumbramientos.',
+    id: 'visera-oficial',
+    name: 'Visera Oficial del Parque Botánico',
+    category: 'Prenda Oficial',
+    cost: 0,
+    defaultEquipped: true,
+    description: 'Equipada por defecto. Visera verde esmeralda con el sello de la Reserva Natural Urbana Barón Schuel.',
     icon: '🧢'
   },
   {
-    id: 'mochila-schuel',
-    name: 'Mochila Botánica Barón Schuel',
-    category: 'Mochila',
+    id: 'binoculares-dosel',
+    name: 'Binoculares de Dosel de Alta Precisión',
+    category: 'Óptica XR',
     cost: 100,
-    description: 'Mochila de lona impermeable con el escudo botánico del Parque para guardar libreta y muestras.',
-    icon: '🎒'
-  },
-  {
-    id: 'prismaticos-oro',
-    name: 'Prismáticos Ópticos 10x42',
-    category: 'Prismáticos',
-    cost: 150,
-    description: 'Prismáticos con lentes antirreflejo especiales para condiciones de niebla en la selva montana.',
+    description: 'Lentes de prisma luminoso para distinguir aves en el dosel alto de laureles y cebiles entre la niebla.',
     icon: '🔭'
   },
   {
-    id: 'cuaderno-campo',
-    name: 'Libreta de Campo Yungas',
-    category: 'Herramienta',
-    cost: 80,
-    description: 'Cuaderno con papel reciclado y claves dicotómicas de ornitología de Jujuy.',
-    icon: '📓'
+    id: 'chaleco-guardaparque',
+    name: 'Chaleco de Guardaparque de las Yungas',
+    category: 'Indumentaria',
+    cost: 150,
+    description: 'Chaleco multipropósito con bolsillos para libreta científica, guía de aves y lupas botánicas.',
+    icon: '🦺'
+  },
+  {
+    id: 'camara-teleobjetivo',
+    name: 'Cámara Teleobjetivo Respetuosa Sin Flash',
+    category: 'Fotografía',
+    cost: 200,
+    description: 'Teleobjetivo silencioso de 400 mm que captura primeros planos nítidos respetando la distancia ética sin usar flash.',
+    icon: '📷'
+  },
+  {
+    id: 'pin-aliado-aves',
+    name: 'Pin Dorado "Aliado del Grupo Aves Jujuy"',
+    category: 'Distinción',
+    cost: 250,
+    description: 'Insignia honorífica dorada para los guardianes comprometidos con la conservación de las 125 especies del Parque.',
+    icon: '🏅'
   }
 ];
 export const CHECKPOINTS_DATA: CheckPoint[] = [
@@ -889,7 +898,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
       loreOrFact: 'Tiene alas cortas y redondas, patas fuertes rojo rosáceas y dedos largos.'
     },
     soundType: 'chinchero',
-    image: '/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg',
+    image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
     silhouetteIcon: '🦤'
   },
   {
@@ -917,7 +926,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
       loreOrFact: "Su nombre común imita su fuerte canto trisilábico: 'bien-te-veo'."
     },
     soundType: 'benteveo',
-    image: '/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg',
+    image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
     silhouetteIcon: '🐤'
   },
   {
@@ -977,5 +986,270 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     soundType: 'zorzal',
     image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
     silhouetteIcon: '🎻'
+  }
+];
+
+// Especies adicionales del "Sobre Selva Montana" (100 XP en Tienda)
+export const PACK_EXTRA_BIRDS_DATA: CatalogBird[] = [
+  {
+    id: '019-tangara-cabeza-celeste',
+    catalogNumber: '019',
+    commonName: 'Tangará Cabeza Celeste',
+    scientificName: 'Euphonia cyanocephala',
+    size: '11 cm',
+    weight: '14 g',
+    family: 'FRINGILLIDAE',
+    habitat: 'Copas con ligas y epífitas de Selva Montana',
+    stratum: 'Dosel',
+    conservationStatus: 'NA',
+    presence: 'R',
+    observationPossibility: 'M',
+    beakDescription: 'Pico corto y cónico negruzco especializado en frutos de muérdago y ligas.',
+    songDescription: 'Notas finas metálicas y silbidos suaves desde lo alto del dosel.',
+    plumageDescription: 'Corona y nuca celeste turquesa brillante, garganta y dorso negro azulado y vientre amarillo oro.',
+    cp: 2579,
+    hp: '125 / 125 HP',
+    hints: {
+      size: '11 cm',
+      habitat: 'Estrato: dosel (Asociado a plantas epífitas)',
+      morphology: 'Inconfundible capuchón celeste brillante, dorso negro lustroso y pecho amarillo.',
+      loreOrFact: 'Es un dispersor clave de semillas de plantas hemiparásitas en las copas de los árboles del Parque.'
+    },
+    soundType: 'zorzal',
+    image: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
+    silhouetteIcon: '🐦'
+  },
+  {
+    id: '020-rey-del-bosque',
+    catalogNumber: '020',
+    commonName: 'Rey del Bosque',
+    scientificName: 'Pheucticus aureoventris',
+    size: '22 cm',
+    weight: '52 g',
+    family: 'CARDINALIDAE',
+    habitat: 'Quebradas boscosas y laderas de las Yungas',
+    stratum: 'Subdosel',
+    conservationStatus: 'NA',
+    presence: 'R',
+    observationPossibility: 'M',
+    beakDescription: 'Pico descomunal, cónico y fortísimo para partir semillas duras y frutos.',
+    songDescription: 'Silbido melodioso, potente y solemne que resuena en el 3º Mirador Horco Molle.',
+    plumageDescription: 'Cabeza, pecho y dorso negros en contraste con abdomen amarillo oro intenso y manchas alares blancas.',
+    cp: 2579,
+    hp: '125 / 125 HP',
+    hints: {
+      size: '22 cm',
+      habitat: 'Estrato: subdosel y dosel',
+      morphology: 'Pico muy grueso, capucha y dorso negros con vientre amarillo intenso y motas blancas en las alas.',
+      loreOrFact: 'Considerado uno de los cantores más extraordinarios de la Selva Montana de Jujuy.'
+    },
+    soundType: 'zorzal',
+    image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
+    silhouetteIcon: '👑'
+  },
+  {
+    id: '021-carpintero-lomo-blanco',
+    catalogNumber: '021',
+    commonName: 'Carpintero Lomo Blanco',
+    scientificName: 'Campephilus leucopogon',
+    size: '30 cm',
+    weight: '220 g',
+    family: 'PICIDAE',
+    habitat: 'Troncos añosos de cebiles, tipas y nogales',
+    stratum: 'Subdosel',
+    conservationStatus: 'NA',
+    presence: 'R',
+    observationPossibility: 'M',
+    beakDescription: 'Pico cincel largo, recto y color marfil para excavar madera dura.',
+    songDescription: 'Tamborileo doble potente ("toc-toc") que retumba en todo el 3º Descanso La Tusca.',
+    plumageDescription: 'Cabeza con flamante copete rojo carmesí, dorso negro con una ancha V dorsal color crema/blanco.',
+    cp: 2579,
+    hp: '125 / 125 HP',
+    hints: {
+      size: '30 cm',
+      habitat: 'Estrato: subdosel y fustes gruesos',
+      morphology: 'Copete rojo escarlata, pico marfil en cincel y lomo blanco cremoso muy visible.',
+      loreOrFact: 'Su tamborileo mecánico de dos golpes secos sirve para delimitar su territorio en el bosque.'
+    },
+    soundType: 'chinchero',
+    image: '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg',
+    silhouetteIcon: '🔨'
+  },
+  {
+    id: '022-martin-pescador-grande',
+    catalogNumber: '022',
+    commonName: 'Martín Pescador Grande',
+    scientificName: 'Megaceryle torquata',
+    size: '40 cm',
+    weight: '310 g',
+    family: 'ALCEDINIDAE',
+    habitat: 'Arroyos pedregosos y cercanías del Río Grande',
+    stratum: 'Subdosel',
+    conservationStatus: 'NA',
+    presence: 'R',
+    observationPossibility: 'B',
+    beakDescription: 'Pico largo, recto y pesado como lanza para zambullirse tras peces.',
+    songDescription: 'Matraca fuerte y seca "kerr-kerr-kerr" mientras vuela sobre el cauce.',
+    plumageDescription: 'Cabeza con prominente cresta gris azulada despeinada, collar blanco y pecho castaño rufo.',
+    cp: 2579,
+    hp: '125 / 125 HP',
+    hints: {
+      size: '40 cm',
+      habitat: 'Estrato: riberas y quebradas con agua',
+      morphology: 'Gran penacho gris azulado, collar blanco puro y pecho rufo terracota con pico largo.',
+      loreOrFact: 'Es el mayor de los martines pescadores sudamericanos y vigila desde ramas altas.'
+    },
+    soundType: 'benteveo',
+    image: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
+    silhouetteIcon: '🐟'
+  },
+  {
+    id: '023-yapu',
+    catalogNumber: '023',
+    commonName: 'Yapú',
+    scientificName: 'Psarocolius decumanus',
+    size: '43 cm',
+    weight: '290 g',
+    family: 'ICTERIDAE',
+    habitat: 'Dosel alto en 1º Mirador El Guarán',
+    stratum: 'Dosel',
+    conservationStatus: 'NA',
+    presence: 'R',
+    observationPossibility: 'A',
+    beakDescription: 'Pico cónico largo y puntiagudo color blanco marfil resplandeciente.',
+    songDescription: 'Repertorio metálico líquido acompañado de batido de alas e inclinación corporal.',
+    plumageDescription: 'Negro lustroso con rabadilla castaña, ojos celestes y rectrices externas de la cola amarillo vivo.',
+    cp: 2579,
+    hp: '125 / 125 HP',
+    hints: {
+      size: '43 cm',
+      habitat: 'Estrato: dosel alto',
+      morphology: 'Plumaje negro con cola amarilla brillante, ojos celestes y pico marfil puntiagudo.',
+      loreOrFact: 'Teje nidos colgantes en forma de largas bolsas de más de un metro que penden de las ramas altas.'
+    },
+    soundType: 'toucan',
+    image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
+    silhouetteIcon: '🪺'
+  },
+  {
+    id: '024-naranjero',
+    catalogNumber: '024',
+    commonName: 'Naranjero',
+    scientificName: 'Pipraeidea bonariensis',
+    size: '17 cm',
+    weight: '34 g',
+    family: 'THRAUPIDAE',
+    habitat: 'Bordes de selva y árboles frutales del Parque',
+    stratum: 'Dosel',
+    conservationStatus: 'NA',
+    presence: 'R',
+    observationPossibility: 'A',
+    beakDescription: 'Pico corto y robusto azulado con punta oscura para trozar frutas dulces.',
+    songDescription: 'Gorjeo agudo y vivaz de notas repetidas en las copas soleadas.',
+    plumageDescription: 'Capucha celeste turquesa, antifaz y dorso negros, y pecho naranja fuego intenso.',
+    cp: 2579,
+    hp: '125 / 125 HP',
+    hints: {
+      size: '17 cm',
+      habitat: 'Estrato: dosel y subdosel',
+      morphology: 'Cabeza y alas celestes, antifaz negro y pecho anaranjado brillante.',
+      loreOrFact: 'Aporta los colores más vibrantes a las copas soleadas del Parque Botánico Municipal.'
+    },
+    soundType: 'zorzal',
+    image: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
+    silhouetteIcon: '🍊'
+  }
+];
+
+// Paso 15 - Pestaña B: "Temporada de Aves Migrantes de las Yungas" (5 especies reales de la Guía)
+export const SEASON_MIGRANT_BIRDS = [
+  {
+    id: 'mig-loro-alisero',
+    commonName: 'Loro Alisero',
+    scientificName: 'Amazona tucumana',
+    size: '32 cm',
+    status: 'Amenazada (AM)',
+    stratum: 'Dosel y subdosel',
+    family: 'PSITTACIDAE',
+    description: 'Loro migrante emblemático de los bosques de aliso de las Yungas. Frente roja, periocular blanco y cobertoras rojas.',
+    icon: '🦜'
+  },
+  {
+    id: 'mig-milano-tijereta',
+    commonName: 'Milano Tijereta',
+    scientificName: 'Elanoides forficatus',
+    size: '60 cm',
+    status: 'No Amenazada (NA)',
+    stratum: 'En vuelo',
+    family: 'ACCIPITRIDAE',
+    description: 'Rapaz migrante inconfundible por su larguísima cola ahorquillada en tijera y su elegante planeo blanco y negro sobre el Parque.',
+    icon: '🦅'
+  },
+  {
+    id: 'mig-vencejo-collar',
+    commonName: 'Vencejo de Collar',
+    scientificName: 'Streptoprocne zonaris',
+    size: '21 cm',
+    status: 'No Amenazada (NA)',
+    stratum: 'En vuelo',
+    family: 'APODIDAE',
+    description: 'Acróbata aéreo veloz de plumaje negro hollín con un nítido collar blanco completo alrededor del cuello.',
+    icon: '⚡'
+  },
+  {
+    id: 'mig-cuclillo-canela',
+    commonName: 'Cuclillo Canela',
+    scientificName: 'Coccyzus melacoryphus',
+    size: '27 cm',
+    status: 'No Amenazada (NA)',
+    stratum: 'Dosel y subdosel',
+    family: 'CUCULIDAE',
+    description: 'Migrante estival sigiloso de vientre canela ocráceo, antifaz oscuro y larga cola escalonada con manchas blancas.',
+    icon: '🍂'
+  },
+  {
+    id: 'mig-suiriri-real',
+    commonName: 'Suirirí Real',
+    scientificName: 'Tyrannus melancholicus',
+    size: '21 cm',
+    status: 'No Amenazada (NA)',
+    stratum: 'Dosel y subdosel',
+    family: 'TYRANNIDAE',
+    description: 'Tiránido migrador que se posa en las ramas más altas y expuestas para cazar insectos al vuelo con su pecho amarillo y cabeza gris.',
+    icon: '☀️'
+  }
+];
+
+// Paso 15 - Pestaña B: Eventos de Fechas Especiales con Fichas Exclusivas
+export const SPECIAL_EVENT_CARDS = [
+  {
+    id: 'global-big-day',
+    eventTitle: 'Global Big Day - Jujuy',
+    eventSubtitle: 'Jornada Mundial de Observación de Aves',
+    birdCommonName: 'Tucán Grande',
+    birdScientificName: 'Ramphastos toco',
+    size: '55 cm',
+    status: 'No Amenazada (NA)',
+    family: 'RAMPHASTIDAE',
+    stratum: 'Subdosel y dosel',
+    xpReward: 100,
+    badgeIcon: '🌍',
+    image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
+    specialNote: 'Ficha Especial Conmemorativa del Global Big Day en el Parque Botánico Municipal Barón Schuel: el Tucán Grande lidera los registros de biodiversidad de San Salvador de Jujuy como dispersor estelar de semillas de las Yungas.'
+  },
+  {
+    id: 'qmi-raymi',
+    eventTitle: "Q'MI RAYMI - Fiesta Verde",
+    eventSubtitle: 'Día Nacional de la Conciencia Ambiental',
+    birdCommonName: 'Pava de Monte Yungueña',
+    birdScientificName: 'Penelope bridgesi',
+    size: '72 cm',
+    status: 'Vulnerable (VU)',
+    family: 'CRACIDAE',
+    stratum: 'Subdosel y sotobosque',
+    xpReward: 100,
+    badgeIcon: '🌿',
+    image: '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg',
+    specialNote: "Ficha Especial de Conservación Q'MI RAYMI (Fiesta Verde): La Pava de Monte Yungueña (72 cm, Vulnerable) encuentra en las 15,5 hectáreas del Parque Botánico un santuario vital libre de caza y perturbación urbana."
   }
 ];
