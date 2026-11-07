@@ -1,0 +1,6 @@
+{
+  "name": "Señal Nativa: Aves en Acción",
+  "description": "Videojuego móvil 2D/XR del Parque Botánico Municipal Barón Carlos María Schuel en las Yungas de Jujuy para la observación y conservación de aves nativas.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
