@@ -669,7 +669,7 @@ export const RARE_BIRDS_DATA: BirdSpecies[] = [
     description: 'Ave nocturna legendaria. Su plumaje gris, pardo y ocre imita a la perfección un tocón o rama seca rota. Posee hendiduras en los párpados que le permiten ver con los ojos cerrados.',
     diet: 'Grandes polillas, escarabajos y dípteros nocturnos cazados en vuelos cortos silenciosos.',
     callDescription: 'Canto lastimero descendente melancólico: "¡pua-pua-pua-pua-uh!", origen del llanto del monte.',
-    soundType: 'toucan',
+    soundType: 'urutau',
     silhouette: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z',
     image: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
     funFact: 'Inspiró la conmovedora leyenda quichua del Kakuy: el lamento de la hermana abandonada en la cima de un árbol seco que ruega perdón en las noches de luna.',
@@ -688,7 +688,7 @@ export const RARE_BIRDS_DATA: BirdSpecies[] = [
     description: 'El monarca de las aves carroñeras neotropicales. Plumaje blanco cremoso con rémiges y cola negras. Cabeza y cuello desnudos con pliegues vivamente coloreados en naranja, carmín y amarillo.',
     diet: 'Carroñero estricto: gracias a su tamaño y pico descomunal es el primero en abrir los restos de grandes mamíferos.',
     callDescription: 'Siseos y chasquidos sordos en los riscos.',
-    soundType: 'parrot',
+    soundType: 'raptor',
     silhouette: 'M12 2l10 10-10 10L2 12z',
     image: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
     funFact: 'En la cosmovisión andina y de las tierras bajas era considerado el mensajero del sol entre el cielo y la tierra por su majestuoso vuelo en las alturas del Parque.',
@@ -784,7 +784,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
       morphology: 'Plumaje general blanco con alas y cola negras, cuello desnudo rojo anaranjado y carúncula sobre el pico.',
       loreOrFact: 'Pertenece a la familia Cathartidae; planea a gran altura sin dimorfismo sexual.'
     },
-    soundType: 'parrot',
+    soundType: 'raptor',
     image: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
     silhouetteIcon: '🦅'
   },
@@ -897,7 +897,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
       morphology: 'Cabeza, cuello y pecho grises, corona castaña, iris rojo, pico verde con base amarilla y ventral rufo.',
       loreOrFact: 'Tiene alas cortas y redondas, patas fuertes rojo rosáceas y dedos largos.'
     },
-    soundType: 'chinchero',
+    soundType: 'chiricote',
     image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
     silhouetteIcon: '🦤'
   },
@@ -1071,7 +1071,7 @@ export const PACK_EXTRA_BIRDS_DATA: CatalogBird[] = [
       morphology: 'Copete rojo escarlata, pico marfil en cincel y lomo blanco cremoso muy visible.',
       loreOrFact: 'Su tamborileo mecánico de dos golpes secos sirve para delimitar su territorio en el bosque.'
     },
-    soundType: 'chinchero',
+    soundType: 'woodpecker',
     image: '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg',
     silhouetteIcon: '🔨'
   },
@@ -1099,7 +1099,7 @@ export const PACK_EXTRA_BIRDS_DATA: CatalogBird[] = [
       morphology: 'Gran penacho gris azulado, collar blanco puro y pecho rufo terracota con pico largo.',
       loreOrFact: 'Es el mayor de los martines pescadores sudamericanos y vigila desde ramas altas.'
     },
-    soundType: 'benteveo',
+    soundType: 'kingfisher',
     image: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
     silhouetteIcon: '🐟'
   },

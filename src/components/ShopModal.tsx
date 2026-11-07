@@ -71,7 +71,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                   TIENDA BOTÁNICA SCHUEL
                 </h3>
                 <p className="text-[10px] text-teal-300 font-semibold">
-                  Canje de Recompensas · Paso 9
+                  Canje de Recompensas y Equipo Oficial
                 </p>
               </div>
             </div>

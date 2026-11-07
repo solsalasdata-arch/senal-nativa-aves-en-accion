@@ -18,6 +18,7 @@ import {
 import { soundManager } from '../utils/audio';
 import { CHECKPOINTS_DATA, RARE_BIRDS_DATA } from '../data/birdsData';
 import { CheckPoint, PlayerProfile, BirdSpecies } from '../types/game';
+import { useLanguage, localizeCheckpoint } from '../utils/i18n';
 
 interface TrailMapModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
   onOpenXRVision,
   onOpenSquadsAndSeasons
 }) => {
+  const { lang, tx } = useLanguage();
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<CheckPoint>(CHECKPOINTS_DATA[0]);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [selectedChallengeOption, setSelectedChallengeOption] = useState<number | null>(null);
@@ -47,6 +49,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
 
   if (!isOpen) return null;
 
+  const localizedCp = localizeCheckpoint(selectedCheckpoint, lang);
   const completedCount = playerProfile.completedCheckpoints?.length || 0;
   const isRouteComplete = completedCount >= 8 || playerProfile.hasRouteCompleteSeal;
   const isCurrentCheckpointCompleted = playerProfile.completedCheckpoints?.includes(selectedCheckpoint.id);
@@ -81,9 +84,11 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
               <Map className="w-5 h-5 text-teal-400" />
               <div>
                 <h3 className="font-extrabold text-xs sm:text-sm text-white tracking-wide">
-                  Plano de los Senderos
+                  {tx('Plano de los Senderos', 'Trail Map & Checkpoints')}
                 </h3>
-                <p className="text-[10px] text-teal-300">Parque Botánico Municipal Barón Schuel</p>
+                <p className="text-[10px] text-teal-300">
+                  {tx('Parque Botánico Municipal Barón Schuel', 'Barón Schuel Municipal Botanical Park')}
+                </p>
               </div>
             </div>
             <button
@@ -93,7 +98,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
               }}
               className="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-teal-200 hover:text-white text-[10px] font-bold flex items-center gap-1 border border-teal-700/60 shrink-0 shadow active:scale-95 transition-all"
             >
-              <span>← Volver al Menú</span>
+              <span>{tx('← Volver al Menú', '← Back to Menu')}</span>
             </button>
           </div>
 
@@ -270,7 +275,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
             </div>
           </div>
 
-          {/* Botón: Validar Punto (Escanear QR / GPS) + Acceso Paso 15 */}
+          {/* Botón: Validar Punto (Escanear QR / GPS) + Acceso a Cuadrillas y Temporadas */}
           <div className="pt-1 space-y-1.5">
             <button
               onClick={handleOpenChallenge}
@@ -283,8 +288,8 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
               <QrCode className="w-4 h-4" />
               <span>
                 {isCurrentCheckpointCompleted
-                  ? 'Repasar Desafío QR / GPS'
-                  : 'Validar Punto (Escanear QR / GPS)'}
+                  ? tx('Repasar Desafío QR / GPS', 'Review QR / GPS Challenge')
+                  : tx('Validar Punto (Escanear QR / GPS)', 'Validate Point (Scan QR / GPS)')}
               </span>
             </button>
 
@@ -297,7 +302,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 }}
                 className="w-full py-2 px-3 rounded-2xl game-btn-mint text-emerald-950 text-[11px] font-black tracking-wide uppercase flex items-center justify-center gap-1.5 shadow"
               >
-                <span>🛡️ Cuadrillas y Temporadas (Paso 15)</span>
+                <span>{tx('🛡️ Cuadrillas y Temporadas', '🛡️ Squads & Seasons')}</span>
               </button>
             )}
           </div>
@@ -328,17 +333,17 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
             {/* Question */}
             <div className="py-3 space-y-2.5">
               <div className="text-[10px] text-teal-300 font-semibold">
-                Punto {selectedCheckpoint.id}: {selectedCheckpoint.name} (+25 XP)
+                {tx('Punto', 'Checkpoint')} {localizedCp.id}: {localizedCp.name} (+25 XP)
               </div>
               <p className="text-xs font-bold text-white leading-snug">
-                {selectedCheckpoint.challenge.question}
+                {localizedCp.challenge.question}
               </p>
 
               {/* Options */}
               <div className="space-y-1.5 pt-1">
-                {selectedCheckpoint.challenge.options.map((option, idx) => {
+                {localizedCp.challenge.options.map((option, idx) => {
                   const isSelected = selectedChallengeOption === idx;
-                  const isCorrect = idx === selectedCheckpoint.challenge.correctIndex;
+                  const isCorrect = idx === localizedCp.challenge.correctIndex;
 
                   let optClass = 'bg-slate-950 border-slate-700 text-slate-300';
                   if (challengeSubmitted) {
@@ -371,17 +376,17 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
               {challengeSubmitted && (
                 <div
                   className={`p-2.5 rounded-xl text-[10px] leading-relaxed ${
-                    selectedChallengeOption === selectedCheckpoint.challenge.correctIndex
+                    selectedChallengeOption === localizedCp.challenge.correctIndex
                       ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-200'
                       : 'bg-amber-950/80 border border-amber-500/50 text-amber-200'
                   }`}
                 >
                   <span className="font-bold block mb-0.5">
-                    {selectedChallengeOption === selectedCheckpoint.challenge.correctIndex
-                      ? '¡PUNTO VALIDADO CON ÉXITO! (+25 XP)'
-                      : 'CONSEJO DE CAMPO:'}
+                    {selectedChallengeOption === localizedCp.challenge.correctIndex
+                      ? tx('¡PUNTO VALIDADO CON ÉXITO! (+25 XP)', 'CHECKPOINT VALIDATED! (+25 XP)')
+                      : tx('CONSEJO DE CAMPO:', 'FIELD TIP:')}
                   </span>
-                  {selectedCheckpoint.challenge.explanation}
+                  {localizedCp.challenge.explanation}
                 </div>
               )}
             </div>
@@ -442,7 +447,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 <button
                   key={bird.id}
                   onClick={() => {
-                    soundManager.playClick();
+                    soundManager.playBirdSound(bird.soundType || bird.id);
                     setSelectedRareBird(bird);
                   }}
                   className={`flex-1 py-1 px-2 rounded-xl text-[10px] font-bold border transition-all ${

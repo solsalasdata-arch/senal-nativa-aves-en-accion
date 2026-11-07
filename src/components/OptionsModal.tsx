@@ -10,9 +10,12 @@ import {
   Users,
   Camera,
   LogOut,
-  Cloud
+  Cloud,
+  Globe
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+import { useLanguage } from '../utils/i18n';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface OptionsModalProps {
   isOpen: boolean;
@@ -41,6 +44,8 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
   onBackToSplash,
   onOpenDrive
 }) => {
+  const { lang, setLang, tx } = useLanguage();
+
   if (!isOpen) return null;
 
   return (
@@ -51,8 +56,12 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-teal-400" />
             <div>
-              <h3 className="font-bold text-sm text-white">OPCIONES DEL JUEGO</h3>
-              <p className="text-[10px] text-teal-300">Configuración, Jugador y Reserva</p>
+              <h3 className="font-bold text-sm text-white">
+                {tx('OPCIONES DEL JUEGO', 'GAME OPTIONS')}
+              </h3>
+              <p className="text-[10px] text-teal-300">
+                {tx('Configuración, Idioma, Jugador y Reserva', 'Settings, Language, Player & Reserve')}
+              </p>
             </div>
           </div>
           <button
@@ -68,10 +77,52 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
 
         {/* Content */}
         <div className="p-4 space-y-4 flex-1 overflow-y-auto text-xs text-slate-200">
+          {/* SECCIÓN 0: SELECTOR DE IDIOMA Y MODO PWA OFFLINE */}
+          <div className="bg-slate-950/90 rounded-2xl p-3 border border-amber-400/50 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-amber-400" />
+                <span className="font-bold text-white">
+                  {tx('Idioma de la Interfaz', 'Interface Language')}
+                </span>
+              </div>
+              <div className="flex gap-1 bg-slate-900 p-1 rounded-xl border border-teal-800">
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setLang('es');
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                    lang === 'es'
+                      ? 'bg-amber-400 text-slate-950 shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Español (ES)
+                </button>
+                <button
+                  onClick={() => {
+                    soundManager.playClick();
+                    setLang('en');
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                    lang === 'en'
+                      ? 'bg-amber-400 text-slate-950 shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  English (EN)
+                </button>
+              </div>
+            </div>
+
+            <PWAInstallButton />
+          </div>
+
           {/* SECCIÓN 1: ACCIONES PRINCIPALES DE JUGADOR Y NAVEGACIÓN */}
           <div className="bg-slate-950/90 rounded-2xl p-3 border border-teal-700/60 space-y-2">
             <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">
-              ACCIONES DE EXPEDICIÓN
+              {tx('ACCIONES DE EXPEDICIÓN', 'EXPEDITION ACTIONS')}
             </div>
 
             {/* Google Drive Sync */}
@@ -85,8 +136,13 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             >
               <Cloud className="w-4 h-4 text-emerald-300 shrink-0" />
               <div className="text-left flex-1">
-                <div>Sincronizar con Google Drive</div>
-                <div className="text-[9px] text-emerald-300 font-normal">Exporta tu Diario Científico o restaura respaldos en la nube</div>
+                <div>{tx('Sincronizar con Google Drive', 'Sync with Google Drive')}</div>
+                <div className="text-[9px] text-emerald-300 font-normal">
+                  {tx(
+                    'Exporta tu Diario Científico o restaura respaldos en la nube',
+                    'Export your Field Journal or restore cloud backups'
+                  )}
+                </div>
               </div>
             </button>
 
@@ -101,8 +157,13 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             >
               <Users className="w-4 h-4 text-amber-400 shrink-0" />
               <div className="text-left flex-1">
-                <div>Cambiar de Jugador / Personaje</div>
-                <div className="text-[9px] text-teal-300 font-normal">Guarda tu progreso y elige o crea otro explorador</div>
+                <div>{tx('Cambiar de Jugador / Personaje', 'Switch Player / Character')}</div>
+                <div className="text-[9px] text-teal-300 font-normal">
+                  {tx(
+                    'Guarda tu progreso y elige o crea otro explorador',
+                    'Save your progress and choose or create another explorer'
+                  )}
+                </div>
               </div>
             </button>
 
@@ -117,8 +178,13 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             >
               <Camera className="w-4 h-4 text-sky-400 shrink-0" />
               <div className="text-left flex-1">
-                <div>Cambiar Ave Compañera / Tomar Foto</div>
-                <div className="text-[9px] text-teal-300 font-normal">Posar con Tucán, Benteveo, Chinchero o Picaflor sin flash</div>
+                <div>{tx('Cambiar Ave Compañera / Tomar Foto', 'Change Companion Bird / Take Photo')}</div>
+                <div className="text-[9px] text-teal-300 font-normal">
+                  {tx(
+                    'Posar con Tucán, Benteveo, Chinchero o Picaflor sin flash',
+                    'Pose with Toucan, Kiskadee, Woodcreeper, or Comet without flash'
+                  )}
+                </div>
               </div>
             </button>
 
@@ -133,15 +199,22 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             >
               <LogOut className="w-4 h-4 text-rose-400 shrink-0" />
               <div className="text-left flex-1">
-                <div>Volver a la Portada Principal</div>
-                <div className="text-[9px] text-slate-400 font-normal">Regresar a la pantalla de bienvenida del juego</div>
+                <div>{tx('Volver a la Portada Principal', 'Return to Main Cover')}</div>
+                <div className="text-[9px] text-slate-400 font-normal">
+                  {tx(
+                    'Regresar a la pantalla de bienvenida del juego',
+                    'Return to the welcome splash screen'
+                  )}
+                </div>
               </div>
             </button>
           </div>
 
           {/* SECCIÓN 2: AJUSTES DE AUDIO */}
           <div className="bg-slate-950/80 rounded-2xl p-3 border border-teal-900/60 space-y-3">
-            <div className="text-[11px] font-bold text-teal-300 uppercase">AJUSTES DE AUDIO</div>
+            <div className="text-[11px] font-bold text-teal-300 uppercase">
+              {tx('AJUSTES DE AUDIO', 'AUDIO SETTINGS')}
+            </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -150,7 +223,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 ) : (
                   <VolumeX className="w-4 h-4 text-slate-500" />
                 )}
-                <span>Efectos de Sonido y Cantos</span>
+                <span>{tx('Efectos de Sonido y Cantos', 'Sound Effects & Bird Calls')}</span>
               </div>
               <button
                 onClick={() => {
@@ -163,14 +236,14 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                     : 'bg-slate-800 text-slate-400'
                 }`}
               >
-                {soundEnabled ? 'Activado' : 'Mudo'}
+                {soundEnabled ? tx('Activado', 'Enabled') : tx('Mudo', 'Muted')}
               </button>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Trees className="w-4 h-4 text-teal-400" />
-                <span>Brisa de Selva Montana</span>
+                <span>{tx('Brisa de Selva Montana', 'Mountain Forest Breeze')}</span>
               </div>
               <button
                 onClick={() => {
@@ -183,7 +256,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                     : 'bg-slate-800 text-slate-400'
                 }`}
               >
-                {bgmEnabled ? 'En reproducción' : 'Pausado'}
+                {bgmEnabled ? tx('En reproducción', 'Playing') : tx('Pausado', 'Paused')}
               </button>
             </div>
           </div>
@@ -192,31 +265,37 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
           <div className="bg-slate-950/80 rounded-2xl p-3 border border-teal-900/60 space-y-2">
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-300 uppercase">
               <Info className="w-3.5 h-3.5" />
-              <span>PARQUE BOTÁNICO MUNICIPAL</span>
+              <span>{tx('PARQUE BOTÁNICO MUNICIPAL', 'MUNICIPAL BOTANICAL PARK')}</span>
             </div>
             <p className="text-[11px] text-slate-300 leading-relaxed">
-              <strong>"Barón Carlos María Schuel"</strong> es una Reserva Natural Urbana de 15.5 hectáreas en el barrio Los Perales, San Salvador de Jujuy.
+              <strong>"Barón Carlos María Schuel"</strong>{' '}
+              {tx(
+                'es una Reserva Natural Urbana de 15.5 hectáreas en el barrio Los Perales, San Salvador de Jujuy.',
+                'is a 15.5-hectare Urban Nature Reserve in the Los Perales neighborhood, San Salvador de Jujuy.'
+              )}
             </p>
             <div className="grid grid-cols-2 gap-2 text-[10px] text-teal-200">
               <div className="bg-teal-950/50 p-2 rounded-lg border border-teal-900/40">
-                <span className="block font-bold text-amber-300">ALTITUD</span>
-                1334 a 1463 m.s.n.m.
+                <span className="block font-bold text-amber-300">{tx('ALTITUD', 'ALTITUDE')}</span>
+                {tx('1334 a 1463 m.s.n.m.', '1334 to 1463 m.a.s.l.')}
               </div>
               <div className="bg-teal-950/50 p-2 rounded-lg border border-teal-900/40">
-                <span className="block font-bold text-amber-300">ECOSISTEMA</span>
-                Selva Montana de las Yungas
+                <span className="block font-bold text-amber-300">{tx('ECOSISTEMA', 'ECOSYSTEM')}</span>
+                {tx('Selva Montana de las Yungas', 'Yungas Mountain Forest')}
               </div>
             </div>
           </div>
 
           {/* SECCIÓN 4: CÓDIGO ÉTICO */}
           <div className="bg-emerald-950/50 border border-emerald-500/40 rounded-2xl p-3 text-[11px] text-emerald-200 space-y-1">
-            <div className="font-bold text-emerald-300">CÓDIGO DEL OBSERVADOR ÉTICO:</div>
+            <div className="font-bold text-emerald-300">
+              {tx('CÓDIGO DEL OBSERVADOR ÉTICO:', 'ETHICAL OBSERVER CODE:')}
+            </div>
             <ul className="list-disc list-inside space-y-0.5 opacity-90">
-              <li>Nunca uses flash: desorienta y estresa a las aves.</li>
-              <li>Mantén el silencio para escuchar los cantos nativos.</li>
-              <li>No dejes residuos en los senderos.</li>
-              <li>Permanece siempre en las sendas señalizadas.</li>
+              <li>{tx('Nunca uses flash: desorienta y estresa a las aves.', 'Never use flash: it disorients and stresses birds.')}</li>
+              <li>{tx('Mantén el silencio para escuchar los cantos nativos.', 'Keep quiet so you can hear native bird calls.')}</li>
+              <li>{tx('No dejes residuos en los senderos.', 'Leave no litter on the trails.')}</li>
+              <li>{tx('Permanece siempre en las sendas señalizadas.', 'Always stay on marked trails.')}</li>
             </ul>
           </div>
 
@@ -224,7 +303,14 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
           <div className="pt-1">
             <button
               onClick={() => {
-                if (confirm('¿Deseas reiniciar los puntos y misiones del perfil activo a Nivel 1?')) {
+                if (
+                  confirm(
+                    tx(
+                      '¿Deseas reiniciar los puntos y misiones del perfil activo a Nivel 1?',
+                      'Do you want to reset the active profile points and missions to Level 1?'
+                    )
+                  )
+                ) {
                   soundManager.playClick();
                   onResetProgress();
                   onClose();
@@ -233,7 +319,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
               className="w-full py-2.5 rounded-xl bg-rose-950/60 border border-rose-800/60 text-rose-300 hover:text-white hover:bg-rose-900/80 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reiniciar Progreso de este Perfil</span>
+              <span>{tx('Reiniciar Progreso de este Perfil', 'Reset Progress for This Profile')}</span>
             </button>
           </div>
         </div>

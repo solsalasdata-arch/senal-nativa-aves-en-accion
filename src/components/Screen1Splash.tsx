@@ -1,6 +1,7 @@
 import React from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+import { useLanguage, LanguageSelector } from '../utils/i18n';
 
 interface Screen1SplashProps {
   onStartAdventure: () => void;
@@ -13,6 +14,8 @@ export const Screen1Splash: React.FC<Screen1SplashProps> = ({
   soundEnabled,
   onToggleSound
 }) => {
+  const { tx } = useLanguage();
+
   const handleScreenClick = () => {
     soundManager.playClick();
     onStartAdventure();
@@ -24,21 +27,24 @@ export const Screen1Splash: React.FC<Screen1SplashProps> = ({
       className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-cover bg-center select-none cursor-pointer"
       style={{ backgroundImage: `url('/assets/aistudio/Botanical_park_start_screen_logo_11198c3d_2d966cdf.jpg')` }}
     >
-      {/* Top Header: Ambient control badge */}
+      {/* Top Header: Ambient control badge + Language Selector + Sound Toggle */}
       <div className="relative z-20 flex items-center justify-between p-4 pointer-events-auto">
         <div className="px-3 py-1 rounded-full bg-slate-950/70 backdrop-blur-md border border-teal-400/40 text-[10px] text-teal-200 tracking-wider font-semibold shadow">
-          PARQUE BOTÁNICO SCHUEL · JUJUY
+          {tx('PARQUE BOTÁNICO SCHUEL · JUJUY', 'SCHUEL BOTANICAL PARK · JUJUY')}
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleSound();
-          }}
-          className="w-9 h-9 rounded-full bg-slate-950/70 backdrop-blur-md border border-teal-400/40 flex items-center justify-center text-teal-300 hover:text-white shadow active:scale-95 transition-transform"
-          title="Sonido y Brisa de Selva"
-        >
-          {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
-        </button>
+        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <LanguageSelector />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSound();
+            }}
+            className="w-9 h-9 rounded-full bg-slate-950/70 backdrop-blur-md border border-teal-400/40 flex items-center justify-center text-teal-300 hover:text-white shadow active:scale-95 transition-transform"
+            title={tx('Sonido y Brisa de Selva', 'Sound & Jungle Breeze')}
+          >
+            {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+          </button>
+        </div>
       </div>
 
       {/* 
@@ -51,7 +57,7 @@ export const Screen1Splash: React.FC<Screen1SplashProps> = ({
           e.stopPropagation();
           handleScreenClick();
         }}
-        aria-label="Comienza tu aventura"
+        aria-label={tx('Comienza tu aventura', 'Start your adventure')}
         style={{
           position: 'absolute',
           bottom: '18%',
@@ -69,7 +75,10 @@ export const Screen1Splash: React.FC<Screen1SplashProps> = ({
       {/* Bottom Subtitle Caption */}
       <div className="relative z-10 w-full pb-3 text-center pointer-events-none">
         <p className="text-[11px] text-teal-100/90 font-medium tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-          Selva Montana de las Yungas · 1334 a 1463 m.s.n.m.
+          {tx(
+            'Selva Montana de las Yungas · 1334 a 1463 m.s.n.m.',
+            'Yungas Mountain Forest · 1334 to 1463 m.a.s.l.'
+          )}
         </p>
       </div>
     </div>

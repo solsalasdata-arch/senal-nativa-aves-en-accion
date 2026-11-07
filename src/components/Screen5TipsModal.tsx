@@ -2,6 +2,7 @@ import React from 'react';
 import { HelpCircle, X, Map, Bird, CheckCircle2, CircleDashed, Award } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { PlayerState } from '../types/game';
+import { useLanguage } from '../utils/i18n';
 
 interface Screen5TipsModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ export const Screen5TipsModal: React.FC<Screen5TipsModalProps> = ({
   onOpenMap,
   onOpenBirds
 }) => {
+  const { tx } = useLanguage();
+
   if (!isOpen) return null;
 
   const sightingComplete = playerState.sightingsCompleted >= 1;
@@ -31,8 +34,12 @@ export const Screen5TipsModal: React.FC<Screen5TipsModalProps> = ({
           <div className="flex items-center gap-2">
             <HelpCircle className="w-5 h-5 text-amber-400" />
             <div>
-              <h3 className="font-bold text-sm text-white">CONSEJOS DE NIVEL</h3>
-              <p className="text-[10px] text-teal-300">Regla Oficial del Parque Botánico Schuel</p>
+              <h3 className="font-bold text-sm text-white">
+                {tx('CONSEJOS DE NIVEL', 'LEVEL UP TIPS')}
+              </h3>
+              <p className="text-[10px] text-teal-300">
+                {tx('Regla Oficial del Parque Botánico Schuel', 'Official Rule of Schuel Botanical Park')}
+              </p>
             </div>
           </div>
           <button
@@ -59,9 +66,12 @@ export const Screen5TipsModal: React.FC<Screen5TipsModalProps> = ({
               />
             </div>
 
-            {/* Speech bubble: "Para subir de nivel, debes completar 1 avistamiento y responder 5 preguntas." */}
+            {/* Speech bubble */}
             <div className="relative bg-white text-slate-900 p-2.5 rounded-2xl text-xs font-bold leading-snug shadow-md">
-              "Para subir de nivel, debes completar 1 avistamiento y responder 5 preguntas."
+              {tx(
+                '"Para subir de nivel, debes completar 1 avistamiento y responder 5 preguntas."',
+                '"To level up, you must complete 1 bird sighting and answer 5 questions."'
+              )}
               {/* Pointer beak */}
               <div className="absolute top-1/2 -left-1.5 transform -translate-y-1/2 w-3 h-3 bg-white border-l border-b border-slate-300 rotate-45" />
             </div>

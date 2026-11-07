@@ -27,6 +27,7 @@ import {
 import { soundManager } from '../utils/audio';
 import { CATALOG_BIRDS_DATA, PACK_EXTRA_BIRDS_DATA, TRIVIA_QUESTIONS, CHECKPOINTS_DATA } from '../data/birdsData';
 import { CatalogBird, JournalEntry, PlayerProfile } from '../types/game';
+import { useLanguage, localizeTriviaQuestions, localizeCatalogBird } from '../utils/i18n';
 
 interface TriviaAndBirdGuideModalProps {
   isOpen: boolean;
@@ -55,6 +56,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   onOpenDrive,
   onConsumeFreeHints
 }) => {
+  const { lang, tx } = useLanguage();
   const [activeTab, setActiveTab] = useState<'catalog' | 'audio' | 'journal' | 'trivia'>('catalog');
 
   // Filter for catalog cards: 'all' | 'silhouettes' | 'illuminated'
@@ -99,20 +101,14 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
   if (!isOpen) return null;
 
-  // Sound Dispatcher based on bird soundType
+  // Sound Dispatcher: plays the exact synthesized call for every species in the Park
   const playSoundForBird = (bird: CatalogBird) => {
     setAudioIsPlaying(true);
-    if (bird.soundType === 'benteveo') soundManager.playBenteveoCall();
-    else if (bird.soundType === 'chinchero') soundManager.playChincheroCall();
-    else if (bird.soundType === 'urutau') soundManager.playUrutauCall();
-    else if (bird.soundType === 'zorzal') soundManager.playZorzalCall();
-    else if (bird.soundType === 'hornero') soundManager.playHorneroCall();
-    else if (bird.soundType === 'toucan') soundManager.playToucanCall();
-    else soundManager.playClick();
+    soundManager.playBirdSound(bird.soundType || bird.id || bird.commonName);
 
     setTimeout(() => {
       setAudioIsPlaying(false);
-    }, 1800);
+    }, 1600);
   };
 
   // Featured bird: CHINCHERO CHICO
@@ -257,8 +253,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     }
   };
 
-  // TRIVIA Handlers
-  const currentQ = TRIVIA_QUESTIONS[currentQuestionIdx];
+  // TRIVIA Handlers (Localized ES/EN)
+  const localizedTriviaList = localizeTriviaQuestions(TRIVIA_QUESTIONS, lang);
+  const currentQ = localizedTriviaList[currentQuestionIdx];
 
   const handleSelectOption = (idx: number) => {
     if (isAnswerSubmitted) return;
@@ -394,11 +391,15 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   // Build deterministic 3 options for Modo Bioacústico "Escucha el Canto"
   const getAudioOptions = (bird: CatalogBird): string[] => {
     const distractorsMap: Record<string, [string, string]> = {
-      '016': ['Chinchero Chico', 'Zorzal Colorado'],
       '010': ['Benteveo', 'Hornero'],
-      '014': ['Zorzal Colorado', 'Urutaú' === bird.commonName ? 'Chinchero Chico' : 'Urutaú'],
-      '018': ['Benteveo', 'Hornero'],
-      '017': ['Chinchero Chico', 'Zorzal Colorado']
+      '011': ['Loro Alisero', 'Urutaú'],
+      '012': ['Benteveo', 'Picaflor Cometa'],
+      '013': ['Chinchero Chico', 'Zorzal Colorado'],
+      '014': ['Zorzal Colorado', 'Chinchero Chico'],
+      '015': ['Hornero', 'Benteveo'],
+      '016': ['Chinchero Chico', 'Zorzal Colorado'],
+      '017': ['Chinchero Chico', 'Zorzal Colorado'],
+      '018': ['Benteveo', 'Hornero']
     };
     const distractors = distractorsMap[bird.catalogNumber] || ['Benteveo', 'Urutaú'];
     const all = [bird.commonName, ...distractors];
@@ -421,10 +422,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               </div>
               <div className="truncate">
                 <h3 className="font-black text-xs text-white uppercase tracking-wider">
-                  COLECCIÓN DE AVES · YUNGAS
+                  {tx('COLECCIÓN DE AVES · YUNGAS', 'BIRD COLLECTION · YUNGAS')}
                 </h3>
                 <p className="text-[10px] text-teal-300 font-semibold truncate">
-                  Parque Botánico Municipal "Barón Carlos María Schuel"
+                  {tx(
+                    'Parque Botánico Municipal "Barón Carlos María Schuel"',
+                    '"Barón Carlos María Schuel" Municipal Botanical Park'
+                  )}
                 </p>
               </div>
             </div>
@@ -435,7 +439,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               }}
               className="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-teal-200 hover:text-white text-[10px] font-bold flex items-center gap-1 border border-teal-700/60 shrink-0 shadow active:scale-95 transition-all"
             >
-              <span>← Volver al Menú</span>
+              <span>{tx('← Volver al Menú', '← Back to Menu')}</span>
             </button>
           </div>
 
@@ -453,7 +457,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               }`}
             >
               <Bird className="w-3.5 h-3.5 mb-0.5" />
-              <span>Catálogo</span>
+              <span>{tx('Catálogo', 'Catalog')}</span>
             </button>
 
             <button
@@ -468,7 +472,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               }`}
             >
               <Music className="w-3.5 h-3.5 mb-0.5" />
-              <span>Cantos</span>
+              <span>{tx('Cantos', 'Calls')}</span>
             </button>
 
             <button
@@ -483,7 +487,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               }`}
             >
               <BookOpen className="w-3.5 h-3.5 mb-0.5" />
-              <span>Diario</span>
+              <span>{tx('Diario', 'Journal')}</span>
               {hasDetailBadge && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-slate-900" />
               )}
@@ -844,14 +848,18 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 })}
               </div>
 
-              {/* Bird Selector Buttons */}
+              {/* Bird Selector Buttons (All Species with Characteristic Calls) */}
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                 {[
-                  CATALOG_BIRDS_DATA[5], // Benteveo
-                  featuredChinchero,     // Chinchero Chico
-                  CATALOG_BIRDS_DATA[3], // Urutaú
-                  CATALOG_BIRDS_DATA[7], // Zorzal Colorado
-                  CATALOG_BIRDS_DATA[6]  // Hornero
+                  CATALOG_BIRDS_DATA[5], // Benteveo ("bien-te-veo")
+                  featuredChinchero,     // Chinchero Chico (descending trill)
+                  CATALOG_BIRDS_DATA[3], // Urutaú (nocturnal lament "Turay, kakuy")
+                  CATALOG_BIRDS_DATA[7], // Zorzal Colorado (melodious flute)
+                  CATALOG_BIRDS_DATA[6], // Hornero (rhythmic duet)
+                  CATALOG_BIRDS_DATA[1], // Loro Alisero (flock squawk)
+                  CATALOG_BIRDS_DATA[2], // Picaflor Cometa (wing hum + tsik-tsik)
+                  CATALOG_BIRDS_DATA[4], // Chiricote ("chi-ri-co-te")
+                  CATALOG_BIRDS_DATA[0]  // Jote Real (soaring thermal + click)
                 ].map((bird) => {
                   const isSelected = audioTargetBird.id === bird.id;
                   const isUnlocked = isAcousticUnlocked(bird.id);
@@ -1229,7 +1237,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       onClick={handleNextTriviaQuestion}
                       className="w-full py-3 rounded-xl game-btn-mint text-emerald-950 font-bold text-xs flex items-center justify-center gap-1.5"
                     >
-                      <span>{currentQuestionIdx < TRIVIA_QUESTIONS.length - 1 ? 'SIGUIENTE PREGUNTA' : 'VER RESULTADOS FINALES'}</span>
+                      <span>
+                        {currentQuestionIdx < TRIVIA_QUESTIONS.length - 1
+                          ? tx('SIGUIENTE PREGUNTA', 'NEXT QUESTION')
+                          : tx('VER RESULTADOS FINALES', 'VIEW FINAL RESULTS')}
+                      </span>
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   )}
@@ -1240,18 +1252,22 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         )}
 
         {/* ============================================================== */}
-        {/* SUBMODAL 1: JUEGO "SILUETA MISTERIOSA" (PASO 10) */}
+        {/* SUBMODAL 1: JUEGO "SILUETA MISTERIOSA" */}
         {/* ============================================================== */}
-        {silhouetteGameBird && (
+        {silhouetteGameBird && (() => {
+          const localizedSilBird = localizeCatalogBird(silhouetteGameBird, lang);
+          return (
           <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-3 animate-fadeIn select-none">
             <div className="flex items-center justify-between pb-2 border-b border-teal-900 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-xl">🕵️</span>
                 <div>
                   <h4 className="text-xs font-black text-white uppercase tracking-wider">
-                    SILUETA MISTERIOSA #{silhouetteGameBird.catalogNumber}
+                    {tx('SILUETA MISTERIOSA', 'MYSTERY SILHOUETTE')} #{localizedSilBird.catalogNumber}
                   </h4>
-                  <p className="text-[10px] text-teal-300">Descifra la especie a través de las 4 pistas</p>
+                  <p className="text-[10px] text-teal-300">
+                    {tx('Descifra la especie a través de las 4 pistas', 'Decipher the species through the 4 clues')}
+                  </p>
                 </div>
               </div>
               <button
@@ -1271,30 +1287,33 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 {silhouetteResult === 'correct' ? (
                   <div className="flex flex-col items-center animate-scaleIn">
                     <img
-                      src={silhouetteGameBird.image}
-                      alt={silhouetteGameBird.commonName}
+                      src={localizedSilBird.image}
+                      alt={localizedSilBird.commonName}
                       className="w-20 h-20 rounded-full object-cover border-3 border-amber-400 shadow-xl"
                     />
                     <span className="text-xs font-black text-slate-950 bg-amber-300 px-2.5 py-0.5 rounded-full mt-1 uppercase shadow">
-                      ¡{silhouetteGameBird.commonName} ILUMINADO!
+                      {tx(`¡${localizedSilBird.commonName} ILUMINADO!`, `${localizedSilBird.commonName} ILLUMINATED!`)}
                     </span>
                   </div>
                 ) : (
                   <>
                     <div className="filter drop-shadow-md">
-                      {renderBirdSilhouetteSvg(silhouetteGameBird.catalogNumber, 'w-24 h-20')}
+                      {renderBirdSilhouetteSvg(localizedSilBird.catalogNumber, 'w-24 h-20')}
                     </div>
                     <div className="text-[10px] font-black text-amber-300 bg-slate-950/85 px-2.5 py-0.5 rounded-full mt-1 border border-amber-400/50">
-                      Recompensa activa ({hintsRevealed} {hintsRevealed === 1 ? 'pista' : 'pistas'}): +{getSilhouetteXpReward()} XP
+                      {tx(
+                        `Recompensa activa (${hintsRevealed} ${hintsRevealed === 1 ? 'pista' : 'pistas'}): +${getSilhouetteXpReward()} XP`,
+                        `Active reward (${hintsRevealed} ${hintsRevealed === 1 ? 'clue' : 'clues'}): +${getSilhouetteXpReward()} XP`
+                      )}
                     </div>
                   </>
                 )}
               </div>
 
-              {/* The 4 Progressive Hints (Verbatim from Guide) */}
+              {/* The 4 Progressive Hints */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] font-black text-teal-300">
-                  <span>Pistas Reveladas: {hintsRevealed}/4</span>
+                  <span>{tx('Pistas Reveladas:', 'Clues Revealed:')} {hintsRevealed}/4</span>
                   {hintsRevealed < 4 && silhouetteResult === null && (
                     <button
                       onClick={() => {
@@ -1303,38 +1322,46 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       }}
                       className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 text-[10px] font-black border border-amber-300 shadow"
                     >
-                      + Revelar Pista {hintsRevealed + 1}
+                      + {tx('Revelar Pista', 'Reveal Clue')} {hintsRevealed + 1}
                     </button>
                   )}
                 </div>
 
                 {/* Pista 1: Tamaño */}
                 <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                  <span className="font-bold text-amber-400 block text-[9px]">PISTA 1 (TAMAÑO):</span>
-                  <p className="text-white text-[11px] font-bold">{silhouetteGameBird.hints.size}</p>
+                  <span className="font-bold text-amber-400 block text-[9px]">
+                    {tx('PISTA 1 (TAMAÑO):', 'CLUE 1 (SIZE):')}
+                  </span>
+                  <p className="text-white text-[11px] font-bold">{localizedSilBird.hints.size}</p>
                 </div>
 
                 {/* Pista 2: Hábitat / Estrato */}
                 {hintsRevealed >= 2 && (
                   <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-xs animate-fadeIn">
-                    <span className="font-bold text-emerald-400 block text-[9px]">PISTA 2 (HÁBITAT / ESTRATO):</span>
-                    <p className="text-white text-[11px]">{silhouetteGameBird.hints.habitat}</p>
+                    <span className="font-bold text-emerald-400 block text-[9px]">
+                      {tx('PISTA 2 (HÁBITAT / ESTRATO):', 'CLUE 2 (HABITAT / STRATUM):')}
+                    </span>
+                    <p className="text-white text-[11px]">{localizedSilBird.hints.habitat}</p>
                   </div>
                 )}
 
                 {/* Pista 3: Color y Morfología */}
                 {hintsRevealed >= 3 && (
                   <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-xs animate-fadeIn">
-                    <span className="font-bold text-sky-400 block text-[9px]">PISTA 3 (COLOR Y MORFOLOGÍA):</span>
-                    <p className="text-white text-[11px]">{silhouetteGameBird.hints.morphology}</p>
+                    <span className="font-bold text-sky-400 block text-[9px]">
+                      {tx('PISTA 3 (COLOR Y MORFOLOGÍA):', 'CLUE 3 (COLOR & MORPHOLOGY):')}
+                    </span>
+                    <p className="text-white text-[11px]">{localizedSilBird.hints.morphology}</p>
                   </div>
                 )}
 
                 {/* Pista 4: Dato Curioso / Leyenda */}
                 {hintsRevealed >= 4 && (
                   <div className="p-2 rounded-xl bg-amber-950/60 border border-amber-600 text-xs animate-fadeIn">
-                    <span className="font-bold text-amber-300 block text-[9px]">PISTA 4 (DATO CURIOSO / LEYENDA):</span>
-                    <p className="text-amber-100 text-[11px] italic">{silhouetteGameBird.hints.loreOrFact}</p>
+                    <span className="font-bold text-amber-300 block text-[9px]">
+                      {tx('PISTA 4 (DATO CURIOSO / LEYENDA):', 'CLUE 4 (FUN FACT / FOLKLORE):')}
+                    </span>
+                    <p className="text-amber-100 text-[11px] italic">{localizedSilBird.hints.loreOrFact}</p>
                   </div>
                 )}
               </div>
@@ -1343,7 +1370,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               {silhouetteResult === null && (
                 <div className="space-y-1.5 pt-1">
                   <span className="text-[10px] font-black text-slate-300 block">
-                    Selecciona el nombre correcto entre las 4 opciones:
+                    {tx('Selecciona el nombre correcto entre las 4 opciones:', 'Select the correct species name from the 4 options:')}
                   </span>
                   {getSilhouetteOptions(silhouetteGameBird).map((optName, idx) => (
                     <button
@@ -1362,10 +1389,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               {silhouetteResult === 'correct' && (
                 <div className="p-3 rounded-2xl bg-emerald-950 border border-emerald-500 text-center space-y-2 animate-scaleIn text-white">
                   <div className="text-sm font-black text-amber-300">
-                    🎉 ¡SILUETA ILUMINADA A COLOR!
+                    🎉 {tx('¡SILUETA ILUMINADA A COLOR!', 'SILHOUETTE ILLUMINATED IN COLOR!')}
                   </div>
                   <p className="text-xs text-emerald-200">
-                    Has ganado <span className="font-black text-white">+{getSilhouetteXpReward()} XP</span> y esta especie ya brilla en tu catálogo.
+                    {tx('Has ganado', 'You earned')}{' '}
+                    <span className="font-black text-white">+{getSilhouetteXpReward()} XP</span>{' '}
+                    {tx('y esta especie ya brilla en tu catálogo.', 'and this species now shines in your catalog.')}
                   </p>
                   <div className="flex gap-2 pt-1">
                     <button
@@ -1375,19 +1404,19 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       }}
                       className="flex-1 py-2 rounded-xl game-btn-mint text-emerald-950 font-bold text-xs"
                     >
-                      Ver Ficha Técnica
+                      {tx('Ver Ficha Técnica', 'View Technical Sheet')}
                     </button>
                     <button
                       onClick={() => setSilhouetteGameBird(null)}
                       className="flex-1 py-2 rounded-xl game-btn-orange text-white font-bold text-xs"
                     >
-                      Volver a la Guía
+                      {tx('Volver a la Guía', 'Back to Guide')}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Failure Dialogue: Tucán Feedback Amable (8B) - NO RESTA PUNTOS */}
+              {/* Failure Dialogue: Tucán Feedback Amable - NO RESTA PUNTOS */}
               {silhouetteResult === 'wrong' && (
                 <div className="p-3.5 rounded-2xl bg-slate-950 border border-teal-500 text-slate-100 space-y-2.5 animate-fadeIn">
                   <div className="flex items-start gap-2.5">
@@ -1397,9 +1426,14 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       className="w-12 h-12 rounded-full object-cover border-2 border-amber-400 shrink-0"
                     />
                     <div className="text-xs">
-                      <span className="font-black text-amber-300 block">TUCÁN ANFITRIÓN:</span>
+                      <span className="font-black text-amber-300 block">
+                        {tx('TUCÁN ANFITRIÓN:', 'TOUCAN HOST:')}
+                      </span>
                       <p className="text-[11px] text-teal-100 italic leading-snug mt-0.5">
-                        "Desafortunadamente, no has respondido todas las preguntas correctamente. ¡El Parque Botánico Barón Schuel siempre te da otra oportunidad para aprender! Vuelve a escuchar los cantos y observar las copas de los árboles."
+                        {tx(
+                          '"Desafortunadamente, no has respondido todas las preguntas correctamente. ¡El Parque Botánico Barón Schuel siempre te da otra oportunidad para aprender! Vuelve a escuchar los cantos y observar las copas de los árboles."',
+                          '"Unfortunately, that wasn\'t the right match. Baron Schuel Botanical Park always gives you another chance to learn! Listen carefully to the calls and observe the treetops again."'
+                        )}
                       </p>
                     </div>
                   </div>
@@ -1408,32 +1442,34 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     onClick={() => {
                       soundManager.playClick();
                       setSilhouetteResult(null);
-                      // Automatically grants an extra hint without deducting points
                       setHintsRevealed(prev => Math.min(4, prev + 1));
                     }}
                     className="w-full py-2.5 rounded-xl game-btn-mint text-emerald-950 font-black text-xs shadow flex items-center justify-center gap-1.5"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Volver a intentar (Habilita pista extra)</span>
+                    <span>{tx('Volver a intentar (Habilita pista extra)', 'Try again (Unlocks extra clue)')}</span>
                   </button>
                 </div>
               )}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ============================================================== */}
-        {/* SUBMODAL 2: FICHA TÉCNICA ESTILO PROTOTIPO (PASO 13) */}
+        {/* SUBMODAL 2: FICHA TÉCNICA ESTILO PROTOTIPO */}
         {/* ============================================================== */}
-        {inspectingBird && (
+        {inspectingBird && (() => {
+          const localizedInspBird = localizeCatalogBird(inspectingBird, lang);
+          return (
           <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-3 animate-fadeIn select-none text-white">
             <div className="flex items-center justify-between pb-2 border-b border-teal-900 shrink-0">
               <div>
                 <h4 className="text-xs font-black text-white uppercase tracking-wider">
-                  FICHA TÉCNICA · #{inspectingBird.catalogNumber}
+                  {tx('FICHA TÉCNICA', 'TECHNICAL SHEET')} · #{localizedInspBird.catalogNumber}
                 </h4>
                 <p className="text-[10px] text-teal-300 font-serif italic">
-                  {inspectingBird.scientificName}
+                  {localizedInspBird.scientificName}
                 </p>
               </div>
               <button
@@ -1450,12 +1486,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             <div className="flex-1 overflow-y-auto py-2.5 space-y-3">
               {/* Prototype-Style Top Semicircular Arc with PC 2579, Avatar & 125 / 125 HP Bar */}
               <div className="relative rounded-3xl overflow-hidden border-2 border-teal-400/70 bg-gradient-to-b from-[#0E6E5C] via-[#134E48] to-slate-950 p-3 text-center shadow-xl">
-                {/* PC 2579 Header */}
                 <div className="text-amber-300 font-black text-sm tracking-widest uppercase drop-shadow">
-                  PC <span className="text-xl text-white">{inspectingBird.cp || 2579}</span>
+                  PC <span className="text-xl text-white">{localizedInspBird.cp || 2579}</span>
                 </div>
 
-                {/* Semicircular Arc SVG + Bird Circular Portrait */}
                 <div className="relative w-44 h-32 mx-auto flex items-center justify-center">
                   <svg viewBox="0 0 200 120" className="absolute inset-0 w-full h-full pointer-events-none">
                     <path
@@ -1477,23 +1511,22 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
                   <div className="relative z-10 w-24 h-24 rounded-full overflow-hidden border-3 border-amber-300 shadow-2xl bg-slate-900 mt-3">
                     <img
-                      src={inspectingBird.image}
-                      alt={inspectingBird.commonName}
+                      src={localizedInspBird.image}
+                      alt={localizedInspBird.commonName}
                       className="w-full h-full object-cover"
                     />
                   </div>
                 </div>
 
-                {/* Name & HP Bar (125 / 125 HP) */}
                 <h3 className="text-base font-black text-white uppercase tracking-wide mt-1">
-                  {inspectingBird.commonName}
+                  {localizedInspBird.commonName}
                 </h3>
                 <div className="w-40 mx-auto mt-1">
                   <div className="h-2 rounded-full bg-slate-900 border border-emerald-500/60 overflow-hidden">
                     <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-teal-300" />
                   </div>
                   <span className="text-[10px] font-black text-emerald-300 block mt-0.5">
-                    {inspectingBird.hp || '125 / 125 HP'}
+                    {localizedInspBird.hp || '125 / 125 HP'}
                   </span>
                 </div>
 
@@ -1501,47 +1534,47 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-950/85 border border-amber-400/60 text-[10px] font-bold text-amber-300">
                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                   <span>
-                    Mejor Foto Perfecta: {'★'.repeat(playerProfile.birdPhotoStars?.[inspectingBird.id] || 3)}
+                    {tx('Mejor Foto Perfecta:', 'Best Perfect Photo:')} {'★'.repeat(playerProfile.birdPhotoStars?.[localizedInspBird.id] || 3)}
                   </span>
                 </div>
               </div>
 
-              {/* Biological Metrics Grid: Peso, Altura, Familia, Hábitat, Conservación, Presencia, Observación */}
+              {/* Biological Metrics Grid */}
               <div className="grid grid-cols-3 gap-1.5 text-center text-xs bg-slate-950 p-2.5 rounded-2xl border border-teal-900">
                 <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
-                  <span className="text-[8px] text-slate-400 block font-bold uppercase">PESO</span>
-                  <span className="text-teal-300 font-black text-xs">{inspectingBird.weight}</span>
+                  <span className="text-[8px] text-slate-400 block font-bold uppercase">{tx('PESO', 'WEIGHT')}</span>
+                  <span className="text-teal-300 font-black text-xs">{localizedInspBird.weight}</span>
                 </div>
                 <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
-                  <span className="text-[8px] text-slate-400 block font-bold uppercase">ALTURA</span>
-                  <span className="text-amber-300 font-black text-xs">{inspectingBird.size}</span>
+                  <span className="text-[8px] text-slate-400 block font-bold uppercase">{tx('ALTURA', 'SIZE')}</span>
+                  <span className="text-amber-300 font-black text-xs">{localizedInspBird.size}</span>
                 </div>
                 <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
-                  <span className="text-[8px] text-slate-400 block font-bold uppercase">FAMILIA</span>
-                  <span className="text-white font-black text-[10px] truncate block">{inspectingBird.family}</span>
+                  <span className="text-[8px] text-slate-400 block font-bold uppercase">{tx('FAMILIA', 'FAMILY')}</span>
+                  <span className="text-white font-black text-[10px] truncate block">{localizedInspBird.family}</span>
                 </div>
               </div>
 
               <div className="p-2.5 rounded-2xl bg-slate-950 border border-teal-900/80 space-y-1.5 text-[10px]">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400 font-bold">Hábitat / Estrato:</span>
-                  <span className="text-teal-200 font-bold text-right">{inspectingBird.habitat} ({inspectingBird.stratum})</span>
+                  <span className="text-slate-400 font-bold">{tx('Hábitat / Estrato:', 'Habitat / Stratum:')}</span>
+                  <span className="text-teal-200 font-bold text-right">{localizedInspBird.habitat} ({localizedInspBird.stratum})</span>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-slate-900">
                   <span className={`px-2 py-0.5 rounded font-black border ${
-                    inspectingBird.conservationStatus === 'AM'
+                    localizedInspBird.conservationStatus === 'AM'
                       ? 'bg-rose-950 text-rose-300 border-rose-600'
-                      : inspectingBird.conservationStatus === 'VU'
+                      : localizedInspBird.conservationStatus === 'VU'
                       ? 'bg-amber-950 text-amber-300 border-amber-600'
                       : 'bg-emerald-950 text-emerald-300 border-emerald-600'
                   }`}>
-                    Conservación: {inspectingBird.conservationStatus}
+                    {tx('Conservación:', 'Conservation:')} {localizedInspBird.conservationStatus}
                   </span>
                   <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-bold">
-                    Presencia: {inspectingBird.presence}
+                    {tx('Presencia:', 'Presence:')} {localizedInspBird.presence}
                   </span>
                   <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-amber-300 font-bold">
-                    Obs.: {inspectingBird.observationPossibility}
+                    Obs.: {localizedInspBird.observationPossibility}
                   </span>
                 </div>
               </div>
@@ -1549,8 +1582,8 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               {/* Anatomical Details: Pico, Canto con Onda Sonora Desbloqueada, Plumaje */}
               <div className="p-3 rounded-2xl bg-slate-950 border border-teal-900 space-y-2 text-xs">
                 <div>
-                  <span className="font-black text-teal-300 block text-[10px]">TIPO DE PICO:</span>
-                  <p className="text-slate-200 text-[11px] leading-snug">{inspectingBird.beakDescription}</p>
+                  <span className="font-black text-teal-300 block text-[10px]">{tx('TIPO DE PICO:', 'BEAK TYPE:')}</span>
+                  <p className="text-slate-200 text-[11px] leading-snug">{localizedInspBird.beakDescription}</p>
                 </div>
 
                 {/* Canto with Unlocked Sound Wave */}
@@ -1558,14 +1591,17 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-black text-amber-300 text-[10px] flex items-center gap-1">
                       <Music className="w-3 h-3" />
-                      <span>CANTO Y ONDA SONORA {isAcousticUnlocked(inspectingBird.id) ? '(DESBLOQUEADA ✓)' : ''}:</span>
+                      <span>
+                        {tx('CANTO Y ONDA SONORA', 'CALL & SOUND WAVE')}{' '}
+                        {isAcousticUnlocked(localizedInspBird.id) ? tx('(DESBLOQUEADA ✓)', '(UNLOCKED ✓)') : ''}:
+                      </span>
                     </span>
                     <button
                       onClick={() => playSoundForBird(inspectingBird)}
                       className="px-2.5 py-0.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black flex items-center gap-1 shadow"
                     >
                       <Play className="w-2.5 h-2.5" />
-                      <span>{audioIsPlaying ? 'Sonando...' : 'Escuchar'}</span>
+                      <span>{audioIsPlaying ? tx('Sonando...', 'Playing...') : tx('Escuchar', 'Listen')}</span>
                     </button>
                   </div>
                   
@@ -1584,12 +1620,14 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       );
                     })}
                   </div>
-                  <p className="text-slate-300 text-[10px] italic mt-1">{inspectingBird.songDescription}</p>
+                  <p className="text-slate-300 text-[10px] italic mt-1">{localizedInspBird.songDescription}</p>
                 </div>
 
                 <div className="pt-1.5 border-t border-slate-800">
-                  <span className="font-black text-teal-300 block text-[10px]">DESCRIPCIÓN DE PLUMAJE:</span>
-                  <p className="text-slate-200 text-[11px] leading-snug">{inspectingBird.plumageDescription}</p>
+                  <span className="font-black text-teal-300 block text-[10px]">
+                    {tx('DESCRIPCIÓN DE PLUMAJE:', 'PLUMAGE DESCRIPTION:')}
+                  </span>
+                  <p className="text-slate-200 text-[11px] leading-snug">{localizedInspBird.plumageDescription}</p>
                 </div>
               </div>
 
@@ -1602,21 +1640,22 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 className="w-full py-3.5 rounded-2xl game-btn-orange text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
               >
                 <BookOpen className="w-4 h-4 text-amber-300" />
-                <span>Registrar en Diario de Campo (4 Toques)</span>
+                <span>{tx('Registrar en Diario de Campo (4 Toques)', 'Log in Field Journal (4 Taps)')}</span>
               </button>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ============================================================== */}
-        {/* SUBMODAL 3: FORMULARIO CIENTÍFICO DE 4 TOQUES (PASO 13) */}
+        {/* SUBMODAL 3: FORMULARIO CIENTÍFICO DE 4 TOQUES */}
         {/* ============================================================== */}
         {journalModalBird && (
           <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-3 animate-fadeIn select-none text-white">
             <div className="flex items-center justify-between pb-2 border-b border-teal-900 shrink-0">
               <div>
                 <h4 className="text-xs font-black text-white uppercase tracking-wider">
-                  REGISTRO CIENTÍFICO (4 TOQUES)
+                  {tx('REGISTRO CIENTÍFICO (4 TOQUES)', 'SCIENTIFIC LOG (4 TAPS)')}
                 </h4>
                 <p className="text-[10px] text-teal-300 font-bold">
                   {journalModalBird.commonName}
@@ -1647,7 +1686,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   </span>
                 </div>
                 <div className="pt-1">
-                  <span className="font-bold text-teal-300 block mb-1">Punto del Sendero:</span>
+                  <span className="font-bold text-teal-300 block mb-1">
+                    {tx('Punto del Sendero:', 'Trail Point:')}
+                  </span>
                   <select
                     value={selectedTrailPoint}
                     onChange={(e) => setSelectedTrailPoint(e.target.value)}
@@ -1665,7 +1706,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               {/* TOQUE 1: COMPORTAMIENTO */}
               <div className="space-y-1">
                 <span className="text-[10px] font-black text-amber-300 uppercase">
-                  TOQUE 1: COMPORTAMIENTO
+                  {tx('TOQUE 1: COMPORTAMIENTO', 'TAP 1: BEHAVIOR')}
                 </span>
                 <div className="grid grid-cols-2 gap-1.5 text-xs">
                   {(['Alimentándose', 'Cantando', 'En reposo', 'En vuelo'] as const).map((b) => (
@@ -1681,7 +1722,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                           : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-teal-700'
                       }`}
                     >
-                      {b}
+                      {b === 'Alimentándose'
+                        ? tx('Alimentándose', 'Foraging')
+                        : b === 'Cantando'
+                        ? tx('Cantando', 'Singing')
+                        : b === 'En reposo'
+                        ? tx('En reposo', 'Resting')
+                        : tx('En vuelo', 'In flight')}
                     </button>
                   ))}
                 </div>
@@ -1690,7 +1737,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               {/* TOQUE 2: CANTIDAD */}
               <div className="space-y-1">
                 <span className="text-[10px] font-black text-emerald-300 uppercase">
-                  TOQUE 2: CANTIDAD
+                  {tx('TOQUE 2: CANTIDAD', 'TAP 2: COUNT')}
                 </span>
                 <div className="grid grid-cols-3 gap-1.5 text-[10px]">
                   {(['1 individuo', 'Pareja (2)', 'Bandada (3 o más)'] as const).map((c) => (
@@ -1706,7 +1753,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                           : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-emerald-700'
                       }`}
                     >
-                      {c === 'Bandada (3 o más)' ? 'Grupo/Bandada (3+)' : c}
+                      {c === '1 individuo'
+                        ? tx('1 individuo', '1 individual')
+                        : c === 'Pareja (2)'
+                        ? tx('Pareja (2)', 'Pair (2)')
+                        : tx('Grupo/Bandada (3+)', 'Flock (3+)')}
                     </button>
                   ))}
                 </div>
@@ -1715,7 +1766,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               {/* TOQUE 3: ESTRATO */}
               <div className="space-y-1">
                 <span className="text-[10px] font-black text-sky-300 uppercase">
-                  TOQUE 3: ESTRATO
+                  {tx('TOQUE 3: ESTRATO', 'TAP 3: STRATUM')}
                 </span>
                 <div className="grid grid-cols-3 gap-1 text-[10px]">
                   {(['Dosel', 'Subdosel', 'Sotobosque', 'Zona Urbanizada', 'En Vuelo'] as const).map((st) => (
@@ -1731,7 +1782,15 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                           : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-sky-700'
                       }`}
                     >
-                      {st}
+                      {st === 'Dosel'
+                        ? tx('Dosel', 'Canopy')
+                        : st === 'Subdosel'
+                        ? tx('Subdosel', 'Subcanopy')
+                        : st === 'Sotobosque'
+                        ? tx('Sotobosque', 'Understory')
+                        : st === 'Zona Urbanizada'
+                        ? tx('Zona Urbanizada', 'Urbanized Area')
+                        : tx('En Vuelo', 'In Flight')}
                     </button>
                   ))}
                 </div>
@@ -1740,7 +1799,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               {/* TOQUE 4: CLIMA */}
               <div className="space-y-1">
                 <span className="text-[10px] font-black text-amber-400 uppercase">
-                  TOQUE 4: CLIMA DEL MOMENTO
+                  {tx('TOQUE 4: CLIMA DEL MOMENTO', 'TAP 4: CURRENT WEATHER')}
                 </span>
                 <div className="grid grid-cols-3 gap-1.5 text-[10px]">
                   {(['Soleado', 'Nublado', 'Llovizna de Yungas'] as const).map((w) => (
@@ -1756,7 +1815,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                           : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-amber-700'
                       }`}
                     >
-                      {w}
+                      {w === 'Soleado'
+                        ? tx('Soleado', 'Sunny')
+                        : w === 'Nublado'
+                        ? tx('Nublado', 'Cloudy')
+                        : tx('Llovizna de Yungas', 'Yungas Drizzle')}
                     </button>
                   ))}
                 </div>
@@ -1769,7 +1832,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   className="w-full py-3.5 rounded-2xl game-btn-orange text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl"
                 >
                   <Check className="w-4 h-4 text-amber-300" />
-                  <span>Guardar Observación (+30 XP)</span>
+                  <span>{tx('Guardar Observación (+30 XP)', 'Save Observation (+30 XP)')}</span>
                 </button>
               </div>
             </div>

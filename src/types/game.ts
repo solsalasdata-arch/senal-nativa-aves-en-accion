@@ -125,7 +125,7 @@ export interface CatalogBird {
     loreOrFact: string;
   };
   legend?: string;
-  soundType: 'toucan' | 'benteveo' | 'chinchero' | 'urutau' | 'zorzal' | 'parrot' | 'hummingbird' | 'hornero';
+  soundType: 'toucan' | 'benteveo' | 'chinchero' | 'urutau' | 'zorzal' | 'parrot' | 'hummingbird' | 'hornero' | 'chiricote' | 'raptor' | 'woodpecker' | 'kingfisher';
   image: string;
   silhouetteIcon: string;
 }
@@ -142,7 +142,7 @@ export interface BirdSpecies {
   description: string;
   diet: string;
   callDescription: string;
-  soundType: 'toucan' | 'benteveo' | 'chinchero' | 'urutau' | 'zorzal' | 'parrot' | 'hummingbird' | 'hornero';
+  soundType: 'toucan' | 'benteveo' | 'chinchero' | 'urutau' | 'zorzal' | 'parrot' | 'hummingbird' | 'hornero' | 'chiricote' | 'raptor' | 'woodpecker' | 'kingfisher';
   silhouette: string;
   image: string;
   funFact: string;

@@ -24,6 +24,7 @@ import {
 } from '../data/birdsData';
 import { PlayerProfile, Squad, SquadMember, CompanionBirdId } from '../types/game';
 import { loadSquadsList, saveSquadsList } from '../utils/storage';
+import { useLanguage } from '../utils/i18n';
 
 interface SquadsAndSeasonsModalProps {
   isOpen: boolean;
@@ -46,6 +47,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
   onClaimSquadGoalReward,
   initialTab = 'squads'
 }) => {
+  const { tx } = useLanguage();
   const [activeTab, setActiveTab] = useState<'squads' | 'seasons' | 'ranking'>(initialTab);
   const [squads, setSquads] = useState<Squad[]>(() => loadSquadsList());
   const [selectedSquadIdx, setSelectedSquadIdx] = useState<number>(0);
@@ -318,10 +320,13 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
               </div>
               <div className="truncate">
                 <h3 className="font-black text-xs text-white uppercase tracking-wider">
-                  COMUNIDAD Y TEMPORADAS · PASO 15
+                  {tx('CUADRILLAS Y TEMPORADAS', 'SQUADS & SEASONS')}
                 </h3>
                 <p className="text-[10px] text-teal-300 font-semibold truncate">
-                  Cuadrillas Escolares, Aves Migrantes y Ranking Amigable
+                  {tx(
+                    'Cuadrillas Escolares, Aves Migrantes y Ranking Amigable',
+                    'School Squads, Migrant Birds & Friendly Ranking'
+                  )}
                 </p>
               </div>
             </div>
@@ -332,7 +337,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
               }}
               className="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-teal-200 hover:text-white text-[10px] font-bold flex items-center gap-1 border border-teal-700/60 shrink-0 shadow active:scale-95 transition-all"
             >
-              <span>← Volver</span>
+              <span>{tx('← Volver', '← Back')}</span>
             </button>
           </div>
 
@@ -350,7 +355,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
               }`}
             >
               <Users className="w-3.5 h-3.5 mb-0.5" />
-              <span>Cuadrillas (5)</span>
+              <span>{tx('Cuadrillas (5)', 'Squads (5)')}</span>
             </button>
 
             <button
@@ -365,7 +370,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
               }`}
             >
               <Calendar className="w-3.5 h-3.5 mb-0.5" />
-              <span>Temporadas</span>
+              <span>{tx('Temporadas', 'Seasons')}</span>
             </button>
 
             <button
@@ -380,7 +385,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
               }`}
             >
               <Trophy className="w-3.5 h-3.5 mb-0.5" />
-              <span>Ranking Amigable</span>
+              <span>{tx('Ranking Amigable', 'Friendly Rank')}</span>
             </button>
           </div>
         </div>

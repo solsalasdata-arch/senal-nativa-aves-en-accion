@@ -13,13 +13,13 @@ import {
   Volume2,
   Users,
   LogOut,
-  Bird,
-  Compass,
   Cloud
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { PlayerProfile, Mission } from '../types/game';
 import { SHOP_ITEMS } from '../data/birdsData';
+import { useLanguage, LanguageSelector, localizeMission, localizeDifficultyLabel } from '../utils/i18n';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface Screen4MainHubProps {
   playerProfile: PlayerProfile;
@@ -54,7 +54,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
   onChangePlayer,
   onBackToSplash
 }) => {
-  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'collection' | 'camera'>('home');
+  const { lang, tx } = useLanguage();
   const [showMissionsModal, setShowMissionsModal] = useState(false);
   const [showQuickExitModal, setShowQuickExitModal] = useState(false);
 
@@ -68,16 +68,16 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
       style={{ backgroundImage: `url('/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg')` }}
     >
       {/* 1. TOP BAR */}
-      <div className="relative z-20 flex items-center justify-between p-3 bg-slate-950/75 backdrop-blur-md border-b border-teal-800/40 gap-1.5">
+      <div className="relative z-20 flex items-center justify-between p-2.5 sm:p-3 bg-slate-950/75 backdrop-blur-md border-b border-teal-800/40 gap-1.5">
         {/* Left: Active Player Pill + "Cambiar Jugador" */}
-        <div className="flex items-center gap-1.5 min-w-0">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-950/90 border border-teal-400/50 text-white shadow min-w-0">
+        <div className="flex items-center gap-1 min-w-0">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-teal-950/90 border border-teal-400/50 text-white shadow min-w-0">
             <span className="text-sm shrink-0">{playerProfile.avatarIcon || '🧢'}</span>
-            <span className="text-[11px] font-black text-amber-300 truncate max-w-[65px]">
+            <span className="text-[11px] font-black text-amber-300 truncate max-w-[60px]">
               {playerProfile.name}
             </span>
             <span className="text-teal-400">·</span>
-            <span className="text-[10px] text-teal-200 truncate max-w-[65px]">
+            <span className="text-[10px] text-teal-200 truncate max-w-[55px]">
               {playerProfile.favoriteBird}
             </span>
             {(playerProfile.equippedItems || ['visera-oficial']).length > 0 && (
@@ -99,20 +99,28 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               onChangePlayer();
             }}
             className="flex items-center gap-1 px-2 py-1 rounded-full bg-teal-800/90 hover:bg-teal-700 text-teal-100 text-[10px] font-bold border border-teal-500/50 shadow shrink-0 active:scale-95 transition-all"
-            title="Cambiar de Jugador"
+            title={tx('Cambiar de Jugador', 'Switch Player')}
           >
             <Users className="w-3 h-3 text-amber-300" />
-            <span className="hidden xs:inline">Cambiar</span>
+            <span className="hidden xs:inline">{tx('Cambiar', 'Switch')}</span>
           </button>
         </div>
 
-        {/* Right: Level/XP and ONLY Opciones (gear) + Consejos (?) */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Right: Level/XP + Language Selector (ES | EN) + PWA Install + Opciones (gear) + Consejos (?) */}
+        <div className="flex items-center gap-1 shrink-0">
           <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-900/90 border border-teal-500/30 text-[10px] text-white">
-            <span className="font-extrabold text-amber-400">NV {playerProfile.level}</span>
+            <span className="font-extrabold text-amber-400">
+              {tx('NV', 'LV')} {playerProfile.level}
+            </span>
             <span className="text-teal-400">·</span>
             <span className="font-semibold text-teal-200">{playerProfile.xp} XP</span>
           </div>
+
+          {/* Selector de Idioma (ES / EN) junto al engranaje */}
+          <LanguageSelector />
+
+          {/* Botón de instalación rápida PWA */}
+          <PWAInstallButton compact />
 
           {/* Botón circular "OPCIONES" (engranaje) */}
           <button
@@ -121,7 +129,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               onOpenOptions();
             }}
             className="w-8 h-8 rounded-full bg-white/90 text-teal-900 game-btn-circle flex items-center justify-center hover:bg-white active:scale-95 cursor-pointer shadow-md"
-            title="Opciones del Juego"
+            title={tx('Opciones del Juego', 'Game Options')}
           >
             <Settings className="w-4 h-4 text-teal-950 stroke-[2.5]" />
           </button>
@@ -133,7 +141,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               onOpenTips();
             }}
             className="w-8 h-8 rounded-full bg-sky-200 text-sky-950 game-btn-circle flex items-center justify-center hover:bg-sky-100 active:scale-95 cursor-pointer shadow-md"
-            title="Consejos y Regla de Nivel"
+            title={tx('Consejos y Regla de Nivel', 'Tips & Level Rule')}
           >
             <HelpCircle className="w-4 h-4 text-sky-950 stroke-[2.5]" />
           </button>
@@ -145,17 +153,20 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
         {/* Speech Bubble */}
         <div className="relative max-w-xs bg-white text-slate-900 rounded-3xl p-3 shadow-xl border-3 border-teal-900 mb-2 animate-float">
           <p className="text-xs font-bold leading-snug text-center">
-            "¡Estas son las opciones del juego! Necesitas más avistamientos para seguir obteniendo desbloqueos."
+            {tx(
+              '"¡Estas son las opciones del juego! Necesitas más avistamientos para seguir obteniendo desbloqueos."',
+              '"These are the game options! You need more sightings to keep earning unlocks."'
+            )}
           </p>
           <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white border-r-3 border-b-3 border-teal-900 rotate-45" />
         </div>
 
-        {/* Toucan Host Character Greeting with Sound (Clean Toucan on Yungas background without social buttons) */}
+        {/* Toucan Host Character Greeting with Sound */}
         <div className="relative flex items-center justify-center">
           <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-amber-400 p-0.5 shadow-2xl overflow-hidden bg-teal-950 ring-4 ring-teal-400/40 relative">
             <img
               src="/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg"
-              alt="Tucán Grande Guía con visera verde y mochila"
+              alt={tx('Tucán Grande Guía con visera verde y mochila', 'Toco Toucan Guide with green visor and backpack')}
               className="w-full h-full object-cover object-[center_18%] scale-125"
             />
           </div>
@@ -166,7 +177,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               soundManager.playToucanCall();
             }}
             className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center border-2 border-slate-900 shadow-lg hover:scale-110 active:scale-95 cursor-pointer"
-            title="Canto del Tucán"
+            title={tx('Canto del Tucán', 'Toucan Call')}
           >
             <Volume2 className="w-4 h-4" />
           </button>
@@ -184,18 +195,21 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             <span className="text-base">🎯</span>
             <div className="text-left">
               <div className="text-[11px] font-black text-amber-300 tracking-wide uppercase flex items-center gap-1">
-                <span>MISIONES DEL DÍA</span>
+                <span>{tx('MISIONES DEL DÍA', 'DAILY MISSIONS')}</span>
                 <span className="text-[9px] text-teal-200 font-bold">(20-40 min)</span>
               </div>
               <div className="text-[9px] text-teal-200">
-                {missions.filter(m => m.completed).length} de {missions.length} completadas hoy
+                {tx(
+                  `${missions.filter(m => m.completed).length} de ${missions.length} completadas hoy`,
+                  `${missions.filter(m => m.completed).length} of ${missions.length} completed today`
+                )}
               </div>
             </div>
           </div>
           <ChevronDown className="w-4 h-4 text-amber-300 group-hover:translate-y-0.5 transition-transform" />
         </button>
 
-        {/* Acceso Destacado Paso 15: "Cuadrillas y Temporadas (Paso 15)" */}
+        {/* Acceso Destacado: "Cuadrillas y Temporadas" (Sin etiqueta interna Paso 15) */}
         <button
           onClick={() => {
             soundManager.playClick();
@@ -207,10 +221,13 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             <span className="text-base">🛡️</span>
             <div className="text-left">
               <div className="text-[11px] font-black text-slate-950 tracking-wide uppercase">
-                Cuadrillas y Temporadas (Paso 15)
+                {tx('Cuadrillas y Temporadas', 'Squads & Seasons')}
               </div>
               <div className="text-[9px] font-bold text-amber-950">
-                Equipos Escolares (5) · Aves Migrantes · Ranking Amigable
+                {tx(
+                  'Equipos Escolares (5) · Aves Migrantes · Ranking Amigable',
+                  'School Teams (5) · Migrant Birds · Friendly Ranking'
+                )}
               </div>
             </div>
           </div>
@@ -227,7 +244,12 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             className="mt-1 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-400 text-slate-950 font-bold text-[10px] shadow-lg animate-pulse"
           >
             <Award className="w-3.5 h-3.5" />
-            <span>¡Insignia de Observador en Ascenso Portada!</span>
+            <span>
+              {tx(
+                '¡Insignia de Observador en Ascenso Portada!',
+                'Rising Observer Badge Equipped!'
+              )}
+            </span>
           </button>
         )}
       </div>
@@ -243,14 +265,14 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                 onOpenMap();
               }}
               className="w-16 h-16 rounded-full bg-white text-teal-900 game-btn-circle flex items-center justify-center hover:bg-slate-50 cursor-pointer shadow-xl active:scale-90 transition-transform"
-              title="Mapas"
+              title={tx('Mapas', 'Maps')}
             >
               <div className="w-10 h-10 rounded-full bg-teal-100/70 flex items-center justify-center">
                 <Map className="w-5 h-5 text-teal-800 stroke-[2.5]" />
               </div>
             </button>
             <span className="mt-1 text-[11px] font-black text-white tracking-wider uppercase drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
-              MAPAS
+              {tx('MAPAS', 'MAPS')}
             </span>
           </div>
 
@@ -262,14 +284,14 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                 onOpenShop();
               }}
               className="w-16 h-16 rounded-full bg-white text-teal-900 game-btn-circle flex items-center justify-center hover:bg-slate-50 cursor-pointer shadow-xl active:scale-90 transition-transform"
-              title="Tienda"
+              title={tx('Tienda', 'Shop')}
             >
               <div className="w-10 h-10 rounded-full bg-amber-100/70 flex items-center justify-center">
                 <ShoppingBag className="w-5 h-5 text-amber-700 stroke-[2.5]" />
               </div>
             </button>
             <span className="mt-1 text-[11px] font-black text-white tracking-wider uppercase drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
-              TIENDA
+              {tx('TIENDA', 'SHOP')}
             </span>
           </div>
 
@@ -281,7 +303,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                 onOpenBirds();
               }}
               className="w-16 h-16 rounded-full bg-white text-teal-900 game-btn-circle flex items-center justify-center hover:bg-slate-50 cursor-pointer shadow-xl active:scale-90 transition-transform"
-              title="Aves y Trivia"
+              title={tx('Aves y Trivia', 'Birds & Trivia')}
             >
               <div className="w-10 h-10 rounded-full bg-sky-100/70 flex items-center justify-center">
                 <svg className="w-5 h-5 text-sky-800" viewBox="0 0 24 24" fill="currentColor">
@@ -290,7 +312,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               </div>
             </button>
             <span className="mt-1 text-[11px] font-black text-white tracking-wider uppercase drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
-              AVES
+              {tx('AVES', 'BIRDS')}
             </span>
           </div>
 
@@ -302,14 +324,14 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                 onOpenSighting();
               }}
               className="w-16 h-16 rounded-full game-btn-orange flex items-center justify-center cursor-pointer shadow-2xl active:scale-90 transition-transform ring-3 ring-amber-300/50"
-              title="Avistamiento de aves"
+              title={tx('Avistamiento de aves', 'Bird Sighting')}
             >
               <div className="w-10 h-10 rounded-full bg-amber-950/20 flex items-center justify-center">
                 <Binoculars className="w-6 h-6 text-white stroke-[2.5]" />
               </div>
             </button>
-            <span className="mt-1 text-[10px] font-black text-amber-300 tracking-tight uppercase drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] truncate max-w-[70px]">
-              AVISTAMIENTO
+            <span className="mt-1 text-[10px] font-black text-amber-300 tracking-tight uppercase drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] truncate max-w-[76px]">
+              {tx('AVISTAMIENTO', 'SIGHTING')}
             </span>
           </div>
         </div>
@@ -321,7 +343,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             setShowQuickExitModal(true);
           }}
           className="w-12 h-12 rounded-full bg-teal-900/90 hover:bg-teal-800 text-teal-100 border-2 border-teal-300/80 shadow-[0_0_16px_rgba(45,212,191,0.5)] flex items-center justify-center active:scale-90 transition-all cursor-pointer"
-          title="Cambiar de Jugador o Volver al Inicio"
+          title={tx('Cambiar de Jugador o Volver al Inicio', 'Switch Player or Return to Start')}
         >
           <X className="w-5 h-5 text-teal-100 stroke-[2.5]" />
         </button>
@@ -332,7 +354,9 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn">
           <div className="relative w-full max-w-xs rounded-3xl overflow-hidden bg-slate-900 border-2 border-teal-500 shadow-2xl p-4 text-center">
             <div className="flex items-center justify-between pb-2 border-b border-teal-900">
-              <h4 className="text-sm font-bold text-white">MENÚ DE NAVEGACIÓN</h4>
+              <h4 className="text-sm font-bold text-white">
+                {tx('MENÚ DE NAVEGACIÓN', 'NAVIGATION MENU')}
+              </h4>
               <button
                 onClick={() => {
                   soundManager.playClick();
@@ -356,8 +380,10 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               >
                 <Users className="w-4 h-4 text-amber-400" />
                 <div className="text-left">
-                  <div>Cambiar de Jugador / Personaje</div>
-                  <div className="text-[9px] text-teal-300 font-normal">Guarda tu avance y elige o crea otro perfil</div>
+                  <div>{tx('Cambiar de Jugador / Personaje', 'Switch Player / Character')}</div>
+                  <div className="text-[9px] text-teal-300 font-normal">
+                    {tx('Guarda tu avance y elige o crea otro perfil', 'Save your progress and choose or create another profile')}
+                  </div>
                 </div>
               </button>
 
@@ -372,8 +398,10 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               >
                 <Camera className="w-4 h-4 text-sky-400" />
                 <div className="text-left">
-                  <div>Cambiar Ave Compañera / Foto</div>
-                  <div className="text-[9px] text-teal-300 font-normal">Abre el selector de ave y la cámara sin flash</div>
+                  <div>{tx('Cambiar Ave Compañera / Foto', 'Change Companion Bird / Photo')}</div>
+                  <div className="text-[9px] text-teal-300 font-normal">
+                    {tx('Abre el selector de ave y la cámara sin flash', 'Opens the bird selector and no-flash camera')}
+                  </div>
                 </div>
               </button>
 
@@ -388,8 +416,10 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               >
                 <Cloud className="w-4 h-4 text-emerald-300" />
                 <div className="text-left">
-                  <div>Sincronizar con Google Drive</div>
-                  <div className="text-[9px] text-emerald-300 font-normal">Exporta tu Diario Científico y respaldo en la nube</div>
+                  <div>{tx('Sincronizar con Google Drive', 'Sync with Google Drive')}</div>
+                  <div className="text-[9px] text-emerald-300 font-normal">
+                    {tx('Exporta tu Diario Científico y respaldo en la nube', 'Export your Field Journal and cloud backup')}
+                  </div>
                 </div>
               </button>
 
@@ -404,8 +434,10 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               >
                 <LogOut className="w-4 h-4 text-rose-400" />
                 <div className="text-left">
-                  <div>Volver a la Portada Principal</div>
-                  <div className="text-[9px] text-slate-400 font-normal">Regresa a la pantalla inicial del juego</div>
+                  <div>{tx('Volver a la Portada Principal', 'Return to Main Cover')}</div>
+                  <div className="text-[9px] text-slate-400 font-normal">
+                    {tx('Regresa a la pantalla inicial del juego', 'Go back to the initial splash screen')}
+                  </div>
                 </div>
               </button>
             </div>
@@ -422,8 +454,12 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-xl">🎯</span>
                 <div>
-                  <h3 className="font-bold text-sm text-white">MISIONES DEL DÍA</h3>
-                  <p className="text-[10px] text-teal-300">Meta recomendada: 20 a 40 minutos de sendero</p>
+                  <h3 className="font-bold text-sm text-white">
+                    {tx('MISIONES DEL DÍA', 'DAILY MISSIONS')}
+                  </h3>
+                  <p className="text-[10px] text-teal-300">
+                    {tx('Meta recomendada: 20 a 40 minutos de sendero', 'Recommended goal: 20 to 40 minutes on the trail')}
+                  </p>
                 </div>
               </div>
               <button
@@ -444,7 +480,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                 <div className="flex items-center justify-between text-xs font-bold">
                   <span className="text-amber-300 flex items-center gap-1">
                     <Sparkles className="w-3.5 h-3.5" />
-                    Misión Semanal de Fin de Semana
+                    {tx('Misión Semanal de Fin de Semana', 'Weekend Weekly Mission')}
                   </span>
                   <span className="text-teal-200">{weeklyProgressPercent}%</span>
                 </div>
@@ -455,16 +491,20 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                   />
                 </div>
                 <div className="text-[10px] text-teal-300/80">
-                  Completa las 3 misiones para obtener el "Sobre de Siluetas Raras de las Yungas".
+                  {tx(
+                    'Completa las 3 misiones para obtener el "Sobre de Siluetas Raras de las Yungas".',
+                    'Complete all 3 missions to earn the "Rare Yungas Silhouettes Pack".'
+                  )}
                 </div>
               </div>
 
               {/* 3 Active Daily Missions */}
-              {missions.map((mission) => {
+              {missions.map((rawMission) => {
+                const mission = localizeMission(rawMission, lang);
                 const diffBadgeColor =
-                  mission.difficulty === 'Fácil'
+                  rawMission.difficulty === 'Fácil'
                     ? 'bg-emerald-950 text-emerald-300 border-emerald-600/50'
-                    : mission.difficulty === 'Media'
+                    : rawMission.difficulty === 'Media'
                     ? 'bg-amber-950 text-amber-300 border-amber-600/50'
                     : 'bg-rose-950 text-rose-300 border-rose-600/50';
 
@@ -478,7 +518,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                         <div className="flex items-center gap-2">
                           <h4 className="text-xs font-bold text-white">{mission.title}</h4>
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${diffBadgeColor}`}>
-                            {mission.difficulty} · {mission.duration}
+                            {localizeDifficultyLabel(rawMission.difficulty, lang)} · {mission.duration}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-300 leading-snug mt-1">
@@ -510,7 +550,10 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
                 }}
                 className="w-full py-3 rounded-2xl game-btn-orange text-white text-xs font-bold"
               >
-                IR A CUMPLIR MISIÓN CON PRISMÁTICOS
+                {tx(
+                  'IR A CUMPLIR MISIÓN CON PRISMÁTICOS',
+                  'START MISSION WITH XR BINOCULARS'
+                )}
               </button>
             </div>
           </div>

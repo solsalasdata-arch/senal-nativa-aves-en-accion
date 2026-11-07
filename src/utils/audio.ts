@@ -1,362 +1,571 @@
-// Web Audio API synthesizer for native game sound effects and bird calls
+// Web Audio API Synthesizer for 100% Offline Bioacoustics & UI Sounds
 
 class SoundManager {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
-  private bgmGain: GainNode | null = null;
-  private bgmOscillators: (OscillatorNode | AudioBufferSourceNode)[] = [];
+  private bgmInterval: number | null = null;
   private isBgmPlaying: boolean = false;
 
-  private initCtx() {
-    if (!this.ctx) {
+  private getContext(): AudioContext | null {
+    if (this.isMuted) return null;
+    if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AudioCtx();
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+      }
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
     }
+    return this.ctx;
   }
 
   public setMuted(muted: boolean) {
     this.isMuted = muted;
-    if (muted && this.bgmGain && this.ctx) {
-      this.bgmGain.gain.setValueAtTime(0, this.ctx.currentTime);
-    } else if (!muted && this.bgmGain && this.ctx && this.isBgmPlaying) {
-      this.bgmGain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+    if (muted) {
+      this.stopForestAmbience();
     }
   }
 
-  // UI Pop / Button Click
-  public playClick() {
-    if (this.isMuted) return;
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, this.ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
+  public getMuted(): boolean {
+    return this.isMuted;
+  }
 
-      gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
+  public playClick() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.06);
+
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.065);
+  }
+
+  public playShutter() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const bufferSize = ctx.sampleRate * 0.08;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1800;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start();
+  }
+
+  public playSuccess() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      const startTime = ctx.currentTime + idx * 0.09;
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0.15, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.008, startTime + 0.25);
 
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start();
-      osc.stop(this.ctx.currentTime + 0.1);
-    } catch {
-      // Audio context restricted or failed
-    }
+      gain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.26);
+    });
   }
 
-  // Camera Shutter Snap
-  public playShutter() {
-    if (this.isMuted) return;
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      const bufferSize = this.ctx.sampleRate * 0.08;
-      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-      const output = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1;
-      }
-
-      const whiteNoise = this.ctx.createBufferSource();
-      whiteNoise.buffer = buffer;
-
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 1200;
-
-      const gain = this.ctx.createGain();
-      gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.07);
-
-      whiteNoise.connect(filter);
-      filter.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      whiteNoise.start();
-    } catch {
-      // ignore
-    }
-  }
-
-  // Level Up / Achievement Fanfare
-  public playSuccess() {
-    if (this.isMuted) return;
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
-      notes.forEach((freq, idx) => {
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, this.ctx!.currentTime + idx * 0.1);
-        
-        gain.gain.setValueAtTime(0.2, this.ctx!.currentTime + idx * 0.1);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx!.currentTime + idx * 0.1 + 0.3);
-
-        osc.connect(gain);
-        gain.connect(this.ctx!.destination);
-
-        osc.start(this.ctx!.currentTime + idx * 0.1);
-        osc.stop(this.ctx!.currentTime + idx * 0.1 + 0.35);
-      });
-    } catch {
-      // ignore
-    }
-  }
-
-  // Toucan Characteristic Call (croaking resonant "grr-ock" of Ramphastos toco)
+  // 1. Tucán Grande (Ramphastos toco) / Yapú: Deep resonant croak "grrr-ock, grrr-ock"
   public playToucanCall() {
-    if (this.isMuted) return;
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      const now = this.ctx.currentTime;
-      [0, 0.22, 0.44].forEach((offset) => {
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(260, now + offset);
-        osc.frequency.linearRampToValueAtTime(190, now + offset + 0.16);
+    const ctx = this.getContext();
+    if (!ctx) return;
 
-        gain.gain.setValueAtTime(0.25, now + offset);
-        gain.gain.exponentialRampToValueAtTime(0.005, now + offset + 0.18);
+    [0, 0.32].forEach((offset) => {
+      const start = ctx.currentTime + offset;
+      const osc = ctx.createOscillator();
+      const mod = ctx.createOscillator();
+      const modGain = ctx.createGain();
+      const gain = ctx.createGain();
 
-        osc.connect(gain);
-        gain.connect(this.ctx!.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(240, start);
+      osc.frequency.exponentialRampToValueAtTime(145, start + 0.22);
 
-        osc.start(now + offset);
-        osc.stop(now + offset + 0.2);
-      });
-    } catch {
-      // ignore
-    }
+      // Rattle modulation for the guttural frog-like croak
+      mod.type = 'square';
+      mod.frequency.setValueAtTime(42, start);
+      modGain.gain.setValueAtTime(35, start);
+
+      gain.gain.setValueAtTime(0.14, start);
+      gain.gain.exponentialRampToValueAtTime(0.01, start + 0.24);
+
+      mod.connect(modGain);
+      modGain.connect(osc.frequency);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      mod.start(start);
+      osc.start(start);
+      mod.stop(start + 0.24);
+      osc.stop(start + 0.25);
+    });
   }
 
-  // Benteveo Call ("¡Bicho feo, bicho feo!")
+  // 2. Benteveo Común (Pitangus sulphuratus): Bright trisilábico "¡Bien-te-veo!"
   public playBenteveoCall() {
-    if (this.isMuted) return;
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      const now = this.ctx.currentTime;
-      // High energetic trill
-      const notes = [
-        { f: 1400, t: 0.12 },
-        { f: 1650, t: 0.12 },
-        { f: 1200, t: 0.2 }
-      ];
-      let tOffset = 0;
-      notes.forEach((n) => {
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(n.f, now + tOffset);
-        osc.frequency.exponentialRampToValueAtTime(n.f * 0.9, now + tOffset + n.t);
+    const ctx = this.getContext();
+    if (!ctx) return;
 
-        gain.gain.setValueAtTime(0.2, now + tOffset);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + tOffset + n.t);
+    const now = ctx.currentTime;
 
-        osc.connect(gain);
-        gain.connect(this.ctx!.destination);
+    // Sílabas: 1) "¡BIEN-" (ascendente corto), 2) "-TE-" (agudo corto), 3) "-VEO!" (descendente largo brillante)
+    const syllables = [
+      { start: 0.0, dur: 0.14, fStart: 1650, fMid: 2350, fEnd: 2100 },
+      { start: 0.19, dur: 0.11, fStart: 2550, fMid: 2850, fEnd: 2450 },
+      { start: 0.35, dur: 0.38, fStart: 2950, fMid: 2200, fEnd: 1380 }
+    ];
 
-        osc.start(now + tOffset);
-        osc.stop(now + tOffset + n.t);
-        tOffset += n.t + 0.04;
-      });
-    } catch {
-      // ignore
-    }
+    syllables.forEach((s) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+
+      const t0 = now + s.start;
+      osc.frequency.setValueAtTime(s.fStart, t0);
+      osc.frequency.exponentialRampToValueAtTime(s.fMid, t0 + s.dur * 0.4);
+      osc.frequency.exponentialRampToValueAtTime(s.fEnd, t0 + s.dur);
+
+      gain.gain.setValueAtTime(0.01, t0);
+      gain.gain.linearRampToValueAtTime(0.2, t0 + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.008, t0 + s.dur);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + s.dur + 0.02);
+    });
   }
 
-  // Chinchero Chico Rapid Descending Trill
+  // 3. Chinchero Chico (Lepidocolaptes angustirostris): Rapid descending woodcreeper trill "ti-ti-ti-tirrr"
   public playChincheroCall() {
-    if (this.isMuted) return;
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      const now = this.ctx.currentTime;
-      for (let i = 0; i < 7; i++) {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        const freq = 2200 - i * 180;
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + i * 0.05);
+    const ctx = this.getContext();
+    if (!ctx) return;
 
-        gain.gain.setValueAtTime(0.18, now + i * 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.05 + 0.04);
+    const totalNotes = 10;
+    for (let i = 0; i < totalNotes; i++) {
+      const start = ctx.currentTime + i * 0.068;
+      const freq = 3400 - i * 195;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.86, start + 0.052);
 
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
+      gain.gain.setValueAtTime(0.14, start);
+      gain.gain.exponentialRampToValueAtTime(0.008, start + 0.055);
 
-        osc.start(now + i * 0.05);
-        osc.stop(now + i * 0.05 + 0.045);
-      }
-    } catch {
-      // ignore
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.06);
     }
   }
 
-  // Urutaú Melancholy Descending Lamento ("Turay, kakuy... pua-pua-uh")
+  // 4. Urutaú / Kakuy (Nyctibius griseus): Melancholic nocturnal lament "Turay, kakuy... pua-pua-uh"
   public playUrutauCall() {
-    if (this.isMuted) return;
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      const now = this.ctx.currentTime;
-      const notes = [
-        { f: 880, start: 0, dur: 0.35 },
-        { f: 740, start: 0.38, dur: 0.35 },
-        { f: 620, start: 0.76, dur: 0.4 },
-        { f: 520, start: 1.18, dur: 0.55 },
-        { f: 415, start: 1.75, dur: 0.8 }
-      ];
+    const ctx = this.getContext();
+    if (!ctx) return;
 
-      notes.forEach((n) => {
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(n.f, now + n.start);
-        osc.frequency.linearRampToValueAtTime(n.f * 0.88, now + n.start + n.dur);
+    const notes = [
+      { start: 0.0, dur: 0.34, f1: 1120, f2: 860 },
+      { start: 0.38, dur: 0.32, f1: 920, f2: 710 },
+      { start: 0.74, dur: 0.32, f1: 760, f2: 580 },
+      { start: 1.10, dur: 0.34, f1: 630, f2: 470 },
+      { start: 1.48, dur: 0.45, f1: 510, f2: 350 }
+    ];
 
-        gain.gain.setValueAtTime(0.01, now + n.start);
-        gain.gain.linearRampToValueAtTime(0.22, now + n.start + 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.005, now + n.start + n.dur);
+    notes.forEach((n) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      const t0 = ctx.currentTime + n.start;
+      osc.frequency.setValueAtTime(n.f1, t0);
+      osc.frequency.exponentialRampToValueAtTime(n.f2, t0 + n.dur);
 
-        osc.connect(gain);
-        gain.connect(this.ctx!.destination);
+      gain.gain.setValueAtTime(0.01, t0);
+      gain.gain.linearRampToValueAtTime(0.18, t0 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.008, t0 + n.dur);
 
-        osc.start(now + n.start);
-        osc.stop(now + n.start + n.dur);
-      });
-    } catch {
-      // ignore
-    }
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + n.dur + 0.02);
+    });
   }
 
-  // Zorzal Colorado Flute Melodious Singing
+  // 5. Zorzal Colorado (Turdus rufiventris): Melodious flute phrases
   public playZorzalCall() {
-    if (this.isMuted) return;
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      const now = this.ctx.currentTime;
-      const melody = [
-        { f: 1046, t: 0.12 },
-        { f: 1318, t: 0.15 },
-        { f: 1174, t: 0.18 },
-        { f: 1567, t: 0.22 },
-        { f: 1396, t: 0.14 },
-        { f: 1760, t: 0.3 }
-      ];
-      let offset = 0;
-      melody.forEach((m) => {
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(m.f, now + offset);
-        osc.frequency.exponentialRampToValueAtTime(m.f * 1.05, now + offset + m.t * 0.5);
-        osc.frequency.exponentialRampToValueAtTime(m.f, now + offset + m.t);
+    const ctx = this.getContext();
+    if (!ctx) return;
 
-        gain.gain.setValueAtTime(0.2, now + offset);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + offset + m.t);
+    const phrases = [
+      { start: 0.0, dur: 0.22, f1: 1350, f2: 1680 },
+      { start: 0.26, dur: 0.26, f1: 1680, f2: 1420 },
+      { start: 0.56, dur: 0.22, f1: 1520, f2: 1980 },
+      { start: 0.82, dur: 0.32, f1: 1850, f2: 1560 },
+      { start: 1.18, dur: 0.38, f1: 1480, f2: 2150 }
+    ];
 
-        osc.connect(gain);
-        gain.connect(this.ctx!.destination);
+    phrases.forEach((p) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      const t0 = ctx.currentTime + p.start;
+      osc.frequency.setValueAtTime(p.f1, t0);
+      osc.frequency.exponentialRampToValueAtTime(p.f2, t0 + p.dur);
 
-        osc.start(now + offset);
-        osc.stop(now + offset + m.t);
-        offset += m.t + 0.06;
-      });
-    } catch {
-      // ignore
-    }
+      gain.gain.setValueAtTime(0.01, t0);
+      gain.gain.linearRampToValueAtTime(0.16, t0 + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.008, t0 + p.dur);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + p.dur + 0.02);
+    });
   }
 
-  // Hornero Duet Accelerating Staccato Call ("¡kye-kye-kye-kye!")
+  // 6. Hornero (Furnarius rufus): Energetic rhythmic duet "ki-ki-ki-ki-kurrr"
   public playHorneroCall() {
-    if (this.isMuted) return;
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      const now = this.ctx.currentTime;
-      const pulses = 10;
-      for (let i = 0; i < pulses; i++) {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        const t = now + i * 0.07;
-        const freq = 1900 + (i % 3) * 150 - i * 30;
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, t);
-        osc.frequency.exponentialRampToValueAtTime(freq * 0.85, t + 0.05);
+    const ctx = this.getContext();
+    if (!ctx) return;
 
-        gain.gain.setValueAtTime(0.18, t);
-        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+    for (let i = 0; i < 12; i++) {
+      const start = ctx.currentTime + i * 0.085;
+      const freq = i % 2 === 0 ? 2250 : 1850;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.14, start + 0.06);
 
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
+      gain.gain.setValueAtTime(0.14, start);
+      gain.gain.exponentialRampToValueAtTime(0.01, start + 0.07);
 
-        osc.start(t);
-        osc.stop(t + 0.055);
-      }
-    } catch {
-      // ignore
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.075);
     }
   }
 
-  // Soft Yungas Forest Ambience (soothing white/pink noise modulated like breeze through trees)
-  public toggleForestAmbience(enable: boolean) {
-    try {
-      this.initCtx();
-      if (!this.ctx) return;
-      if (!enable || this.isMuted) {
-        if (this.bgmGain) {
-          this.bgmGain.gain.setValueAtTime(0, this.ctx.currentTime);
-        }
-        this.isBgmPlaying = false;
-        return;
-      }
+  // 7. Loro Alisero (Amazona tucumana): Metallic flock squawks "kree-ah! kree-ah!"
+  public playParrotCall() {
+    const ctx = this.getContext();
+    if (!ctx) return;
 
-      if (this.isBgmPlaying) return;
+    [0, 0.28, 0.56].forEach((offset, idx) => {
+      const t0 = ctx.currentTime + offset;
+      const osc = ctx.createOscillator();
+      const mod = ctx.createOscillator();
+      const modGain = ctx.createGain();
+      const gain = ctx.createGain();
 
-      const bufferSize = this.ctx.sampleRate * 2;
-      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      let lastOut = 0.0;
-      for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1;
-        data[i] = (lastOut + 0.02 * white) / 1.02;
-        lastOut = data[i];
-      }
+      osc.type = 'sawtooth';
+      const baseF = idx === 1 ? 1450 : 1280;
+      osc.frequency.setValueAtTime(baseF, t0);
+      osc.frequency.exponentialRampToValueAtTime(baseF * 1.35, t0 + 0.09);
+      osc.frequency.exponentialRampToValueAtTime(baseF * 0.85, t0 + 0.21);
 
-      const noise = this.ctx.createBufferSource();
-      noise.buffer = buffer;
-      noise.loop = true;
+      mod.type = 'sine';
+      mod.frequency.setValueAtTime(65, t0);
+      modGain.gain.setValueAtTime(120, t0);
 
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 450;
+      gain.gain.setValueAtTime(0.11, t0);
+      gain.gain.exponentialRampToValueAtTime(0.008, t0 + 0.22);
 
-      this.bgmGain = this.ctx.createGain();
-      this.bgmGain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+      mod.connect(modGain);
+      modGain.connect(osc.frequency);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-      noise.connect(filter);
-      filter.connect(this.bgmGain);
-      this.bgmGain.connect(this.ctx.destination);
+      mod.start(t0);
+      osc.start(t0);
+      mod.stop(t0 + 0.22);
+      osc.stop(t0 + 0.23);
+    });
+  }
 
-      noise.start();
-      this.bgmOscillators = [noise];
-      this.isBgmPlaying = true;
-    } catch {
-      // ignore
+  // 8. Picaflor Cometa (Sappho sparganurus): Rapid wing hum + sharp high "tsik-tsik-tsik"
+  public playHummingbirdCall() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+
+    // Wing hum (low buzz)
+    const humOsc = ctx.createOscillator();
+    const humGain = ctx.createGain();
+    humOsc.type = 'triangle';
+    humOsc.frequency.setValueAtTime(78, now);
+    humOsc.frequency.linearRampToValueAtTime(92, now + 0.5);
+    humOsc.frequency.linearRampToValueAtTime(75, now + 1.1);
+    humGain.gain.setValueAtTime(0.08, now);
+    humGain.gain.exponentialRampToValueAtTime(0.008, now + 1.15);
+    humOsc.connect(humGain);
+    humGain.connect(ctx.destination);
+    humOsc.start(now);
+    humOsc.stop(now + 1.2);
+
+    // High crystalline "tsik-tsik-tsik" chips
+    [0.1, 0.26, 0.42, 0.65, 0.82].forEach((offset, i) => {
+      const t0 = now + offset;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      const f = i % 2 === 0 ? 4200 : 3850;
+      osc.frequency.setValueAtTime(f, t0);
+      osc.frequency.exponentialRampToValueAtTime(2900, t0 + 0.055);
+
+      gain.gain.setValueAtTime(0.13, t0);
+      gain.gain.exponentialRampToValueAtTime(0.008, t0 + 0.06);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.065);
+    });
+  }
+
+  // 9. Chiricote (Aramides cajaneus): Syncopated rail chorus "¡chi-ri-co-te! ¡chi-ri-co-te!"
+  public playChiricoteCall() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const pattern = [
+      { start: 0.0, dur: 0.11, f1: 1150, f2: 1480 }, // chi
+      { start: 0.13, dur: 0.10, f1: 1380, f2: 1620 }, // ri
+      { start: 0.25, dur: 0.15, f1: 1820, f2: 1450 }, // co
+      { start: 0.42, dur: 0.18, f1: 1250, f2: 920 },  // te!
+      { start: 0.66, dur: 0.11, f1: 1180, f2: 1520 }, // chi
+      { start: 0.79, dur: 0.10, f1: 1420, f2: 1680 }, // ri
+      { start: 0.91, dur: 0.15, f1: 1880, f2: 1480 }, // co
+      { start: 1.08, dur: 0.20, f1: 1280, f2: 880 }   // te!
+    ];
+
+    pattern.forEach((p) => {
+      const t0 = ctx.currentTime + p.start;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(p.f1, t0);
+      osc.frequency.exponentialRampToValueAtTime(p.f2, t0 + p.dur);
+
+      gain.gain.setValueAtTime(0.16, t0);
+      gain.gain.exponentialRampToValueAtTime(0.008, t0 + p.dur);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + p.dur + 0.015);
+    });
+  }
+
+  // 10. Jote Real (Sarcoramphus papa): Thermal soaring wind whoosh + low guttural clicks
+  public playRaptorCall() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const bufferSize = Math.floor(ctx.sampleRate * 0.9);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(420, now);
+    filter.frequency.exponentialRampToValueAtTime(980, now + 0.45);
+    filter.frequency.exponentialRampToValueAtTime(340, now + 0.9);
+    filter.Q.value = 3.5;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.9);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start(now);
+
+    // Low beak click/croak
+    [0.25, 0.55].forEach((offset) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(190, now + offset);
+      osc.frequency.exponentialRampToValueAtTime(110, now + offset + 0.12);
+      g.gain.setValueAtTime(0.12, now + offset);
+      g.gain.exponentialRampToValueAtTime(0.008, now + offset + 0.13);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.14);
+    });
+  }
+
+  // 11. Carpintero Lomo Blanco (Campephilus leucopogon): Resonant double drum "¡toc-toc!" on hollow trunk
+  public playWoodpeckerCall() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    [0.0, 0.14, 0.65, 0.79].forEach((offset) => {
+      const t0 = ctx.currentTime + offset;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, t0);
+      osc.frequency.exponentialRampToValueAtTime(115, t0 + 0.065);
+
+      gain.gain.setValueAtTime(0.28, t0);
+      gain.gain.exponentialRampToValueAtTime(0.008, t0 + 0.07);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.075);
+    });
+  }
+
+  // 12. Martín Pescador Grande (Megaceryle torquata): Dry rapid rattle "kerr-kerr-kerr"
+  public playKingfisherCall() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    for (let i = 0; i < 9; i++) {
+      const t0 = ctx.currentTime + i * 0.065;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(1650 + (i % 2) * 280, t0);
+      osc.frequency.exponentialRampToValueAtTime(980, t0 + 0.05);
+
+      gain.gain.setValueAtTime(0.11, t0);
+      gain.gain.exponentialRampToValueAtTime(0.008, t0 + 0.055);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.06);
+    }
+  }
+
+  // Unified dispatcher by soundType or birdId so every species plays its authentic sound
+  public playBirdSound(soundTypeOrBirdId: string) {
+    const key = soundTypeOrBirdId.toLowerCase();
+    if (key.includes('benteveo')) {
+      this.playBenteveoCall();
+    } else if (key.includes('chinchero')) {
+      this.playChincheroCall();
+    } else if (key.includes('urutau') || key.includes('kakuy')) {
+      this.playUrutauCall();
+    } else if (key.includes('zorzal') || key.includes('rey') || key.includes('tangara') || key.includes('naranjero')) {
+      this.playZorzalCall();
+    } else if (key.includes('hornero')) {
+      this.playHorneroCall();
+    } else if (key.includes('chiricote')) {
+      this.playChiricoteCall();
+    } else if (key.includes('jote') || key.includes('raptor') || key.includes('milano')) {
+      this.playRaptorCall();
+    } else if (key.includes('parrot') || key.includes('loro')) {
+      this.playParrotCall();
+    } else if (key.includes('hummingbird') || key.includes('picaflor') || key.includes('vencejo')) {
+      this.playHummingbirdCall();
+    } else if (key.includes('carpintero') || key.includes('woodpecker')) {
+      this.playWoodpeckerCall();
+    } else if (key.includes('pescador') || key.includes('kingfisher')) {
+      this.playKingfisherCall();
+    } else {
+      this.playToucanCall();
+    }
+  }
+
+  public toggleForestAmbience(play?: boolean): boolean {
+    const shouldPlay = play !== undefined ? play : !this.isBgmPlaying;
+    if (shouldPlay && !this.isMuted) {
+      this.startForestAmbience();
+    } else {
+      this.stopForestAmbience();
+    }
+    return this.isBgmPlaying;
+  }
+
+  private startForestAmbience() {
+    if (this.bgmInterval) return;
+    this.isBgmPlaying = true;
+
+    const playSoftChirp = () => {
+      if (!this.isBgmPlaying || this.isMuted) return;
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const baseFreq = 1800 + Math.random() * 1100;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(baseFreq, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.25, ctx.currentTime + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.9, ctx.currentTime + 0.18);
+
+      gain.gain.setValueAtTime(0.03, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.21);
+    };
+
+    playSoftChirp();
+    this.bgmInterval = window.setInterval(playSoftChirp, 4200);
+  }
+
+  public stopForestAmbience() {
+    this.isBgmPlaying = false;
+    if (this.bgmInterval) {
+      clearInterval(this.bgmInterval);
+      this.bgmInterval = null;
     }
   }
 }

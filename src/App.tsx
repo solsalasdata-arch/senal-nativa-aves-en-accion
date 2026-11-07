@@ -25,6 +25,8 @@ import {
 } from './utils/storage';
 import { soundManager } from './utils/audio';
 import { PlayerProfile, CompanionBirdId, JournalEntry, CatalogBird } from './types/game';
+import { LanguageProvider } from './utils/i18n';
+import { OfflineIndicator } from './components/PWAInstallButton';
 
 type ScreenId = 'screen1' | 'screen2' | 'screen3' | 'screen4';
 
@@ -370,11 +372,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-[#07241E] to-slate-950 flex items-center justify-center p-0 sm:p-4 select-none">
-      {/* 9:16 Centered Mobile Game Container */}
-      <div className="relative w-full max-w-[440px] h-[100dvh] sm:h-[880px] sm:max-h-[94vh] sm:rounded-[38px] overflow-hidden shadow-[0_0_60px_rgba(12,110,90,0.4)] border-0 sm:border-4 sm:border-teal-700/60 bg-slate-950 flex flex-col">
-        {/* Render Active Screen */}
-        <div className="relative flex-1 w-full h-full overflow-hidden">
+    <LanguageProvider>
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-[#07241E] to-slate-950 flex items-center justify-center p-0 sm:p-4 select-none">
+        {/* 9:16 Centered Mobile Game Container */}
+        <div className="relative w-full max-w-[440px] h-[100dvh] sm:h-[880px] sm:max-h-[94vh] sm:rounded-[38px] overflow-hidden shadow-[0_0_60px_rgba(12,110,90,0.4)] border-0 sm:border-4 sm:border-teal-700/60 bg-slate-950 flex flex-col">
+          <OfflineIndicator />
+          {/* Render Active Screen */}
+          <div className="relative flex-1 w-full h-full overflow-hidden">
           {/* PANTALLA 1: PORTADA */}
           {currentScreen === 'screen1' && (
             <Screen1Splash
@@ -595,16 +599,17 @@ export default function App() {
           onOpenDrive={() => setShowDriveModal(true)}
         />
 
-        {/* MODAL DE GOOGLE DRIVE: SINCRONIZACIÓN, EXPORTACIÓN Y ARCHIVOS */}
-        <GoogleDriveModal
-          isOpen={showDriveModal}
-          onClose={() => setShowDriveModal(false)}
-          activeProfile={activeProfile}
-          onRestoreProfileData={(restored) => {
-            handleUpdateProfile(restored);
-          }}
-        />
+          {/* MODAL DE GOOGLE DRIVE: SINCRONIZACIÓN, EXPORTACIÓN Y ARCHIVOS */}
+          <GoogleDriveModal
+            isOpen={showDriveModal}
+            onClose={() => setShowDriveModal(false)}
+            activeProfile={activeProfile}
+            onRestoreProfileData={(restored) => {
+              handleUpdateProfile(restored);
+            }}
+          />
+        </div>
       </div>
-    </div>
+    </LanguageProvider>
   );
 }

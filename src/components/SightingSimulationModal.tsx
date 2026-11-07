@@ -80,13 +80,13 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
   if (!isOpen) return null;
 
-  // Handle Foto Perfecta Capture (Paso 12)
+  // Handle Foto Perfecta Capture
   const handleShutterCapture = () => {
     soundManager.playShutter();
     setIsPhotoCapturing(true);
 
     if (selectedBirdKey === 'chinchero') {
-      soundManager.playClick();
+      soundManager.playChincheroCall();
     } else {
       soundManager.playBenteveoCall();
     }
@@ -455,7 +455,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               <button
                 onClick={handleShutterCapture}
                 className="w-16 h-16 rounded-full bg-white p-1 border-4 border-slate-900 shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-                title="Tomar Foto Perfecta (Paso 12)"
+                title="Tomar Foto Perfecta"
               >
                 <div className="w-12 h-12 rounded-full border-2 border-slate-400 bg-slate-100 flex items-center justify-center">
                   <div className="w-9 h-9 rounded-full bg-white shadow-inner" />
@@ -465,10 +465,10 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               {/* Sound sample of the bird */}
               <button
                 onClick={() => {
-                  if (selectedBirdKey === 'chinchero') soundManager.playClick();
+                  if (selectedBirdKey === 'chinchero') soundManager.playChincheroCall();
                   else soundManager.playBenteveoCall();
                 }}
-                className="flex items-center gap-1 text-[10px] text-teal-300 px-2 py-1 rounded-xl bg-slate-900 border border-teal-800/60"
+                className="flex items-center gap-1 text-[10px] text-teal-300 px-2 py-1 rounded-xl bg-slate-900 border border-teal-800/60 cursor-pointer hover:border-teal-400"
               >
                 <Volume2 className="w-3.5 h-3.5 text-teal-400" />
                 <span>Canto</span>

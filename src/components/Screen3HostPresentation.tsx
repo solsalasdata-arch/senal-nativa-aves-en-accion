@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Binoculars, ArrowLeft, Volume2, Info, X, Users } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { PlayerProfile } from '../types/game';
+import { useLanguage, LanguageSelector } from '../utils/i18n';
 
 interface Screen3HostPresentationProps {
   activeProfile: PlayerProfile;
@@ -16,6 +17,7 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
   onBack,
   onChangePlayer
 }) => {
+  const { tx } = useLanguage();
   const [showSilhouettesModal, setShowSilhouettesModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
 
@@ -24,41 +26,41 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
       className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-cover bg-center select-none"
       style={{ backgroundImage: `url('/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg')` }}
     >
-      {/* Top Header controls with Active Player Chip and "Cambiar Jugador" */}
-      <div className="relative z-10 flex items-center justify-between p-3.5 bg-slate-950/60 backdrop-blur-md border-b border-teal-800/40">
-        <div className="flex items-center gap-2">
+      {/* Top Header controls with Active Player Chip, LanguageSelector and "Cambiar Jugador" */}
+      <div className="relative z-10 flex items-center justify-between p-3 bg-slate-950/65 backdrop-blur-md border-b border-teal-800/40 gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => {
               soundManager.playClick();
               onBack();
             }}
-            className="w-8 h-8 rounded-full bg-slate-900/80 border border-teal-400/40 flex items-center justify-center text-teal-300 hover:text-white"
-            title="Volver"
+            className="w-8 h-8 rounded-full bg-slate-900/80 border border-teal-400/40 flex items-center justify-center text-teal-300 hover:text-white shrink-0"
+            title={tx('Volver', 'Back')}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
 
           {/* Active Player Chip */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-950/90 border border-teal-400/40 text-[10px] text-white">
-            <span>{activeProfile.avatarIcon || '🧢'}</span>
-            <span className="font-bold text-amber-300 truncate max-w-[80px]">{activeProfile.name}</span>
-            <span className="text-teal-400">·</span>
-            <span className="text-teal-200 truncate max-w-[85px]">{activeProfile.favoriteBird}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-950/90 border border-teal-400/40 text-[10px] text-white min-w-0">
+            <span className="shrink-0">{activeProfile.avatarIcon || '🧢'}</span>
+            <span className="font-bold text-amber-300 truncate max-w-[65px]">{activeProfile.name}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <LanguageSelector />
+
           {/* "Cambiar Jugador" button */}
           <button
             onClick={() => {
               soundManager.playClick();
               onChangePlayer();
             }}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-800/80 hover:bg-teal-700 text-teal-100 text-[10px] font-bold border border-teal-500/50 shadow active:scale-95 transition-all"
-            title="Cambiar de Jugador"
+            className="flex items-center gap-1 px-2 py-1 rounded-full bg-teal-800/80 hover:bg-teal-700 text-teal-100 text-[10px] font-bold border border-teal-500/50 shadow active:scale-95 transition-all"
+            title={tx('Cambiar de Jugador', 'Switch Player')}
           >
             <Users className="w-3 h-3 text-amber-300" />
-            <span>Cambiar</span>
+            <span className="hidden xs:inline">{tx('Cambiar', 'Switch')}</span>
           </button>
 
           {/* Toucan call audition */}
@@ -66,10 +68,10 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
             onClick={() => {
               soundManager.playToucanCall();
             }}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/80 border border-teal-400/40 text-[10px] font-bold text-teal-200 hover:text-white shadow"
+            className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-900/80 border border-teal-400/40 text-[10px] font-bold text-teal-200 hover:text-white shadow"
           >
             <Volume2 className="w-3 h-3 text-teal-400" />
-            <span>Canto</span>
+            <span>{tx('Canto', 'Call')}</span>
           </button>
 
           <button
@@ -92,10 +94,10 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
         {/* Title & Subtitle Card */}
         <div className="w-full bg-teal-900/60 backdrop-blur-md border-2 border-teal-400/60 rounded-3xl p-3.5 shadow-2xl text-center mb-3">
           <h2 className="text-2xl font-black text-white tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-            TUCÁN GRANDE
+            {tx('TUCÁN GRANDE', 'TOCO TOUCAN')}
           </h2>
           <div className="text-xs font-bold text-teal-200 tracking-widest uppercase drop-shadow">
-            NATURALEZA
+            {tx('NATURALEZA · GUÍA ANFITRIÓN', 'NATURE · HOST GUIDE')}
           </div>
         </div>
 
@@ -108,7 +110,7 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
               setShowSilhouettesModal(true);
             }}
             className="h-16 rounded-2xl bg-teal-950/80 backdrop-blur-md border-2 border-teal-400/50 flex flex-col items-center justify-center p-1.5 hover:bg-teal-900/80 transition-all cursor-pointer shadow-lg active:scale-95 group"
-            title="Ver siluetas de aves de las Yungas"
+            title={tx('Ver siluetas de aves de las Yungas', 'View Yungas bird silhouettes')}
           >
             <div className="flex items-center justify-center gap-1 text-teal-300 group-hover:text-amber-300 transition-colors">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -119,14 +121,14 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
               </svg>
             </div>
             <span className="text-[9px] font-bold text-teal-200 mt-1 uppercase tracking-tight">
-              Siluetas
+              {tx('Siluetas', 'Silhouettes')}
             </span>
           </button>
 
           {/* 2) Tamaño: "55 - 63 cm" */}
           <div className="h-16 rounded-2xl bg-teal-950/80 backdrop-blur-md border-2 border-teal-400/50 flex flex-col items-center justify-center p-1.5 text-center shadow-lg">
             <span className="text-[9px] font-bold text-teal-300 uppercase tracking-tight">
-              Tamaño
+              {tx('Tamaño', 'Size')}
             </span>
             <span className="text-xs font-extrabold text-white mt-0.5 leading-tight">
               55 - 63 cm
@@ -141,7 +143,7 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
               onAdvanceToMainHub();
             }}
             className="h-16 rounded-2xl game-btn-cyan flex flex-col items-center justify-center p-1.5 cursor-pointer shadow-xl transform active:scale-95 transition-all group ring-2 ring-sky-300/40"
-            title="Comenzar con los prismáticos hacia el Menú Principal"
+            title={tx('Comenzar con los prismáticos hacia el Menú Principal', 'Proceed with binoculars to the Main Menu')}
           >
             <div className="w-9 h-9 rounded-xl bg-sky-950/30 flex items-center justify-center text-sky-900 group-hover:scale-110 transition-transform">
               <Binoculars className="w-6 h-6 text-sky-950 stroke-[2.5]" />
@@ -151,7 +153,7 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
           {/* 4) Peso: "500 - 860 g" */}
           <div className="h-16 rounded-2xl bg-teal-950/80 backdrop-blur-md border-2 border-teal-400/50 flex flex-col items-center justify-center p-1.5 text-center shadow-lg">
             <span className="text-[9px] font-bold text-teal-300 uppercase tracking-tight">
-              Peso
+              {tx('Peso', 'Weight')}
             </span>
             <span className="text-xs font-extrabold text-white mt-0.5 leading-tight">
               500 - 860 g
@@ -165,7 +167,9 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-xs bg-slate-900 border-2 border-teal-400 rounded-3xl p-4 shadow-2xl text-slate-100">
             <div className="flex items-center justify-between pb-2 border-b border-teal-800">
-              <h4 className="font-bold text-sm text-white">SILUETAS ALADAS DE LAS YUNGAS</h4>
+              <h4 className="font-bold text-sm text-white">
+                {tx('SILUETAS ALADAS DE LAS YUNGAS', 'WINGED SILHOUETTES OF THE YUNGAS')}
+              </h4>
               <button
                 onClick={() => {
                   soundManager.playClick();
@@ -180,22 +184,28 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
               <div className="flex items-center gap-2.5 p-2 rounded-xl bg-teal-950/60 border border-teal-800/40">
                 <span className="text-xl">🦅</span>
                 <div>
-                  <div className="font-bold text-teal-300">Cóndor Andino / Rapaces</div>
-                  <div className="text-[10px] text-slate-300">Alas rectas anchas para planear sobre las corrientes térmicas.</div>
+                  <div className="font-bold text-teal-300">{tx('Jote Real / Rapaces', 'King Vulture / Raptors')}</div>
+                  <div className="text-[10px] text-slate-300">
+                    {tx('Alas rectas anchas para planear sobre las corrientes térmicas.', 'Broad straight wings to soar on rising thermal currents.')}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2.5 p-2 rounded-xl bg-teal-950/60 border border-teal-800/40">
                 <span className="text-xl">🦜</span>
                 <div>
-                  <div className="font-bold text-teal-300">Loro Alisero / Maracaná</div>
-                  <div className="text-[10px] text-slate-300">Vuelo rápido en cuña, cola puntiaguda y aleteo continuo.</div>
+                  <div className="font-bold text-teal-300">{tx('Loro Alisero / Maracaná', 'Alder Amazon / Parrots')}</div>
+                  <div className="text-[10px] text-slate-300">
+                    {tx('Vuelo rápido en cuña, cola puntiaguda y aleteo continuo.', 'Fast wedge-shaped flight, pointed tail, and continuous wingbeats.')}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2.5 p-2 rounded-xl bg-teal-950/60 border border-teal-800/40">
                 <span className="text-xl">✨</span>
                 <div>
-                  <div className="font-bold text-teal-300">Picaflor Cometa / Común</div>
-                  <div className="text-[10px] text-slate-300">Vuelo suspendido estacionario en figura de ocho.</div>
+                  <div className="font-bold text-teal-300">{tx('Picaflor Cometa / Común', 'Red-tailed Comet / Hummingbirds')}</div>
+                  <div className="text-[10px] text-slate-300">
+                    {tx('Vuelo suspendido estacionario en figura de ocho.', 'Hovering stationary flight in a figure-eight pattern.')}
+                  </div>
                 </div>
               </div>
             </div>
@@ -206,7 +216,7 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
               }}
               className="w-full py-2.5 rounded-xl game-btn-orange text-white text-xs font-bold mt-1"
             >
-              Entendido
+              {tx('Entendido', 'Got it')}
             </button>
           </div>
         </div>
@@ -218,7 +228,9 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
           <div className="w-full max-w-xs bg-slate-900 border-2 border-teal-400 rounded-3xl p-4 shadow-2xl text-slate-100">
             <div className="flex items-center justify-between pb-2 border-b border-teal-800">
               <div>
-                <h4 className="font-bold text-sm text-white">FICHA CIENTÍFICA</h4>
+                <h4 className="font-bold text-sm text-white">
+                  {tx('FICHA CIENTÍFICA', 'SCIENTIFIC FACT SHEET')}
+                </h4>
                 <p className="text-[10px] text-teal-300">Ramphastidae · Ramphastos toco</p>
               </div>
               <button
@@ -233,10 +245,18 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
             </div>
             <div className="py-3 space-y-2 text-xs text-slate-200">
               <p>
-                <strong>Características:</strong> Longitud promedio de 55 a 63 cm. Destaca su descomunal pico amarillo-anaranjado de 20 cm con mancha negra en la punta, piel periocular turquesa y babero blanco.
+                <strong>{tx('Características:', 'Characteristics:')}</strong>{' '}
+                {tx(
+                  'Longitud promedio de 55 a 63 cm. Destaca su descomunal pico amarillo-anaranjado de 20 cm con mancha negra en la punta, piel periocular turquesa y babero blanco.',
+                  'Average length of 55 to 63 cm. Notable for its massive 20 cm yellow-orange bill with a black tip, turquoise periocular skin, and white bib.'
+                )}
               </p>
               <p>
-                <strong>Reserva Schuel:</strong> Habita el dosel superior y las copas de higuerones y laureles de las Yungas en San Salvador de Jujuy.
+                <strong>{tx('Reserva Schuel:', 'Schuel Reserve:')}</strong>{' '}
+                {tx(
+                  'Habita el dosel superior y las copas de higuerones y laureles de las Yungas en San Salvador de Jujuy.',
+                  'Inhabits the upper canopy and crowns of fig and laurel trees in the Yungas of San Salvador de Jujuy.'
+                )}
               </p>
             </div>
             <button
@@ -246,7 +266,7 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
               }}
               className="w-full py-2.5 rounded-xl game-btn-orange text-white text-xs font-bold"
             >
-              Cerrar Ficha
+              {tx('Cerrar Ficha', 'Close Sheet')}
             </button>
           </div>
         </div>

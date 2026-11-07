@@ -13,6 +13,7 @@ import {
 import { soundManager } from '../utils/audio';
 import { PlayerProfile, CompanionBirdId } from '../types/game';
 import { EXPLORER_AVATARS, COMPANION_BIRDS_OPTIONS } from '../data/birdsData';
+import { useLanguage, LanguageSelector } from '../utils/i18n';
 
 interface Screen2PlayerSelectorProps {
   profiles: PlayerProfile[];
@@ -37,6 +38,8 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
   onTakePhoto,
   onBackToSplash
 }) => {
+  const { tx } = useLanguage();
+
   // Modal states: 'none' | 'new_player' | 'returning_player'
   const [activeModal, setActiveModal] = useState<'none' | 'new_player' | 'returning_player'>('none');
 
@@ -49,7 +52,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPlayerName.trim()) {
-      setFormError('Por favor ingresa tu nombre de explorador.');
+      setFormError(tx('Por favor ingresa tu nombre de explorador.', 'Please enter your explorer name.'));
       return;
     }
     soundManager.playSuccess();
@@ -71,7 +74,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
 
   const handleDeleteWithConfirm = (e: React.MouseEvent, profileId: string, name: string) => {
     e.stopPropagation();
-    if (confirm(`¿Estás seguro de eliminar el perfil de "${name}"?`)) {
+    if (confirm(tx(`¿Estás seguro de eliminar el perfil de "${name}"?`, `Are you sure you want to delete "${name}"'s profile?`))) {
       soundManager.playClick();
       onDeleteProfile(profileId);
     }
@@ -82,8 +85,8 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
       className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-cover bg-center select-none p-4"
       style={{ backgroundImage: `url('/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg')` }}
     >
-      {/* Top Bar with "← Portada" Button and Screen Title */}
-      <div className="relative z-10 flex items-center justify-between">
+      {/* Top Bar with "← Portada" Button, Title, and Language Selector */}
+      <div className="relative z-10 flex items-center justify-between gap-2">
         <button
           onClick={() => {
             soundManager.playClick();
@@ -92,11 +95,14 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/70 backdrop-blur-md border border-teal-400/40 text-xs font-bold text-teal-200 hover:text-white shadow active:scale-95 transition-all"
         >
           <ArrowLeft className="w-4 h-4 text-teal-300" />
-          <span>← Portada</span>
+          <span>{tx('Portada', 'Cover')}</span>
         </button>
 
-        <div className="px-3 py-1 rounded-full bg-slate-950/70 backdrop-blur-md border border-teal-400/30 text-[10px] text-teal-200 tracking-wider font-semibold">
-          SELECTOR DE JUGADOR
+        <div className="flex items-center gap-1.5">
+          <div className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-md border border-teal-400/30 text-[10px] text-teal-200 tracking-wider font-semibold">
+            {tx('SELECTOR DE JUGADOR', 'PLAYER SELECTOR')}
+          </div>
+          <LanguageSelector />
         </div>
       </div>
 
@@ -104,26 +110,25 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
       <div className="relative z-10 flex flex-col items-center mt-2">
         <div className="text-center">
           <div className="text-3xl sm:text-4xl font-black text-amber-400 tracking-wider drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] [text-shadow:_0_3px_0_#064e3b,_0_6px_0_#0f172a]">
-            AVES
+            {tx('AVES', 'BIRDS')}
           </div>
           <div className="text-xl sm:text-2xl font-black text-sky-200 -mt-1 tracking-widest drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] [text-shadow:_0_2px_0_#0369a1,_0_4px_0_#0f172a]">
-            EN ACCIÓN
+            {tx('EN ACCIÓN', 'IN ACTION')}
           </div>
         </div>
 
         {/* Active Player Mini Badge */}
         {activeProfile && (
           <div className="mt-1 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-teal-950/80 border border-teal-500/40 text-[10px] text-teal-200">
-            <span>Activo:</span>
+            <span>{tx('Activo:', 'Active:')}</span>
             <span className="font-bold text-white">{activeProfile.name}</span>
             <span className="text-amber-400">· {activeProfile.favoriteBird}</span>
           </div>
         )}
       </div>
 
-      {/* Central 2 Buttons: RETURNING PLAYER & NEW PLAYER */}
+      {/* Central 2 Unified Buttons: JUGADOR RECURRENTE / RETURNING PLAYER & NUEVO JUGADOR / NEW PLAYER */}
       <div className="relative z-10 w-full max-w-xs mx-auto space-y-3 my-auto">
-        {/* RETURNING PLAYER: Verde menta sólido */}
         <button
           onClick={() => {
             soundManager.playClick();
@@ -132,10 +137,11 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
           className="w-full py-3.5 px-4 rounded-2xl game-btn-mint text-emerald-950 font-black text-sm tracking-wider uppercase shadow-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
         >
           <Users className="w-5 h-5 text-emerald-950 stroke-[2.5]" />
-          <span>RETURNING PLAYER ({profiles.length})</span>
+          <span>
+            {tx(`JUGADOR RECURRENTE (${profiles.length})`, `RETURNING PLAYER (${profiles.length})`)}
+          </span>
         </button>
 
-        {/* NEW PLAYER: Borde verde menta traslúcido */}
         <button
           onClick={() => {
             soundManager.playClick();
@@ -144,11 +150,11 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
           className="w-full py-3.5 px-4 rounded-2xl bg-teal-900/40 backdrop-blur-md border-3 border-emerald-400/80 text-emerald-100 font-black text-sm tracking-wider uppercase shadow-xl hover:bg-teal-900/60 transition-all cursor-pointer active:scale-98 flex items-center justify-center gap-2"
         >
           <UserPlus className="w-5 h-5 text-emerald-300 stroke-[2.5]" />
-          <span>NEW PLAYER</span>
+          <span>{tx('NUEVO JUGADOR', 'NEW PLAYER')}</span>
         </button>
       </div>
 
-      {/* Bottom section: Toucan avatar badge + "Take a photo with your favorite bird!" */}
+      {/* Bottom section: Toucan avatar badge + Photo with favorite bird */}
       <div className="relative z-10 flex flex-col items-center w-full max-w-xs mx-auto pb-3">
         {/* Circular Avatar of Toucan with speech bubble */}
         <div className="relative mb-2.5 flex items-center justify-center">
@@ -160,10 +166,12 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
             />
           </div>
 
-          {/* Speech Bubble "WHAT'S YOUR FAVORITE?" */}
+          {/* Speech Bubble */}
           <div className="absolute -top-3 -right-12 bg-white text-slate-900 px-3 py-1.5 rounded-2xl border-2 border-slate-900 shadow-xl text-center rotate-3 animate-bounce">
             <div className="text-[10px] font-black tracking-tight uppercase leading-none">
-              WHAT'S<br />YOUR<br />FAVORITE?
+              {tx('¿CUÁL ES', "WHAT'S")}<br />
+              {tx('TU AVE', 'YOUR')}<br />
+              {tx('FAVORITA?', 'FAVORITE?')}
             </div>
             <div className="absolute -bottom-1.5 left-3 w-3 h-3 bg-white border-r-2 border-b-2 border-slate-900 transform rotate-45" />
           </div>
@@ -171,7 +179,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
 
         {/* Text */}
         <p className="text-white font-bold text-xs sm:text-sm text-center mb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-          Take a photo with your favorite bird!
+          {tx('¡Tómate una foto con tu ave favorita!', 'Take a photo with your favorite bird!')}
         </p>
 
         {/* TAKE A PHOTO button */}
@@ -183,7 +191,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
           className="w-full py-2.5 sm:py-3 px-4 rounded-2xl game-btn-mint text-emerald-950 font-black text-xs sm:text-sm tracking-wider uppercase shadow-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
         >
           <Camera className="w-4 h-4 text-emerald-950 stroke-[2.5]" />
-          <span>TAKE A PHOTO</span>
+          <span>{tx('TOMAR UNA FOTO', 'TAKE A PHOTO')}</span>
         </button>
       </div>
 
@@ -196,8 +204,12 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-emerald-400" />
                 <div>
-                  <h3 className="font-bold text-sm text-white">NUEVO EXPLORADOR</h3>
-                  <p className="text-[10px] text-teal-300">Crea tu perfil individual para el Parque</p>
+                  <h3 className="font-bold text-sm text-white">
+                    {tx('NUEVO EXPLORADOR', 'NEW EXPLORER')}
+                  </h3>
+                  <p className="text-[10px] text-teal-300">
+                    {tx('Crea tu perfil individual para el Parque', 'Create your individual profile for the Park')}
+                  </p>
                 </div>
               </div>
               <button
@@ -216,12 +228,12 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
               {/* Name Input */}
               <div>
                 <label className="block text-[11px] font-bold text-teal-300 uppercase mb-1">
-                  1. Nombre o Apodo del Explorador:
+                  {tx('1. Nombre o Apodo del Explorador:', '1. Explorer Name or Nickname:')}
                 </label>
                 <input
                   type="text"
                   maxLength={24}
-                  placeholder="Ej: Lucía, Facundo, Guardián..."
+                  placeholder={tx('Ej: Lucía, Facundo, Guardián...', 'E.g.: Lucía, Facundo, Ranger...')}
                   value={newPlayerName}
                   onChange={(e) => {
                     setNewPlayerName(e.target.value);
@@ -236,7 +248,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
               {/* Avatar Selector */}
               <div>
                 <label className="block text-[11px] font-bold text-teal-300 uppercase mb-1">
-                  2. Elige tu Personaje:
+                  {tx('2. Elige tu Personaje:', '2. Choose Your Character:')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {EXPLORER_AVATARS.map((avatar) => {
@@ -269,7 +281,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
               {/* Favorite Companion Bird Selector */}
               <div>
                 <label className="block text-[11px] font-bold text-teal-300 uppercase mb-1">
-                  3. Ave Compañera Favorita:
+                  {tx('3. Ave Compañera Favorita:', '3. Favorite Companion Bird:')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {COMPANION_BIRDS_OPTIONS.map((bird) => {
@@ -279,7 +291,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                         type="button"
                         key={bird.name}
                         onClick={() => {
-                          soundManager.playClick();
+                          soundManager.playBirdSound(bird.name);
                           setSelectedBird(bird.name);
                         }}
                         className={`p-2 rounded-xl border text-left flex flex-col justify-between transition-all ${
@@ -306,7 +318,9 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                 className="w-full mt-2 py-3 rounded-2xl game-btn-orange text-white text-xs font-black uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-200" />
-                <span>GUARDAR PERFIL E INICIAR EXPEDICIÓN</span>
+                <span>
+                  {tx('GUARDAR PERFIL E INICIAR EXPEDICIÓN', 'SAVE PROFILE & START EXPEDITION')}
+                </span>
               </button>
             </form>
           </div>
@@ -322,8 +336,12 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-teal-400" />
                 <div>
-                  <h3 className="font-bold text-sm text-white">PERFILES GUARDADOS</h3>
-                  <p className="text-[10px] text-teal-300">Selecciona tu explorador en este dispositivo</p>
+                  <h3 className="font-bold text-sm text-white">
+                    {tx('PERFILES GUARDADOS', 'SAVED PROFILES')}
+                  </h3>
+                  <p className="text-[10px] text-teal-300">
+                    {tx('Selecciona tu explorador en este dispositivo', 'Select your explorer on this device')}
+                  </p>
                 </div>
               </div>
               <button
@@ -361,12 +379,13 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                             <h4 className="text-xs font-bold text-white">{profile.name}</h4>
                             {isActive && (
                               <span className="px-1.5 py-0.2 rounded-md bg-amber-400 text-slate-950 text-[9px] font-black">
-                                ACTIVO
+                                {tx('ACTIVO', 'ACTIVE')}
                               </span>
                             )}
                           </div>
                           <div className="text-[10px] text-teal-300 font-medium">
-                            Ave: <span className="text-white font-semibold">{profile.favoriteBird}</span>
+                            {tx('Ave:', 'Bird:')}{' '}
+                            <span className="text-white font-semibold">{profile.favoriteBird}</span>
                           </div>
                         </div>
                       </div>
@@ -375,7 +394,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                       <button
                         onClick={(e) => handleDeleteWithConfirm(e, profile.id, profile.name)}
                         className="w-7 h-7 rounded-lg bg-slate-900 text-slate-500 hover:text-rose-400 hover:bg-rose-950/60 flex items-center justify-center border border-slate-800 transition-colors"
-                        title="Eliminar este perfil"
+                        title={tx('Eliminar este perfil', 'Delete this profile')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -384,18 +403,18 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                     {/* Stats Strip */}
                     <div className="mt-2.5 pt-2 border-t border-slate-800/80 grid grid-cols-3 gap-1.5 text-center text-[10px]">
                       <div className="bg-slate-900/80 rounded-lg p-1">
-                        <span className="text-slate-400 block text-[9px]">NIVEL</span>
-                        <span className="font-extrabold text-amber-400">Nv. {profile.level}</span>
+                        <span className="text-slate-400 block text-[9px]">{tx('NIVEL', 'LEVEL')}</span>
+                        <span className="font-extrabold text-amber-400">{tx('Nv.', 'Lv.')} {profile.level}</span>
                       </div>
                       <div className="bg-slate-900/80 rounded-lg p-1">
-                        <span className="text-slate-400 block text-[9px]">EXPERIENCIA</span>
+                        <span className="text-slate-400 block text-[9px]">{tx('EXPERIENCIA', 'EXPERIENCE')}</span>
                         <span className="font-bold text-teal-300">{profile.xp} XP</span>
                       </div>
                       <div className="bg-slate-900/80 rounded-lg p-1">
-                        <span className="text-slate-400 block text-[9px]">MEDALLAS</span>
+                        <span className="text-slate-400 block text-[9px]">{tx('MEDALLAS', 'BADGES')}</span>
                         <span className="font-bold text-emerald-300 flex items-center justify-center gap-0.5">
                           {profile.hasRisingObserverBadge ? <Award className="w-3 h-3 text-amber-400" /> : '0'}
-                          <span>{profile.hasRisingObserverBadge ? 'Observador' : ''}</span>
+                          <span>{profile.hasRisingObserverBadge ? tx('Observador', 'Observer') : ''}</span>
                         </span>
                       </div>
                     </div>
@@ -412,7 +431,9 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                 className="w-full py-2.5 rounded-xl border-2 border-dashed border-teal-700/60 hover:border-teal-400 text-teal-300 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-teal-950/50 transition-colors"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>+ Crear Otro Perfil de Explorador</span>
+                <span>
+                  {tx('+ Crear Otro Perfil de Explorador', '+ Create Another Explorer Profile')}
+                </span>
               </button>
             </div>
           </div>

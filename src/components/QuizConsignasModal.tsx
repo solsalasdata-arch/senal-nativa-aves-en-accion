@@ -15,6 +15,7 @@ import {
 import { soundManager } from '../utils/audio';
 import { TUCAN_CONSIGNAS_QUESTIONS } from '../data/birdsData';
 import { PlayerProfile } from '../types/game';
+import { useLanguage, localizeTucanConsignas } from '../utils/i18n';
 
 interface QuizConsignasModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
   onOpenMap,
   onOpenBirds
 }) => {
+  const { lang, tx } = useLanguage();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
@@ -42,7 +44,8 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentQ = TUCAN_CONSIGNAS_QUESTIONS[currentIdx];
+  const localizedQuestions = localizeTucanConsignas(TUCAN_CONSIGNAS_QUESTIONS, lang);
+  const currentQ = localizedQuestions[currentIdx];
   const allCorrect = score === 5;
   const hasSighting = playerProfile.sightingsCompleted >= 1;
 
@@ -100,8 +103,12 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
           <div className="flex items-center gap-2">
             <HelpCircle className="w-5 h-5 text-amber-400" />
             <div>
-              <h3 className="font-extrabold text-xs sm:text-sm text-white">5 CONSIGNAS DEL TUCÁN</h3>
-              <p className="text-[10px] text-teal-300">Biodiversidad de la Reserva Barón Schuel</p>
+              <h3 className="font-extrabold text-xs sm:text-sm text-white">
+                {tx('5 CONSIGNAS DEL TUCÁN', '5 TOUCAN QUESTIONS')}
+              </h3>
+              <p className="text-[10px] text-teal-300">
+                {tx('Biodiversidad de la Reserva Barón Schuel', 'Biodiversity of Barón Schuel Reserve')}
+              </p>
             </div>
           </div>
           <button
