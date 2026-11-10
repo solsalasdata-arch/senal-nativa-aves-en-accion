@@ -1,6 +1,6 @@
-const CACHE_NAME = 'senal-nativa-pwa-v3';
+const CACHE_NAME = 'senal-nativa-pwa-v4';
 
-// Core static assets and illustrations to pre-cache for offline trail usage
+// Core static assets and 21 species photos + 21 real .mp3 calls to pre-cache for offline trail usage
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -15,7 +15,51 @@ const PRECACHE_ASSETS = [
   '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
   '/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg',
   '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
-  '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg'
+  '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg',
+  // 21 Bird Images (/assets/aves/)
+  encodeURI('/assets/aves/1-Chingolo.jpg'),
+  encodeURI('/assets/aves/2-Tangara sacaya.jpg'),
+  encodeURI('/assets/aves/3-Chercán.jpg'),
+  encodeURI('/assets/aves/4-Zorzal colorado.jpg'),
+  encodeURI('/assets/aves/5-Paloma picazuro.jpg'),
+  encodeURI('/assets/aves/6-Saltator de pico dorado.jpg'),
+  encodeURI('/assets/aves/7-Benteveo.jpg'),
+  encodeURI('/assets/aves/8-Tero.jpg'),
+  encodeURI('/assets/aves/9-Jilguero azafranado.jpg'),
+  encodeURI('/assets/aves/10-Tordo renegrido.jpg'),
+  encodeURI('/assets/aves/11-Urraca morada.JPG'),
+  encodeURI('/assets/aves/12-Suirirí real.jpg'),
+  encodeURI('/assets/aves/13-Carancho.jpg'),
+  encodeURI('/assets/aves/14-Hornero.jpg'),
+  encodeURI('/assets/aves/15-Candelita de gorro pardo.jpg'),
+  encodeURI('/assets/aves/16-Parula tropical.jpg'),
+  encodeURI('/assets/aves/17-Pava de los yungas.png'),
+  encodeURI('/assets/aves/18-Aratinga mitrada.jpg'),
+  encodeURI('/assets/aves/19-Tangara azul y amarilla.png'),
+  encodeURI('/assets/aves/20-Ticotico cejicanelo.jpg'),
+  encodeURI('/assets/aves/21-Tordo bayo.jpg'),
+  // 21 Bird Songs (.mp3 in /assets/aves/)
+  encodeURI('/assets/aves/1-Chingolo.mp3'),
+  encodeURI('/assets/aves/2-Tangara sacaya.mp3'),
+  encodeURI('/assets/aves/3-Chercán.mp3'),
+  encodeURI('/assets/aves/4-Zorzal colorado.mp3'),
+  encodeURI('/assets/aves/5-Paloma picazuro.mp3'),
+  encodeURI('/assets/aves/6-Saltator de pico dorado.mp3'),
+  encodeURI('/assets/aves/7-Benteveo.mp3'),
+  encodeURI('/assets/aves/8-Tero.mp3'),
+  encodeURI('/assets/aves/9-Jilguero azafranado.mp3'),
+  encodeURI('/assets/aves/10-Tordo renegrido.mp3'),
+  encodeURI('/assets/aves/11-Urraca morada.mp3'),
+  encodeURI('/assets/aves/12-Suirirí real.mp3'),
+  encodeURI('/assets/aves/13-Carancho.mp3'),
+  encodeURI('/assets/aves/14-Hornero.mp3'),
+  encodeURI('/assets/aves/15-Candelita de gorro pardo.mp3'),
+  encodeURI('/assets/aves/16-Parula tropical.mp3'),
+  encodeURI('/assets/aves/17-Pava de los yungas.mp3'),
+  encodeURI('/assets/aves/18-Aratinga mitrada.mp3'),
+  encodeURI('/assets/aves/19-Tangara azul y amarilla.mp3'),
+  encodeURI('/assets/aves/20-Ticotico cejicanelo.mp3'),
+  encodeURI('/assets/aves/21-Tordo bayo.mp3')
 ];
 
 self.addEventListener('install', (event) => {

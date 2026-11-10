@@ -5,6 +5,7 @@ class SoundManager {
   private isMuted: boolean = false;
   private bgmInterval: number | null = null;
   private isBgmPlaying: boolean = false;
+  private currentAudio: HTMLAudioElement | null = null;
 
   private getContext(): AudioContext | null {
     if (this.isMuted) return null;
@@ -24,6 +25,62 @@ class SoundManager {
     this.isMuted = muted;
     if (muted) {
       this.stopForestAmbience();
+      this.stopCurrentAudio();
+    }
+  }
+
+  public stopCurrentAudio() {
+    if (this.currentAudio) {
+      try {
+        this.currentAudio.pause();
+        this.currentAudio.currentTime = 0;
+      } catch {
+        // ignore
+      }
+      this.currentAudio = null;
+    }
+  }
+
+  public playAudioUrl(rawUrl: string, onEnd?: () => void, fallbackFn?: () => void): HTMLAudioElement | null {
+    if (this.isMuted || typeof window === 'undefined') {
+      if (onEnd) onEnd();
+      return null;
+    }
+    this.stopCurrentAudio();
+    try {
+      const encodedSrc = rawUrl.includes('%') ? rawUrl : encodeURI(rawUrl);
+      const audio = new Audio(encodedSrc);
+      audio.preload = 'auto';
+      this.currentAudio = audio;
+
+      let endedCalled = false;
+      const finish = () => {
+        if (endedCalled) return;
+        endedCalled = true;
+        if (this.currentAudio === audio) {
+          this.currentAudio = null;
+        }
+        if (onEnd) onEnd();
+      };
+
+      audio.onended = finish;
+      audio.onerror = () => {
+        if (fallbackFn) fallbackFn();
+        setTimeout(finish, 1400);
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          if (fallbackFn) fallbackFn();
+          setTimeout(finish, 1400);
+        });
+      }
+      return audio;
+    } catch {
+      if (fallbackFn) fallbackFn();
+      if (onEnd) setTimeout(onEnd, 1400);
+      return null;
     }
   }
 
@@ -490,33 +547,73 @@ class SoundManager {
     }
   }
 
-  // Unified dispatcher by soundType or birdId so every species plays its authentic sound
-  public playBirdSound(soundTypeOrBirdId: string) {
+  // Exact MP3 resolver for the 21 species in /assets/aves/
+  public resolveBirdMp3Url(soundTypeOrBirdId: string): string | null {
+    if (soundTypeOrBirdId.startsWith('/assets/aves/') && soundTypeOrBirdId.endsWith('.mp3')) {
+      return soundTypeOrBirdId;
+    }
     const key = soundTypeOrBirdId.toLowerCase();
-    if (key.includes('benteveo')) {
-      this.playBenteveoCall();
-    } else if (key.includes('chinchero')) {
-      this.playChincheroCall();
-    } else if (key.includes('urutau') || key.includes('kakuy')) {
-      this.playUrutauCall();
-    } else if (key.includes('zorzal') || key.includes('rey') || key.includes('tangara') || key.includes('naranjero')) {
-      this.playZorzalCall();
-    } else if (key.includes('hornero')) {
-      this.playHorneroCall();
-    } else if (key.includes('chiricote')) {
-      this.playChiricoteCall();
-    } else if (key.includes('jote') || key.includes('raptor') || key.includes('milano')) {
-      this.playRaptorCall();
-    } else if (key.includes('parrot') || key.includes('loro')) {
-      this.playParrotCall();
-    } else if (key.includes('hummingbird') || key.includes('picaflor') || key.includes('vencejo')) {
-      this.playHummingbirdCall();
-    } else if (key.includes('carpintero') || key.includes('woodpecker')) {
-      this.playWoodpeckerCall();
-    } else if (key.includes('pescador') || key.includes('kingfisher')) {
-      this.playKingfisherCall();
+    if (key.includes('001') || key.includes('chingolo')) return '/assets/aves/1-Chingolo.mp3';
+    if (key.includes('002') || key.includes('sayaca') || key.includes('sacaya') || key.includes('celestino')) return '/assets/aves/2-Tangara sacaya.mp3';
+    if (key.includes('003') || key.includes('chercan') || key.includes('chercán') || key.includes('ratona')) return '/assets/aves/3-Chercán.mp3';
+    if (key.includes('004') || key.includes('zorzal')) return '/assets/aves/4-Zorzal colorado.mp3';
+    if (key.includes('005') || key.includes('paloma') || key.includes('picazuro') || key.includes('picazuró')) return '/assets/aves/5-Paloma picazuro.mp3';
+    if (key.includes('006') || key.includes('saltator') || key.includes('rey del bosque') || key.includes('rey')) return '/assets/aves/6-Saltator de pico dorado.mp3';
+    if (key.includes('007') || key.includes('benteveo')) return '/assets/aves/7-Benteveo.mp3';
+    if (key.includes('008') || key.includes('tero')) return '/assets/aves/8-Tero.mp3';
+    if (key.includes('009') || key.includes('jilguero') || key.includes('azafranado')) return '/assets/aves/9-Jilguero azafranado.mp3';
+    if (key.includes('010') || key.includes('renegrido')) return '/assets/aves/10-Tordo renegrido.mp3';
+    if (key.includes('011') || key.includes('urraca')) return '/assets/aves/11-Urraca morada.mp3';
+    if (key.includes('012') || key.includes('suiriri') || key.includes('suirirí')) return '/assets/aves/12-Suirirí real.mp3';
+    if (key.includes('013') || key.includes('carancho')) return '/assets/aves/13-Carancho.mp3';
+    if (key.includes('014') || key.includes('hornero')) return '/assets/aves/14-Hornero.mp3';
+    if (key.includes('015') || key.includes('candelita') || key.includes('arañero')) return '/assets/aves/15-Candelita de gorro pardo.mp3';
+    if (key.includes('016') || key.includes('parula') || key.includes('pitiayumi') || key.includes('pitiayumí')) return '/assets/aves/16-Parula tropical.mp3';
+    if (key.includes('017') || key.includes('pava')) return '/assets/aves/17-Pava de los yungas.mp3';
+    if (key.includes('018') || key.includes('aratinga') || key.includes('calancate') || key.includes('loro') || key.includes('parrot')) return '/assets/aves/18-Aratinga mitrada.mp3';
+    if (key.includes('019') || key.includes('naranjero') || key.includes('azul y amarilla')) return '/assets/aves/19-Tangara azul y amarilla.mp3';
+    if (key.includes('020') || key.includes('ticotico') || key.includes('chinchero')) return '/assets/aves/20-Ticotico cejicanelo.mp3';
+    if (key.includes('021') || key.includes('bayo') || key.includes('músico') || key.includes('musico')) return '/assets/aves/21-Tordo bayo.mp3';
+    return null;
+  }
+
+  // Unified dispatcher by soundType, birdId or audioUrl so every species plays its real MP3 file (with Web Audio fallback)
+  public playBirdSound(soundTypeOrBirdId: string, onEnd?: () => void) {
+    const mp3Url = this.resolveBirdMp3Url(soundTypeOrBirdId);
+    const fallbackSynth = () => {
+      const key = soundTypeOrBirdId.toLowerCase();
+      if (key.includes('benteveo')) {
+        this.playBenteveoCall();
+      } else if (key.includes('chinchero') || key.includes('ticotico')) {
+        this.playChincheroCall();
+      } else if (key.includes('urutau') || key.includes('kakuy')) {
+        this.playUrutauCall();
+      } else if (key.includes('zorzal') || key.includes('rey') || key.includes('tangara') || key.includes('naranjero') || key.includes('chingolo') || key.includes('jilguero')) {
+        this.playZorzalCall();
+      } else if (key.includes('hornero') || key.includes('tero')) {
+        this.playHorneroCall();
+      } else if (key.includes('chiricote') || key.includes('pava')) {
+        this.playChiricoteCall();
+      } else if (key.includes('jote') || key.includes('raptor') || key.includes('milano') || key.includes('carancho')) {
+        this.playRaptorCall();
+      } else if (key.includes('parrot') || key.includes('loro') || key.includes('aratinga') || key.includes('urraca')) {
+        this.playParrotCall();
+      } else if (key.includes('hummingbird') || key.includes('picaflor') || key.includes('vencejo') || key.includes('parula') || key.includes('candelita')) {
+        this.playHummingbirdCall();
+      } else if (key.includes('carpintero') || key.includes('woodpecker')) {
+        this.playWoodpeckerCall();
+      } else if (key.includes('pescador') || key.includes('kingfisher')) {
+        this.playKingfisherCall();
+      } else {
+        this.playToucanCall();
+      }
+    };
+
+    if (mp3Url) {
+      this.playAudioUrl(mp3Url, onEnd, fallbackSynth);
     } else {
-      this.playToucanCall();
+      fallbackSynth();
+      if (onEnd) setTimeout(onEnd, 1500);
     }
   }
 

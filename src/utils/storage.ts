@@ -29,7 +29,7 @@ export function createDefaultProfile(
     completedCheckpoints: [],
     birdPhotoStars: {},
     unlockedRareBirds: [],
-    unlockedSilhouettes: ['016-benteveo'],
+    unlockedSilhouettes: ['007-benteveo'],
     unlockedAcoustics: [],
     addedPackBirdIds: [],
     freeSilhouetteHints: 0,
@@ -81,25 +81,31 @@ export function loadProfilesList(): PlayerProfile[] {
       setActiveProfileId(defaultProf.id);
       return [defaultProf];
     }
-    return parsed.map((p: Partial<PlayerProfile>) => ({
-      ...createDefaultProfile(),
-      ...p,
-      completedCheckpoints: p.completedCheckpoints || [],
-      hasRouteCompleteSeal: p.hasRouteCompleteSeal ?? false,
-      hasDetailObserverBadge: p.hasDetailObserverBadge ?? false,
-      unlockedSilhouettes: p.unlockedSilhouettes || ['016-benteveo'],
-      unlockedAcoustics: p.unlockedAcoustics || [],
-      addedPackBirdIds: p.addedPackBirdIds || [],
-      freeSilhouetteHints: p.freeSilhouetteHints ?? 0,
-      packsOpenedCount: p.packsOpenedCount ?? 0,
-      purchasedGear: Array.from(new Set(['visera-oficial', ...(p.purchasedGear || [])])),
-      equippedItems: p.equippedItems && p.equippedItems.length > 0 ? p.equippedItems : ['visera-oficial'],
-      unlockedSpecialEvents: p.unlockedSpecialEvents || [],
-      registeredMigrantIds: p.registeredMigrantIds || ['mig-loro-alisero'],
-      birdPhotoStars: p.birdPhotoStars || {},
-      unlockedRareBirds: p.unlockedRareBirds || [],
-      fieldJournal: p.fieldJournal || []
-    }));
+    return parsed.map((p: Partial<PlayerProfile>) => {
+      const rawUnlocked = p.unlockedSilhouettes || ['007-benteveo'];
+      const migratedUnlocked = Array.from(
+        new Set(rawUnlocked.map(id => (id === '016-benteveo' ? '007-benteveo' : id)))
+      );
+      return {
+        ...createDefaultProfile(),
+        ...p,
+        completedCheckpoints: p.completedCheckpoints || [],
+        hasRouteCompleteSeal: p.hasRouteCompleteSeal ?? false,
+        hasDetailObserverBadge: p.hasDetailObserverBadge ?? false,
+        unlockedSilhouettes: migratedUnlocked,
+        unlockedAcoustics: p.unlockedAcoustics || [],
+        addedPackBirdIds: p.addedPackBirdIds || [],
+        freeSilhouetteHints: p.freeSilhouetteHints ?? 0,
+        packsOpenedCount: p.packsOpenedCount ?? 0,
+        purchasedGear: Array.from(new Set(['visera-oficial', ...(p.purchasedGear || [])])),
+        equippedItems: p.equippedItems && p.equippedItems.length > 0 ? p.equippedItems : ['visera-oficial'],
+        unlockedSpecialEvents: p.unlockedSpecialEvents || [],
+        registeredMigrantIds: p.registeredMigrantIds || ['mig-loro-alisero'],
+        birdPhotoStars: p.birdPhotoStars || {},
+        unlockedRareBirds: p.unlockedRareBirds || [],
+        fieldJournal: p.fieldJournal || []
+      };
+    });
   } catch {
     const defaultProf = createDefaultProfile('Mateo Guardián', 'avatar-mateo', 'Tucán Grande');
     return [defaultProf];

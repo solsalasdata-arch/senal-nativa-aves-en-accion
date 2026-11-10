@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Bird,
   HelpCircle,
@@ -77,11 +77,18 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   const [weather, setWeather] = useState<'Soleado' | 'Nublado' | 'Llovizna de Yungas'>('Soleado');
   const [selectedTrailPoint, setSelectedTrailPoint] = useState<string>('1º Descanso "Mora Negra" (470 m)');
 
-  // Bioacoustic Mode State (Paso 11)
-  const [audioTargetBird, setAudioTargetBird] = useState<CatalogBird>(CATALOG_BIRDS_DATA[5]); // Benteveo default
+  // Bioacoustic Mode State (Paso 11) - default 007 Benteveo
+  const [audioTargetBird, setAudioTargetBird] = useState<CatalogBird>(
+    CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === '007') || CATALOG_BIRDS_DATA[0]
+  );
   const [audioIsPlaying, setAudioIsPlaying] = useState(false);
+  const [activeAudioUrl, setActiveAudioUrl] = useState<string>(
+    (CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === '007') || CATALOG_BIRDS_DATA[0]).audioUrl
+  );
+  const [waveTick, setWaveTick] = useState(0);
   const [audioGuess, setAudioGuess] = useState<string | null>(null);
   const [audioResult, setAudioResult] = useState<'correct' | 'wrong' | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Trivia State (5 Questions)
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
@@ -97,24 +104,56 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     if (initialTab) {
       setActiveTab(initialTab);
     }
+    if (!isOpen) {
+      soundManager.stopCurrentAudio();
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setAudioIsPlaying(false);
+    }
   }, [initialTab, isOpen]);
+
+  useEffect(() => {
+    if (!audioIsPlaying) return;
+    const interval = window.setInterval(() => {
+      setWaveTick((t) => t + 1);
+    }, 100);
+    return () => window.clearInterval(interval);
+  }, [audioIsPlaying]);
 
   if (!isOpen) return null;
 
-  // Sound Dispatcher: plays the exact synthesized call for every species in the Park
+  // Real HTML5 <audio> Dispatcher: plays the exact .mp3 file from /assets/aves/ using encodeURI()
   const playSoundForBird = (bird: CatalogBird) => {
+    const mp3Path = bird.audioUrl || soundManager.resolveBirdMp3Url(bird.id || bird.commonName) || '/assets/aves/7-Benteveo.mp3';
+    const encodedPath = mp3Path.includes('%') ? mp3Path : encodeURI(mp3Path);
+    setActiveAudioUrl(encodedPath);
     setAudioIsPlaying(true);
-    soundManager.playBirdSound(bird.soundType || bird.id || bird.commonName);
 
-    setTimeout(() => {
-      setAudioIsPlaying(false);
-    }, 1600);
+    soundManager.stopCurrentAudio();
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.src = encodedPath;
+        audioRef.current.currentTime = 0;
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            soundManager.playBirdSound(mp3Path, () => setAudioIsPlaying(false));
+          });
+        }
+        return;
+      } catch {
+        // Fallback to soundManager
+      }
+    }
+    soundManager.playBirdSound(mp3Path, () => setAudioIsPlaying(false));
   };
 
   // Featured bird: CHINCHERO CHICO
   const featuredChinchero: CatalogBird = {
-    id: '010-chinchero-chico',
-    catalogNumber: '010',
+    id: '000-chinchero-chico',
+    catalogNumber: '000',
     commonName: 'Chinchero Chico',
     scientificName: 'Lepidocolaptes angustirostris',
     size: '21 cm',
@@ -136,8 +175,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
       morphology: 'Pico pálido arqueado como lezna y cola con raquis rígidos como trípode.',
       loreOrFact: 'Trepa ágilmente los troncos de tipas y laureles en espiral buscando larvas.'
     },
-    soundType: 'chinchero',
+    soundType: '020-ticotico-cejicanelo',
     image: '/assets/aistudio/chinchero_chico_portrait.jpg',
+    audioUrl: '/assets/aves/20-Ticotico cejicanelo.mp3',
     silhouetteIcon: '🪵'
   };
 
@@ -297,10 +337,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     setTriviaFinished(false);
   };
 
-  // Combine base catalog (011-018) with any extra species unlocked via Sobre Selva Montana (019-024)
+  // All 21 species (001-021) in the official catalog
   const addedPackIds = playerProfile.addedPackBirdIds || [];
   const extraPackBirds = PACK_EXTRA_BIRDS_DATA.filter((b) => addedPackIds.includes(b.id));
-  const allCatalogBirds = [...CATALOG_BIRDS_DATA, ...extraPackBirds];
+  const allCatalogBirds = Array.from(
+    new Map([...CATALOG_BIRDS_DATA, ...extraPackBirds].map((b) => [b.id, b])).values()
+  );
 
   // Filtered bird list for the collection grid
   const filteredBirds = allCatalogBirds.filter((b) => {
@@ -314,104 +356,43 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   const journalCount = journalEntries.length;
   const hasDetailBadge = playerProfile.hasDetailObserverBadge || journalCount >= 10;
 
-  // Render Black SVG Silhouette for each species (011 to 018)
-  const renderBirdSilhouetteSvg = (catalogNumber: string, sizeClass = 'w-20 h-16') => {
-    switch (catalogNumber) {
-      case '011': // Jote Real - soaring condor/raptor in flight
-        return (
-          <svg viewBox="0 0 100 80" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
-            <path d="M50 35 C42 20, 22 12, 4 16 C2 23, 12 29, 26 34 C35 37, 44 40, 47 46 L50 50 L53 46 C56 40, 65 37, 74 34 C88 29, 98 23, 96 16 C78 12, 58 20, 50 35 Z M46 49 L43 70 L57 70 L54 49 Z M50 24 C46 24, 46 33, 50 35 C54 33, 54 24, 50 24 Z" />
-          </svg>
-        );
-      case '012': // Loro Alisero - perched parrot with curved hooked beak
-        return (
-          <svg viewBox="0 0 80 90" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
-            <path d="M42 14 C33 14, 28 21, 31 30 C33 38, 29 48, 33 60 L37 86 L43 86 L45 64 C50 54, 56 44, 53 31 C51 21, 48 15, 42 14 Z M31 21 C24 22, 23 29, 29 31 L31 28 Z M22 62 L58 62 L58 65 L22 65 Z" />
-          </svg>
-        );
-      case '013': // Picaflor Cometa - hovering hummingbird with long forked tail
-        return (
-          <svg viewBox="0 0 95 90" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
-            <path d="M38 30 C44 22, 53 23, 57 29 C59 34, 55 42, 49 48 L64 86 L59 86 L46 55 L33 84 L28 84 L43 48 C37 42, 32 36, 38 30 Z M56 28 L82 24 L57 32 Z M40 28 C26 14, 14 14, 12 22 C18 28, 30 32, 40 28 Z" />
-          </svg>
-        );
-      case '014': // Urutaú - nocturnal bird perched upright on branch
-        return (
-          <svg viewBox="0 0 80 95" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
-            <path d="M39 12 C30 13, 29 26, 31 38 C33 50, 34 68, 35 88 L45 88 C46 68, 48 50, 46 38 C44 26, 46 13, 39 12 Z M30 19 L25 21 L30 23 Z M22 86 L58 86 L58 90 L22 90 Z" />
-          </svg>
-        );
-      case '015': // Chiricote - long-billed walking rail with long legs
-        return (
-          <svg viewBox="0 0 95 90" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
-            <path d="M40 26 C32 26, 24 34, 24 44 C24 52, 32 58, 42 58 C52 58, 60 50, 62 40 L84 36 L62 33 C58 28, 49 26, 40 26 Z M35 58 L32 85 L36 85 L39 58 Z M47 58 L45 85 L49 85 L51 58 Z M24 44 L16 38 L20 48 Z" />
-          </svg>
-        );
-      case '016': // Benteveo - perched passerine with stout bill
-        return (
-          <svg viewBox="0 0 90 85" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
-            <path d="M40 20 C31 20, 27 28, 29 38 C31 48, 38 56, 48 58 L58 78 L63 78 L56 55 C64 48, 66 38, 62 29 C58 22, 48 20, 40 20 Z M61 28 L78 29 L61 34 Z M24 60 L66 60 L66 63 L24 63 Z" />
-          </svg>
-        );
-      case '017': // Hornero - rufous ovenbird walking proudly
-        return (
-          <svg viewBox="0 0 85 85" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
-            <path d="M38 24 C31 24, 27 31, 29 40 C31 50, 38 57, 48 57 L56 76 L61 76 L54 55 C60 49, 62 39, 58 31 C54 25, 46 24, 38 24 Z M57 30 L73 33 L57 35 Z M38 57 L36 78 L40 78 L42 57 Z M46 57 L45 78 L49 78 L50 57 Z" />
-          </svg>
-        );
-      case '018': // Zorzal Colorado - thrush perched
-      default:
-        return (
-          <svg viewBox="0 0 85 85" className={`${sizeClass} fill-slate-950 drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`}>
-            <path d="M41 19 C33 19, 29 27, 31 37 C33 49, 41 59, 51 59 L60 79 L65 79 L57 57 C63 49, 65 37, 61 27 C55 21, 47 19, 41 19 Z M60 26 L75 28 L60 31 Z M25 62 L65 62 L65 65 L25 65 Z" />
-          </svg>
-        );
-    }
-  };
-
-  // Build deterministic 4 options for Silueta Misteriosa so correct answer isn't always first
+  // Build deterministic 4 options for Silueta Misteriosa across all 21 species
   const getSilhouetteOptions = (bird: CatalogBird): string[] => {
-    const distractorsMap: Record<string, [string, string, string]> = {
-      '011': ['Loro Alisero', 'Urutaú', 'Chiricote'],
-      '012': ['Jote Real', 'Benteveo', 'Picaflor Cometa'],
-      '013': ['Chinchero Chico', 'Hornero', 'Zorzal Colorado'],
-      '014': ['Jote Real', 'Chiricote', 'Loro Alisero'],
-      '015': ['Benteveo', 'Urutaú', 'Hornero'],
-      '016': ['Zorzal Colorado', 'Hornero', 'Chinchero Chico'],
-      '017': ['Zorzal Colorado', 'Benteveo', 'Chiricote'],
-      '018': ['Hornero', 'Benteveo', 'Picaflor Cometa']
-    };
-    const distractors = distractorsMap[bird.catalogNumber] || ['Benteveo', 'Hornero', 'Urutaú'];
-    const all = [bird.commonName, ...distractors];
-    // Deterministic rotation based on catalogNumber
-    const shift = parseInt(bird.catalogNumber, 10) % 4;
+    const others = CATALOG_BIRDS_DATA.filter((b) => b.id !== bird.id);
+    const num = Math.max(1, parseInt(bird.catalogNumber, 10) || 1);
+    const d1 = others[(num * 3) % others.length].commonName;
+    const d2 = others[(num * 3 + 7) % others.length].commonName;
+    const d3 = others[(num * 3 + 13) % others.length].commonName;
+    const all = [bird.commonName, d1, d2, d3];
+    const shift = num % 4;
     return [...all.slice(shift), ...all.slice(0, shift)];
   };
 
-  // Build deterministic 3 options for Modo Bioacústico "Escucha el Canto"
+  // Build deterministic 3 options for Modo Bioacústico "Escucha el Canto" across all 21 species
   const getAudioOptions = (bird: CatalogBird): string[] => {
-    const distractorsMap: Record<string, [string, string]> = {
-      '010': ['Benteveo', 'Hornero'],
-      '011': ['Loro Alisero', 'Urutaú'],
-      '012': ['Benteveo', 'Picaflor Cometa'],
-      '013': ['Chinchero Chico', 'Zorzal Colorado'],
-      '014': ['Zorzal Colorado', 'Chinchero Chico'],
-      '015': ['Hornero', 'Benteveo'],
-      '016': ['Chinchero Chico', 'Zorzal Colorado'],
-      '017': ['Chinchero Chico', 'Zorzal Colorado'],
-      '018': ['Benteveo', 'Hornero']
-    };
-    const distractors = distractorsMap[bird.catalogNumber] || ['Benteveo', 'Urutaú'];
-    const all = [bird.commonName, ...distractors];
-    const shift = parseInt(bird.catalogNumber, 10) % 3;
+    const others = CATALOG_BIRDS_DATA.filter((b) => b.id !== bird.id);
+    const num = Math.max(1, parseInt(bird.catalogNumber, 10) || 1);
+    const d1 = others[(num * 5) % others.length].commonName;
+    const d2 = others[(num * 5 + 9) % others.length].commonName;
+    const all = [bird.commonName, d1, d2];
+    const shift = num % 3;
     return [...all.slice(shift), ...all.slice(0, shift)];
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-3 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+      {/* Hidden Real HTML5 Audio Element connected to /assets/aves/*.mp3 */}
+      <audio
+        ref={audioRef}
+        src={activeAudioUrl}
+        preload="auto"
+        onPlay={() => setAudioIsPlaying(true)}
+        onPause={() => setAudioIsPlaying(false)}
+        onEnded={() => setAudioIsPlaying(false)}
+        className="hidden"
+      />
       <div
-        className="relative w-full max-w-sm max-h-[94vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl border-2 border-[#1DB5A0]"
-        style={{ backgroundColor: '#2CC5B1' }}
+        className="relative w-full max-w-sm max-h-[94vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl border-2 border-[#1DB5A0] bg-[#2CC5B1]"
       >
         {/* TOP HEADER */}
         <div className="bg-slate-950/90 px-3.5 pt-3 pb-2 border-b border-teal-800/60 shrink-0">
@@ -670,10 +651,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                  Guía Oficial de Especies (011 - {extraPackBirds.length > 0 ? '024' : '018'})
+                  {tx('Guía Oficial de Especies (001 - 021)', 'Official Species Guide (001 - 021)')}
                 </span>
                 <span className="text-[10px] font-extrabold text-teal-950">
-                  {(playerProfile.unlockedSilhouettes || []).length}/{allCatalogBirds.length} Iluminadas
+                  {allCatalogBirds.filter(b => isBirdUnlocked(b.id)).length}/{allCatalogBirds.length} {tx('Iluminadas', 'Illuminated')}
                 </span>
               </div>
 
@@ -690,7 +671,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  Todas ({allCatalogBirds.length})
+                  {tx('Todas', 'All')} ({allCatalogBirds.length})
                 </button>
                 <button
                   onClick={() => {
@@ -703,7 +684,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  Siluetas ({allCatalogBirds.filter(b => !isBirdUnlocked(b.id)).length})
+                  {tx('Siluetas', 'Silhouettes')} ({allCatalogBirds.filter(b => !isBirdUnlocked(b.id)).length})
                 </button>
                 <button
                   onClick={() => {
@@ -716,7 +697,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  Iluminadas ({allCatalogBirds.filter(b => isBirdUnlocked(b.id)).length})
+                  {tx('Iluminadas', 'Illuminated')} ({allCatalogBirds.filter(b => isBirdUnlocked(b.id)).length})
                 </button>
               </div>
 
@@ -759,21 +740,21 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         )}
                       </div>
 
-                      {/* Silhouette or Color Image */}
-                      <div className="relative h-24 rounded-xl overflow-hidden flex items-center justify-center border border-teal-500/40 mb-2">
-                        {isUnlocked ? (
-                          <img
-                            src={bird.image}
-                            alt={bird.commonName}
-                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-[#9CF0E0] via-[#6BD9C6] to-[#38B8A4]">
-                            {renderBirdSilhouetteSvg(bird.catalogNumber, 'w-20 h-16')}
-                            <span className="text-[8px] font-black text-slate-950 bg-amber-300/90 px-1.5 py-0.2 rounded-full tracking-wider uppercase mt-0.5 shadow-xs">
-                              Toca para Pistas
-                            </span>
-                          </div>
+                      {/* Real Bird Image with CSS Silhouette Filter (brightness-0 contrast-100) when locked, Full Color when unlocked */}
+                      <div className="relative h-24 rounded-xl overflow-hidden flex items-center justify-center border border-teal-500/40 mb-2 bg-gradient-to-b from-[#9CF0E0] via-[#6BD9C6] to-[#38B8A4]">
+                        <img
+                          src={encodeURI(bird.image)}
+                          alt={isUnlocked ? bird.commonName : `Silueta #${bird.catalogNumber}`}
+                          className={`w-full h-full object-cover transition-all duration-300 ${
+                            isUnlocked
+                              ? 'brightness-100 contrast-100 hover:scale-105'
+                              : 'brightness-0 contrast-100 select-none pointer-events-none'
+                          }`}
+                        />
+                        {!isUnlocked && (
+                          <span className="absolute bottom-1 right-1 text-[8px] font-black text-slate-950 bg-amber-300/95 px-1.5 py-0.2 rounded-full tracking-wider uppercase shadow-xs">
+                            {tx('Pistas', 'Clues')}
+                          </span>
                         )}
 
                         <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-[8px] text-teal-200 font-bold">
@@ -793,7 +774,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                             </p>
                             <div className="mt-1 flex items-center justify-between text-[9px] text-slate-400">
                               <span className="truncate">{bird.family}</span>
-                              <span className={`font-black ${bird.conservationStatus === 'AM' ? 'text-rose-400' : 'text-emerald-400'}`}>
+                              <span className={`font-black ${bird.conservationStatus === 'AM' ? 'text-rose-400' : bird.conservationStatus === 'VU' ? 'text-amber-400' : 'text-emerald-400'}`}>
                                 {bird.conservationStatus}
                               </span>
                             </div>
@@ -801,13 +782,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         ) : (
                           <>
                             <h5 className="text-xs font-bold text-slate-300 truncate leading-tight">
-                              Especie #{bird.catalogNumber}
+                              {tx('Especie', 'Species')} #{bird.catalogNumber}
                             </h5>
                             <p className="text-[9px] text-teal-400 truncate">
                               {bird.hints.size}
                             </p>
                             <div className="mt-1 flex items-center justify-between text-[9px] text-amber-400 font-bold">
-                              <span>Misterio</span>
+                              <span>{tx('Misterio', 'Mystery')}</span>
                               <span>+100 XP</span>
                             </div>
                           </>
@@ -822,7 +803,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         )}
 
         {/* ============================================================== */}
-        {/* TAB 2: BIOACÚSTICA "ESCUCHA EL CANTO" (PASO 11) */}
+        {/* TAB 2: BIOACÚSTICA "ESCUCHA EL CANTO" (21 ARCHIVOS .MP3 REALES) */}
         {/* ============================================================== */}
         {activeTab === 'audio' && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
@@ -835,50 +816,42 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               />
             </div>
 
-            {/* Header & Bioacoustic Synth Info */}
+            {/* Header & Real MP3 Bioacoustic Player Info */}
             <div className="rounded-2xl p-3 bg-slate-950/90 border border-teal-500/60 space-y-2 text-white">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-teal-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Volume2 className="w-4 h-4 text-emerald-400" />
-                  Bioacústica Yungas (Web Audio)
+                  {tx('Bioacústica Yungas (21 Cantos MP3)', 'Yungas Bioacoustics (21 MP3 Calls)')}
                 </span>
                 <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500">
                   100% OFFLINE
                 </span>
               </div>
               <p className="text-[11px] text-slate-300 leading-snug">
-                Vocalizaciones sintetizadas en el dispositivo: Benteveo, Chinchero Chico, Urutaú, Zorzal Colorado y Hornero.
+                {tx(
+                  'Grabaciones bioacústicas reales (.mp3) de las 21 especies del Parque Botánico Municipal Barón Schuel.',
+                  'Real bioacoustic recordings (.mp3) of the 21 species of Barón Schuel Municipal Botanical Park.'
+                )}
               </p>
 
               {/* Animated Sound Wave Graphic */}
-              <div className="h-16 rounded-xl bg-slate-900 border border-teal-800 p-2 flex items-center justify-center gap-1.5 overflow-hidden">
-                {[14, 30, 20, 48, 38, 22, 52, 32, 20, 42, 26, 16, 32, 45, 18, 28].map((baseH, idx) => {
-                  const animHeight = audioIsPlaying
-                    ? Math.min(48, Math.max(8, baseH * (1 + 0.8 * Math.sin(Date.now() / 120 + idx))))
-                    : 6;
+              <div className="h-14 rounded-xl bg-slate-900 border border-teal-800 p-2 flex items-center justify-center gap-1.5 overflow-hidden">
+                {['h-3', 'h-6', 'h-4', 'h-10', 'h-8', 'h-5', 'h-11', 'h-7', 'h-4', 'h-9', 'h-6', 'h-3', 'h-7', 'h-10', 'h-4', 'h-6'].map((activeClass, idx) => {
+                  const isHigh = audioIsPlaying && (waveTick + idx) % 2 === 0;
                   return (
                     <div
                       key={idx}
-                      className="w-1.5 rounded-full bg-gradient-to-t from-teal-400 to-amber-300 transition-all duration-100"
-                      style={{ height: `${animHeight}px` }}
+                      className={`w-1.5 rounded-full bg-gradient-to-t from-teal-400 to-amber-300 transition-all duration-100 ${
+                        audioIsPlaying ? (isHigh ? activeClass : 'h-3') : 'h-1.5'
+                      }`}
                     />
                   );
                 })}
               </div>
 
-              {/* Bird Selector Buttons (All Species with Characteristic Calls) */}
+              {/* Bird Selector Buttons (All 21 Species with Real .MP3 Calls) */}
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                {[
-                  CATALOG_BIRDS_DATA[5], // Benteveo ("bien-te-veo")
-                  featuredChinchero,     // Chinchero Chico (descending trill)
-                  CATALOG_BIRDS_DATA[3], // Urutaú (nocturnal lament "Turay, kakuy")
-                  CATALOG_BIRDS_DATA[7], // Zorzal Colorado (melodious flute)
-                  CATALOG_BIRDS_DATA[6], // Hornero (rhythmic duet)
-                  CATALOG_BIRDS_DATA[1], // Loro Alisero (flock squawk)
-                  CATALOG_BIRDS_DATA[2], // Picaflor Cometa (wing hum + tsik-tsik)
-                  CATALOG_BIRDS_DATA[4], // Chiricote ("chi-ri-co-te")
-                  CATALOG_BIRDS_DATA[0]  // Jote Real (soaring thermal + click)
-                ].map((bird) => {
+                {CATALOG_BIRDS_DATA.map((bird) => {
                   const isSelected = audioTargetBird.id === bird.id;
                   const isUnlocked = isAcousticUnlocked(bird.id);
                   return (
@@ -892,7 +865,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       }`}
                     >
                       <Volume2 className="w-3.5 h-3.5 text-amber-300" />
-                      <span>{bird.commonName}</span>
+                      <span>#{bird.catalogNumber} {bird.commonName}</span>
                       {isUnlocked && <span className="text-emerald-300 text-[10px]">✓</span>}
                     </button>
                   );
@@ -904,21 +877,32 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             <div className="bg-slate-950/95 rounded-2xl p-3.5 border border-teal-800 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-amber-400 uppercase tracking-wide">
-                  Desafío: ¿Quién Canta en el Sendero?
+                  {tx('Desafío: ¿Quién Canta en el Sendero?', 'Challenge: Who Is Singing on the Trail?')}
                 </span>
                 <span className="text-[10px] font-black text-teal-300">+50 XP</span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-900 border border-teal-900 text-center space-y-2">
                 <p className="text-[11px] text-slate-300">
-                  Escucha el trino o lamento y selecciona cuál de las 3 especies candidatas está vocalizando:
+                  {tx(
+                    'Escucha el archivo de audio real (.mp3) y selecciona cuál de las 3 especies candidatas está vocalizando:',
+                    'Listen to the real audio file (.mp3) and select which of the 3 candidate species is vocalizing:'
+                  )}
                 </p>
+                <audio
+                  controls
+                  src={encodeURI(audioTargetBird.audioUrl)}
+                  onPlay={() => setAudioIsPlaying(true)}
+                  onPause={() => setAudioIsPlaying(false)}
+                  onEnded={() => setAudioIsPlaying(false)}
+                  className="w-full h-8 rounded-lg"
+                />
                 <button
                   onClick={() => playSoundForBird(audioTargetBird)}
                   className="w-full py-2.5 rounded-xl game-btn-mint text-emerald-950 font-black text-xs flex items-center justify-center gap-2 shadow"
                 >
                   <Volume2 className="w-4 h-4" />
-                  <span>{audioIsPlaying ? 'Reproduciendo Canto...' : 'Reproducir Canto'}</span>
+                  <span>{audioIsPlaying ? tx('Reproduciendo Canto MP3...', 'Playing MP3 Call...') : tx('Reproducir Canto MP3', 'Play MP3 Call')}</span>
                 </button>
               </div>
 
@@ -1309,14 +1293,14 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             </div>
 
             <div className="flex-1 overflow-y-auto py-2.5 space-y-2.5">
-              {/* Silhouette Stage */}
-              <div className="relative h-32 rounded-2xl bg-gradient-to-b from-[#9CF0E0] via-[#5CD2BF] to-[#2BB5A0] border-2 border-teal-300 flex flex-col items-center justify-center p-2 text-center shadow-inner">
+              {/* Silhouette Stage: Real Image with brightness-0 contrast-100 when unrevealed, Full Color when guessed */}
+              <div className="relative h-36 rounded-2xl bg-gradient-to-b from-[#9CF0E0] via-[#5CD2BF] to-[#2BB5A0] border-2 border-teal-300 flex flex-col items-center justify-center p-2 text-center shadow-inner">
                 {silhouetteResult === 'correct' ? (
                   <div className="flex flex-col items-center animate-scaleIn">
                     <img
-                      src={localizedSilBird.image}
+                      src={encodeURI(localizedSilBird.image)}
                       alt={localizedSilBird.commonName}
-                      className="w-20 h-20 rounded-full object-cover border-3 border-amber-400 shadow-xl"
+                      className="w-24 h-24 rounded-2xl object-cover brightness-100 contrast-100 border-3 border-amber-400 shadow-xl transition-all duration-500"
                     />
                     <span className="text-xs font-black text-slate-950 bg-amber-300 px-2.5 py-0.5 rounded-full mt-1 uppercase shadow">
                       {tx(`¡${localizedSilBird.commonName} ILUMINADO!`, `${localizedSilBird.commonName} ILLUMINATED!`)}
@@ -1324,8 +1308,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   </div>
                 ) : (
                   <>
-                    <div className="filter drop-shadow-md">
-                      {renderBirdSilhouetteSvg(localizedSilBird.catalogNumber, 'w-24 h-20')}
+                    <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-teal-900/40 shadow-md flex items-center justify-center bg-teal-200/40">
+                      <img
+                        src={encodeURI(localizedSilBird.image)}
+                        alt={`Silueta #${localizedSilBird.catalogNumber}`}
+                        className="w-full h-full object-cover brightness-0 contrast-100 select-none pointer-events-none transition-all duration-300"
+                      />
                     </div>
                     <div className="text-[10px] font-black text-amber-300 bg-slate-950/85 px-2.5 py-0.5 rounded-full mt-1 border border-amber-400/50">
                       {tx(
@@ -1538,7 +1526,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
                   <div className="relative z-10 w-24 h-24 rounded-full overflow-hidden border-3 border-amber-300 shadow-2xl bg-slate-900 mt-3">
                     <img
-                      src={localizedInspBird.image}
+                      src={encodeURI(localizedInspBird.image)}
                       alt={localizedInspBird.commonName}
                       className="w-full h-full object-cover"
                     />
@@ -1613,13 +1601,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   <p className="text-slate-200 text-[11px] leading-snug">{localizedInspBird.beakDescription}</p>
                 </div>
 
-                {/* Canto with Unlocked Sound Wave */}
-                <div className="pt-1.5 border-t border-slate-800">
-                  <div className="flex items-center justify-between mb-1">
+                {/* Canto with Unlocked Sound Wave & Real HTML5 <audio> Player */}
+                <div className="pt-1.5 border-t border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
                     <span className="font-black text-amber-300 text-[10px] flex items-center gap-1">
                       <Music className="w-3 h-3" />
                       <span>
-                        {tx('CANTO Y ONDA SONORA', 'CALL & SOUND WAVE')}{' '}
+                        {tx('CANTO REAL (.MP3) Y ONDA SONORA', 'REAL CALL (.MP3) & SOUND WAVE')}{' '}
                         {isAcousticUnlocked(localizedInspBird.id) ? tx('(DESBLOQUEADA ✓)', '(UNLOCKED ✓)') : ''}:
                       </span>
                     </span>
@@ -1628,25 +1616,32 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       className="px-2.5 py-0.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black flex items-center gap-1 shadow"
                     >
                       <Play className="w-2.5 h-2.5" />
-                      <span>{audioIsPlaying ? tx('Sonando...', 'Playing...') : tx('Escuchar', 'Listen')}</span>
+                      <span>{audioIsPlaying ? tx('Sonando...', 'Playing...') : tx('Escuchar MP3', 'Listen MP3')}</span>
                     </button>
                   </div>
-                  
+
                   {/* Wave Visualizer Graphic */}
                   <div className="h-9 rounded-lg bg-slate-900 border border-teal-950 p-1.5 flex items-center justify-center gap-1">
-                    {[8, 18, 12, 26, 20, 10, 24, 16, 28, 14, 22, 12, 19, 25, 11, 15].map((h, i) => {
-                      const barH = audioIsPlaying
-                        ? Math.min(28, Math.max(6, h * (1 + 0.5 * Math.sin(Date.now() / 100 + i))))
-                        : h;
+                    {['h-2', 'h-5', 'h-3', 'h-6', 'h-5', 'h-2.5', 'h-6', 'h-4', 'h-7', 'h-3.5', 'h-5', 'h-3', 'h-4', 'h-6', 'h-2.5', 'h-4'].map((cls, i) => {
+                      const isHigh = audioIsPlaying && (waveTick + i) % 2 === 0;
                       return (
                         <div
                           key={i}
-                          className="w-1 rounded-full bg-gradient-to-t from-teal-400 to-amber-300 transition-all duration-100"
-                          style={{ height: `${barH}px` }}
+                          className={`w-1 rounded-full bg-gradient-to-t from-teal-400 to-amber-300 transition-all duration-100 ${
+                            audioIsPlaying ? (isHigh ? cls : 'h-2') : cls
+                          }`}
                         />
                       );
                     })}
                   </div>
+                  <audio
+                    controls
+                    src={encodeURI(localizedInspBird.audioUrl)}
+                    onPlay={() => setAudioIsPlaying(true)}
+                    onPause={() => setAudioIsPlaying(false)}
+                    onEnded={() => setAudioIsPlaying(false)}
+                    className="w-full h-8 rounded-lg"
+                  />
                   <p className="text-slate-300 text-[10px] italic mt-1">{localizedInspBird.songDescription}</p>
                 </div>
 

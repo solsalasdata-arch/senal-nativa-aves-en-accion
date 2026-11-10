@@ -250,116 +250,259 @@ export function localizeCatalogBird(bird: CatalogBird, lang: Language): CatalogB
   if (lang === 'es') return bird;
 
   const enBirds: Record<string, Partial<CatalogBird>> = {
-    '010': {
-      habitat: 'Tree trunks and bark of the Yungas',
-      beakDescription: 'Pale, slender, downward-curved bill, ideal for probing insects under bark.',
-      songDescription: 'Rapid descending trill "ti-ti-ti-tirrr".',
-      plumageDescription: 'Crisp white supercilium, cinnamon back, and creamy-white streaked breast.',
+    '001': {
+      habitat: 'Clearings, trail edges, and park groves',
+      beakDescription: 'Short, conical, strong bill adapted for cracking grass seeds and catching insects.',
+      songDescription: 'Melodious whistle of three or four clear notes followed by a vibrant final trill.',
+      plumageDescription: 'Gray crest with black stripes, rufous-cinnamon collar on the nape, and white throat.',
       hints: {
-        size: '21 cm',
-        habitat: 'Stratum: subcanopy and tree trunks',
-        morphology: 'Pale awl-like curved bill and stiff tail feathers used as a tripod.',
-        loreOrFact: 'Climbs tipa and laurel trunks in spirals searching for hidden larvae.'
+        size: '15 cm',
+        habitat: 'Stratum: understory and open trail edges',
+        morphology: 'Unmistakable black-striped gray crest and rufous-cinnamon nape collar.',
+        loreOrFact: 'One of the earliest and most confiding songbirds along the trails of San Salvador de Jujuy.'
       }
     },
-    '011': {
-      habitat: 'Mountain Forest and Canyons',
-      beakDescription: 'Massive hooked red-and-ivory bill capable of tearing thick hides.',
-      songDescription: 'Deep hisses and low bill snaps on rocky ledges.',
-      plumageDescription: 'Creamy white body with jet-black flight feathers; bare head in crimson, orange, and blue.',
+    '002': {
+      habitat: 'Sunlit canopies and fruit trees of the Mountain Forest',
+      beakDescription: 'Medium, stout bluish-gray bill ideal for slicing fleshy fruits and buds.',
+      songDescription: 'High-pitched, crystalline warbling notes from high branches.',
+      plumageDescription: 'Soft bluish-gray overall plumage with bright turquoise-edged wings and tail.',
       hints: {
-        size: '78 cm',
-        habitat: 'In flight (soars high above the Reserve)',
-        morphology: 'White body with black wings and tail, bare red-orange neck and bill caruncle.',
-        loreOrFact: 'Belongs to Cathartidae; glides on thermal currents without sexual dimorphism.'
-      }
-    },
-    '012': {
-      habitat: 'Alder forests and high ravines',
-      beakDescription: 'Strong pale horn-colored bill adapted for opening mountain alder cones.',
-      songDescription: 'Loud metallic flock calls while flying swiftly across valleys.',
-      plumageDescription: 'Bright emerald green with black-edged feathers, red forehead, and pale bill.',
-      hints: {
-        size: '32 cm',
-        habitat: 'Stratum: canopy & subcanopy (Migrant & Threatened - AM)',
-        morphology: 'Green plumage with red forehead, white eye-ring, and red primary coverts.',
-        loreOrFact: 'Emblematic migrant parrot of the Yungas mountain alder forests.'
-      }
-    },
-    '013': {
-      habitat: 'Flowering slopes and ravines',
-      beakDescription: 'Straight, fine 2 cm black bill to reach nectar in tubular flowers.',
-      songDescription: 'Tail hum and sharp territorial "tsik-tsik" notes near epiphytic flowers.',
-      plumageDescription: 'Male with emerald throat, crimson back, and very long golden-ruby forked tail.',
-      hints: {
-        size: 'Male: 16 cm / Female: 12 cm',
-        habitat: 'Stratum: subcanopy',
-        morphology: 'Emerald green with iridescent magenta back and long glowing orange-red tail.',
-        loreOrFact: 'Marked sexual dimorphism: the male sports a comet-like forked tail.'
-      }
-    },
-    '014': {
-      habitat: 'Mountain Forest and Transition Forest',
-      beakDescription: 'Tiny bill with a wide gape surrounded by tactile bristles.',
-      songDescription: 'Haunting descending nocturnal lament: "Turay, kakuy... pua-pua-uh".',
-      plumageDescription: 'Master of camouflage: gray, ash, and brown tones mimicking a broken dry stump.',
-      hints: {
-        size: '35 cm',
+        size: '17 cm',
         habitat: 'Stratum: canopy and subcanopy',
-        morphology: 'Cryptic mottled brown-and-gray plumage, large head, and huge yellow eyes.',
-        loreOrFact: "Legend of the Urutaú (Kakuy): A captive sister atop a tall tree cried out at night 'Turay, turay! Kakuy, kakuy!' (my brother) until transforming into this nocturnal bird."
-      },
-      legend: 'Legend of the Urutaú (Kakuy): A captive sister atop a tall tree cried out at night "Turay, turay! Kakuy, kakuy!" (my brother) until transforming into this nocturnal bird.'
-    },
-    '015': {
-      habitat: 'Forest streams and ravines',
-      beakDescription: 'Stout yellowish-green bill for probing crabs and worms in stream mud.',
-      songDescription: 'Resounding synchronized duet: "¡chi-ri-co-te, chi-ri-co-te!" at dawn and dusk.',
-      plumageDescription: 'Slate-gray head and neck, rufous-chestnut breast, olive back, and red legs.',
-      hints: {
-        size: '37 cm',
-        habitat: 'Stratum: understory and stream edges',
-        morphology: 'Gray head and neck, chestnut crown, red iris, green bill with yellow base, rufous belly.',
-        loreOrFact: 'Has short rounded wings, strong pinkish-red legs, and long toes.'
+        morphology: 'Ashy sky-blue plumage with luminous turquoise wing edges.',
+        loreOrFact: 'A key seed disperser for native trees across the Jujuy Yungas.'
       }
     },
-    '016': {
-      habitat: 'Woodlands, clearings, and urban edges',
+    '003': {
+      habitat: 'Thickets, fallen logs, and park clearings',
+      beakDescription: 'Fine, sharp, slightly curved bill for catching spiders and small insects.',
+      songDescription: 'Bubbling, complex, and remarkably loud warble for its tiny size.',
+      plumageDescription: 'Uniform cinnamon-brown with fine dark bars on wings and an upright tail.',
+      hints: {
+        size: '12 cm',
+        habitat: 'Stratum: understory and low thickets',
+        morphology: 'Tiny, barred brown, and restless, often holding its tail cocked nearly vertical.',
+        loreOrFact: 'Tirelessly inspects every hollow and tree root in search of small invertebrates.'
+      }
+    },
+    '004': {
+      habitat: 'Mountain Forest and shady groves',
+      beakDescription: 'Bright orange-yellow bill in adult males for harvesting wild berries and earthworms.',
+      songDescription: 'Melodious, flute-like song rich in musical phrases before dawn.',
+      plumageDescription: 'Olive-brown back, white-streaked throat, and brick-orange rufous belly.',
+      hints: {
+        size: '24 cm',
+        habitat: 'Stratum: subcanopy and understory',
+        morphology: 'Grayish-brown back, yellow eye-ring, streaked throat, and bright rufous belly.',
+        loreOrFact: 'Legend of the Zorzal Colorado: The Guaraní youth Zorzal played the flute for his beloved Agüaí; from his chest emerged this red-bellied thrush with a flute-like song.'
+      },
+      legend: 'Legend of the Zorzal Colorado: The Guaraní youth Zorzal played the flute for his beloved Agüaí; from his chest emerged this red-bellied thrush with a flute-like song.'
+    },
+    '005': {
+      habitat: 'High canopies of tipa, cebil, and laurel trees',
+      beakDescription: 'Short grayish bill with whitish cere at the base for consuming fruits and seeds.',
+      songDescription: 'Deep, rhythmic guttural cooing "coo-coo-cooo" echoing through the canopy.',
+      plumageDescription: 'Vinaceous-pink head and breast, scaled blue-and-black nape collar, and white wing band.',
+      hints: {
+        size: '34 cm',
+        habitat: 'Stratum: tree canopy',
+        morphology: 'Large vinaceous pigeon with scaled neck crescent and white wing stripe.',
+        loreOrFact: 'Its name comes from Guaraní "picasú-ró" (bitter dove), due to the taste imparted by wild fruits.'
+      }
+    },
+    '006': {
+      habitat: 'Shrubby slopes and wooded ravine edges',
+      beakDescription: 'Thick, conical, bright golden-orange bill.',
+      songDescription: 'Energetic, clear, melodious whistle "pi-ti-chuuu" from mid-level branches.',
+      plumageDescription: 'Black head with long white postocular supercilium, slate-gray back, and buff-cinnamon breast.',
+      hints: {
+        size: '20 cm',
+        habitat: 'Stratum: subcanopy and shrubland',
+        morphology: 'Unmistakable strong golden-orange bill, black hood with white supercilium, and cinnamon belly.',
+        loreOrFact: 'Also known as Golden-billed Saltator, famous for its powerful song at the Park viewpoints.'
+      }
+    },
+    '007': {
+      habitat: 'Woodlands, clearings, and urban edges of the Park',
       beakDescription: 'Straight, strong black bill with a hooked tip for varied prey.',
       songDescription: 'Loud, cheerful three-syllable call: "¡bien-te-veo! ¡bien-te-veo!".',
       plumageDescription: 'Bright yellow belly, black mask, pure white eyestripe, and hidden yellow crown.',
       hints: {
         size: '22 cm',
-        habitat: 'Urbanized zone (Park entrance and clearings)',
-        morphology: 'Black head with white supercilium, hidden yellow crown, white throat, and yellow belly.',
+        habitat: 'Urbanized zone and forest edges',
+        morphology: 'Black head with white supercilium, hidden yellow crown, white throat, and bright yellow belly.',
         loreOrFact: "Its common name imitates its unmistakable three-syllable call: 'bien-te-veo'."
       }
     },
-    '017': {
+    '008': {
+      habitat: 'Open areas, grasslands, and Reserve access zones',
+      beakDescription: 'Short straight bill with pinkish-red base and black tip for ground insects.',
+      songDescription: 'Sharp metallic alarm call "¡te-ro, te-ro, te-ro!" defending its territory.',
+      plumageDescription: 'Black breast, black forehead, fine occipital crest, bronze-gray back, and red wing spurs.',
+      hints: {
+        size: '35 cm',
+        habitat: 'Stratum: ground and open clearings',
+        morphology: 'Long reddish legs, black breast, fine nape crest, and red shoulder spurs.',
+        loreOrFact: 'Famous sentinel that feigns a broken wing away from its nest to distract intruders.'
+      }
+    },
+    '009': {
+      habitat: 'Open groves and sunny edges of the Park',
+      beakDescription: 'Short, strong conical bill for husking small wild seeds.',
+      songDescription: 'Varied, rapid, and musical trill delivered from exposed branches.',
+      plumageDescription: 'Adult male gleaming golden-yellow with a distinctive bright saffron-orange forehead.',
+      hints: {
+        size: '14 cm',
+        habitat: 'Stratum: subcanopy and sunny clearings',
+        morphology: 'Bright golden-yellow plumage with a vivid saffron-orange forehead in the male.',
+        loreOrFact: 'Often seen in pairs or small flocks foraging for seeds in clearings of Barón Schuel.'
+      }
+    },
+    '010': {
+      habitat: 'Groves, clearings, and urban edges of the Park',
+      beakDescription: 'Conical, straight, jet-black bill adapted to an omnivorous diet of seeds and insects.',
+      songDescription: 'Liquid, bubbling warble accompanied by high notes while puffing its feathers.',
+      plumageDescription: 'Male glossy black with iridescent violet and metallic blue sheen in sunlight; female grayish-brown.',
+      hints: {
+        size: '20 cm',
+        habitat: 'Stratum: subcanopy and open areas',
+        morphology: 'Male entirely black with intense purple and blue iridescent reflections.',
+        loreOrFact: 'A brood parasite that lays its eggs in the nests of other species such as the Chingolo.'
+      }
+    },
+    '011': {
+      habitat: 'Interior and ravines of the Yungas Mountain Forest',
+      beakDescription: 'Stout, versatile black bill for fruits, insects, and small vertebrates.',
+      songDescription: 'Wide repertoire of metallic voices, whistles, and social flock calls in the forest.',
+      plumageDescription: 'Plush black crest, sky-blue patches above and below the golden-yellow eye, violet-blue nape, and cream breast.',
+      hints: {
+        size: '34 cm',
+        habitat: 'Stratum: canopy and subcanopy of the Yungas',
+        morphology: 'Unmistakable black crest, yellow eyes, violet-blue nape, and creamy belly and tail tip.',
+        loreOrFact: 'Highly intelligent, social jay that travels along trails in alert family groups.'
+      }
+    },
+    '012': {
+      habitat: 'High, exposed canopy branches of the Park',
+      beakDescription: 'Wide, hooked black bill ideal for catching large insects in aerial acrobatics.',
+      songDescription: 'High-pitched, vibrant trill "sirirí-sirirí" from the highest perches at dawn.',
+      plumageDescription: 'Gray head with dark mask, pale throat, bright yellow breast, olive back, and notched tail.',
+      hints: {
+        size: '21 cm',
+        habitat: 'Stratum: exposed canopy (Migrant Species)',
+        morphology: 'Gray head without white supercilium, bright yellow belly, and V-notched tail.',
+        loreOrFact: 'Perches on the highest treetops to launch elastic sally flights after flying insects.'
+      }
+    },
+    '013': {
+      habitat: 'Soaring over slopes, clearings, and viewpoints of the Park',
+      beakDescription: 'High, compressed, hooked bluish-gray bill with orange-red facial cere.',
+      songDescription: 'Harsh guttural "kra-kra-kra" call while tossing its head back.',
+      plumageDescription: 'Black crest, white neck, finely barred black-and-cream chest, and pale wing patches in flight.',
+      hints: {
+        size: '58 cm',
+        habitat: 'Stratum: in flight and open clearings',
+        morphology: 'Large raptor with black cap, bare orange-red face, and barred chest.',
+        loreOrFact: 'Unlike other falcons, it walks comfortably on the ground thanks to its long yellow legs.'
+      }
+    },
+    '014': {
       habitat: 'Park clearings and groves',
-      beakDescription: 'Slightly curved brown bill used to knead mud and straw pellets.',
+      beakDescription: 'Slightly curved brown bill used to knead mud and plant fibers.',
       songDescription: 'Jubilant synchronized duet with wing-beating by male and female.',
-      plumageDescription: 'Earthy rufous-brown back, white throat, and soft buff belly.',
+      plumageDescription: 'Earthy rufous-brown back, white throat, and bright rufous tail.',
       hints: {
         size: '18 cm',
-        habitat: 'Urbanized zone',
-        morphology: 'Rufous-brown upperparts with white throat and bright rufous tail.',
-        loreOrFact: 'Legend of the Hornero: Two young potters in love were transformed into Argentina’s national bird, which builds dome-shaped clay oven nests.'
+        habitat: 'Urbanized zone and forest clearings',
+        morphology: 'Earthy brown plumage with white throat, elegant walk on the ground, and rufous tail.',
+        loreOrFact: 'Legend of the Hornero: Argentina’s National Bird, famous for building its sturdy clay oven-shaped nest.'
       },
-      legend: 'Legend of the Hornero: Two young potters in love were transformed into Argentina’s national bird, which builds dome-shaped clay oven nests.'
+      legend: 'Legend of the Hornero: Two young potters in love were transformed into Argentina’s national bird, which models its home in dome-shaped clay nests.'
+    },
+    '015': {
+      habitat: 'Humid understory and ravines of the Mountain Forest',
+      beakDescription: 'Fine black bill specialized in catching small insects among foliage.',
+      songDescription: 'Sweet, crystalline series of high whistles that liven up the forest interior.',
+      plumageDescription: 'Rufous-chestnut crown, white eye crescents, gray back, bright yellow breast, and black tail with white edges.',
+      hints: {
+        size: '13 cm',
+        habitat: 'Stratum: understory and subcanopy',
+        morphology: 'Rufous-brown cap, split white eye-ring, yellow breast, and fanned tail with white outer feathers.',
+        loreOrFact: 'Constantly fans and wags its black-and-white tail to flush insects hidden on leaves.'
+      }
+    },
+    '016': {
+      habitat: 'Lichen-draped canopies and air plants in the Yungas',
+      beakDescription: 'Tiny pointed bill with dark upper mandible and yellowish lower mandible.',
+      songDescription: 'Rapid ascending buzzing trill ending in a sharp snap.',
+      plumageDescription: 'Bluish-gray back with olive-green dorsal patch, orange-tinted yellow throat and breast, and two white wing bars.',
+      hints: {
+        size: '10 cm',
+        habitat: 'Stratum: canopy and subcanopy',
+        morphology: 'Very small, bluish back with olive dorsal patch and yellow breast with orange wash.',
+        loreOrFact: 'Builds its nest hidden inside hanging beard lichens and epiphytes on high branches.'
+      }
+    },
+    '017': {
+      habitat: 'Dense interior of the Botanical Park Mountain Forest',
+      beakDescription: 'Strong dark brown bill for gathering native laurel, chal-chal, and fig fruits.',
+      songDescription: 'Deep, hoarse barking call and resonant wing-whirring at dawn.',
+      plumageDescription: 'Dark bronze-brown with fine white streaking on chest and wing coverts, and prominent red throat wattle.',
+      hints: {
+        size: '72 cm',
+        habitat: 'Stratum: subcanopy and understory (Vulnerable Species - VU)',
+        morphology: 'Large size, white-streaked bronze-brown plumage, and striking red throat dewlap.',
+        loreOrFact: 'Flagship conservation species of the Yungas; finds safe sanctuary in the 15.5 ha of Barón Schuel Reserve.'
+      }
     },
     '018': {
-      habitat: 'Mountain Forest and shady groves',
-      beakDescription: 'Bright orange-yellow bill in adult males for harvesting wild berries.',
-      songDescription: 'Melodious, flute-like song rich in musical phrases before dawn.',
-      plumageDescription: 'Olive-brown back, streaked white throat, and brick-orange rufous belly.',
+      habitat: 'Mountain Forest canopy and cliffs of the Yungas',
+      beakDescription: 'Large, strong ivory-horn hooked bill capable of cracking hard seeds.',
+      songDescription: 'Loud metallic calls uttered in unison while flying in swift flocks.',
+      plumageDescription: 'Bright green with striking scarlet-red forehead and cheek mask, bare white eye-ring, and long pointed tail.',
       hints: {
-        size: '24 cm',
-        habitat: 'Stratum: subcanopy and understory',
-        morphology: 'Grayish-brown back, yellow eye-ring, white-streaked throat, and bright rufous belly.',
-        loreOrFact: 'Legend of the Zorzal Colorado: The Guaraní youth Zorzal played the flute for his beloved Agüaí; from his chest emerged this red-bellied thrush with a flute-like song.'
-      },
-      legend: 'Legend of the Zorzal Colorado: The Guaraní youth Zorzal played the flute for his beloved Agüaí; from his chest emerged this red-bellied thrush with a flute-like song.'
+        size: '36 cm',
+        habitat: 'Stratum: canopy and in flight over ravines',
+        morphology: 'Long-tailed green parakeet with forehead and face splashed with crimson red.',
+        loreOrFact: 'Its flocks announce dusk as they cross the Botanical Park sky toward their roosts.'
+      }
+    },
+    '019': {
+      habitat: 'Forest edges and fruit trees of the Park',
+      beakDescription: 'Short, stout bluish bill with dark tip for slicing sweet fruits.',
+      songDescription: 'High, lively warble of repeated notes in sunlit treetops.',
+      plumageDescription: 'Turquoise-blue hood, black mask and back, and fiery yellow-orange breast.',
+      hints: {
+        size: '17 cm',
+        habitat: 'Stratum: canopy and subcanopy',
+        morphology: 'Bright sky-blue head and wings, black mask, and glowing orange-yellow breast.',
+        loreOrFact: 'Brings the most vibrant colors to the sunlit canopies of Barón Schuel Botanical Park.'
+      }
+    },
+    '020': {
+      habitat: 'Vines, epiphytes, and dense Mountain Forest tangles',
+      beakDescription: 'Straight, strong wedge-shaped bill for probing bromeliads and aerial leaf litter.',
+      songDescription: 'Accelerated series of dry, vibrant metallic notes among branches.',
+      plumageDescription: 'Olive-brown back, distinct buff-cinnamon supercilium, creamy-white streaked brown chest, and rufous tail.',
+      hints: {
+        size: '17 cm',
+        habitat: 'Stratum: subcanopy and understory with epiphytes',
+        morphology: 'Well-defined cinnamon eyebrow, heavily streaked chest, and rufous-chestnut tail.',
+        loreOrFact: 'Specialist in inspecting the interior of bromeliads and dead leaf clusters hanging from branches.'
+      }
+    },
+    '021': {
+      habitat: 'Open groves and edges of the Botanical Park',
+      beakDescription: 'Short conical black bill surrounded by a well-defined dark mask.',
+      songDescription: 'Melodious, varied choral song performed by several individuals together in the branches.',
+      plumageDescription: 'Soft brownish-gray body contrasting with bright rufous-chestnut (bay) wings.',
+      hints: {
+        size: '18 cm',
+        habitat: 'Stratum: subcanopy and open groves',
+        morphology: 'Ashy-gray body with black mask and striking rufous-chestnut (bay) wings.',
+        loreOrFact: 'Called "Músico" (Musician) for its pleasant group concerts in the treetops.'
+      }
     }
   };
 
