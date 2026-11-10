@@ -185,13 +185,13 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             />
           </div>
 
-          {/* Audio chirp button on the toucan */}
+          {/* Audio greeting & croak button on the Toucan */}
           <button
             onClick={() => {
-              soundManager.playToucanCall();
+              soundManager.playToucanGreeting(lang);
             }}
             className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center border-2 border-slate-900 shadow-lg hover:scale-110 active:scale-95 cursor-pointer"
-            title={tx('Canto del Tucán', 'Toucan Call')}
+            title={tx('Escuchar saludo y voz del Tucán Grande', 'Listen to Toco Toucan greeting & call')}
           >
             <Volume2 className="w-4 h-4" />
           </button>

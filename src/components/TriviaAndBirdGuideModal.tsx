@@ -43,6 +43,193 @@ interface TriviaAndBirdGuideModalProps {
   onConsumeFreeHints?: (usedCount: number) => void;
 }
 
+// Vectorial Black SVG Bird Silhouette Component (shows clear contour of beak, head, wings, tail & perch)
+const BirdSilhouetteSvg: React.FC<{ bird: CatalogBird; size?: 'card' | 'stage' }> = ({
+  bird,
+  size = 'card'
+}) => {
+  const num = parseInt(bird.catalogNumber, 10) || 1;
+  const svgSizeClass = size === 'stage' ? 'w-44 h-44 sm:w-48 sm:h-48' : 'w-28 h-28 sm:w-32 sm:h-32';
+
+  // Select anatomically distinct vector silhouette path by species/family
+  const renderBirdPath = () => {
+    // 003 Chercán (Ratona) -> compact wren with upright cocked tail
+    if (num === 3) {
+      return (
+        <g>
+          {/* Perched branch */}
+          <path d="M18 102 Q60 96 104 104" stroke="#08221E" strokeWidth="5" strokeLinecap="round" fill="none" />
+          {/* Legs */}
+          <path d="M56 84 L53 100 M64 84 L63 100" stroke="#061210" strokeWidth="3" strokeLinecap="round" />
+          {/* Upright cocked tail */}
+          <path d="M36 66 L22 30 L32 28 L44 62 Z" fill="#061210" />
+          {/* Compact rounded body & wing */}
+          <ellipse cx="56" cy="69" rx="22" ry="16" fill="#061210" />
+          {/* Head */}
+          <circle cx="74" cy="56" r="11" fill="#061210" />
+          {/* Slender slightly curved insectivore beak */}
+          <path d="M83 53 Q96 54 99 58 L83 59 Z" fill="#061210" />
+        </g>
+      );
+    }
+
+    // 008 Tero -> long-legged plover with thin occipital crest
+    if (num === 8) {
+      return (
+        <g>
+          {/* Ground/branch line */}
+          <path d="M16 106 Q60 103 104 106" stroke="#08221E" strokeWidth="4.5" strokeLinecap="round" fill="none" />
+          {/* Long slender legs */}
+          <path d="M56 72 L53 104 M65 72 L68 104" stroke="#061210" strokeWidth="3.2" strokeLinecap="round" />
+          {/* Plover body & tail */}
+          <path d="M24 68 L48 50 Q68 48 76 62 Q68 76 46 74 Z" fill="#061210" />
+          {/* Upright neck & head */}
+          <path d="M66 56 L72 36 Q78 30 84 36 L78 58 Z" fill="#061210" />
+          {/* Occipital crest plume */}
+          <path d="M70 35 Q58 29 53 33 Q62 37 70 39 Z" fill="#061210" />
+          {/* Plover beak */}
+          <path d="M83 36 L98 39 L83 42 Z" fill="#061210" />
+        </g>
+      );
+    }
+
+    // 013 Carancho -> perched raptor with hooked beak and broad shoulders
+    if (num === 13) {
+      return (
+        <g>
+          {/* Perch post/branch */}
+          <path d="M20 102 Q60 97 100 103" stroke="#08221E" strokeWidth="5.5" strokeLinecap="round" fill="none" />
+          {/* Strong raptor talons */}
+          <path d="M54 82 L50 100 M64 82 L66 100" stroke="#061210" strokeWidth="3.8" strokeLinecap="round" />
+          {/* Tail */}
+          <path d="M36 76 L22 104 L36 106 L48 80 Z" fill="#061210" />
+          {/* Upright broad-shouldered raptor body & folded wings */}
+          <path d="M38 78 Q36 46 58 38 Q74 44 70 78 Z" fill="#061210" />
+          {/* Crested raptor head */}
+          <path d="M52 40 Q54 22 68 25 Q76 28 73 40 Z" fill="#061210" />
+          {/* Hooked raptor beak */}
+          <path d="M72 28 Q87 28 86 38 Q81 35 72 35 Z" fill="#061210" />
+        </g>
+      );
+    }
+
+    // 017 Pava de las yungas -> large arboreal guan with long broad fan tail & crest
+    if (num === 17) {
+      return (
+        <g>
+          {/* Thick Yungas branch */}
+          <path d="M14 98 Q62 92 106 100" stroke="#08221E" strokeWidth="6" strokeLinecap="round" fill="none" />
+          {/* Legs */}
+          <path d="M58 78 L55 95 M66 78 L67 96" stroke="#061210" strokeWidth="3.5" strokeLinecap="round" />
+          {/* Long broad guan tail */}
+          <path d="M42 68 L12 96 L24 104 L48 74 Z" fill="#061210" />
+          {/* Plump arboreal body */}
+          <ellipse cx="60" cy="64" rx="23" ry="16" transform="rotate(-12 60 64)" fill="#061210" />
+          {/* Elongated neck & crested head */}
+          <path d="M72 56 L78 32 Q84 26 90 32 L82 58 Z" fill="#061210" />
+          {/* Bushy crown crest */}
+          <path d="M75 31 Q72 21 82 23 Q86 25 85 31 Z" fill="#061210" />
+          {/* Curved gamebird beak */}
+          <path d="M89 32 Q99 34 97 39 L88 37 Z" fill="#061210" />
+        </g>
+      );
+    }
+
+    // 018 Aratinga mitrada (Loro/Calancate) -> hooked parrot beak & long pointed parakeet tail
+    if (num === 18) {
+      return (
+        <g>
+          {/* Branch */}
+          <path d="M20 94 Q60 88 102 96" stroke="#08221E" strokeWidth="5" strokeLinecap="round" fill="none" />
+          {/* Zygodactyl feet */}
+          <path d="M56 78 L54 91 M63 78 L63 91" stroke="#061210" strokeWidth="3.2" strokeLinecap="round" />
+          {/* Long pointed graduated parakeet tail */}
+          <path d="M44 72 L18 110 L26 112 L52 76 Z" fill="#061210" />
+          {/* Compact parrot body & folded wing */}
+          <path d="M42 74 Q42 46 62 42 Q76 48 68 76 Z" fill="#061210" />
+          {/* Rounded parrot head */}
+          <circle cx="64" cy="36" r="12" fill="#061210" />
+          {/* Hooked psittacid upper & lower mandible */}
+          <path d="M74 30 Q88 32 84 44 Q78 40 74 39 Z" fill="#061210" />
+        </g>
+      );
+    }
+
+    // 001 Chingolo, 006 Saltator, 011 Urraca morada -> Crested / jay-like perched passerine
+    if (num === 1 || num === 6 || num === 11) {
+      return (
+        <g>
+          {/* Branch */}
+          <path d="M16 98 Q60 92 104 100" stroke="#08221E" strokeWidth="4.8" strokeLinecap="round" fill="none" />
+          {/* Legs */}
+          <path d="M55 78 L52 95 M63 78 L64 95" stroke="#061210" strokeWidth="3" strokeLinecap="round" />
+          {/* Tail feathers */}
+          <path d="M40 70 L18 96 L28 100 L48 74 Z" fill="#061210" />
+          {/* Perched songbird body & wing */}
+          <ellipse cx="58" cy="64" rx="21" ry="15" transform="rotate(-18 58 64)" fill="#061210" />
+          {/* Head with distinctive crown crest */}
+          <circle cx="73" cy="46" r="11.5" fill="#061210" />
+          <path d="M64 38 L60 24 L72 34 L69 25 L78 36 Z" fill="#061210" />
+          {/* Conical beak */}
+          <path d="M83 43 L98 47 L83 51 Z" fill="#061210" />
+        </g>
+      );
+    }
+
+    // 007 Benteveo, 012 Suirirí real, 014 Hornero, 020 Ticotico -> Upright flycatcher / furnariid with long bill
+    if (num === 7 || num === 12 || num === 14 || num === 20) {
+      return (
+        <g>
+          {/* Branch */}
+          <path d="M16 98 Q60 92 104 100" stroke="#08221E" strokeWidth="5" strokeLinecap="round" fill="none" />
+          {/* Legs */}
+          <path d="M54 78 L51 95 M62 78 L63 95" stroke="#061210" strokeWidth="3" strokeLinecap="round" />
+          {/* Long notched tail */}
+          <path d="M40 70 L20 100 L31 103 L48 74 Z" fill="#061210" />
+          {/* Upright sentinel body & wing */}
+          <path d="M38 72 Q40 48 62 44 Q76 50 66 76 Z" fill="#061210" />
+          {/* Robust head */}
+          <circle cx="68" cy="39" r="12" fill="#061210" />
+          {/* Strong straight/slightly curved flycatcher/furnariid bill */}
+          <path d="M78 35 L100 39 L98 43 L78 43 Z" fill="#061210" />
+        </g>
+      );
+    }
+
+    // Default Perched Songbird / Tanager / Thrush / Dove (002, 004, 005, 009, 010, 015, 016, 019, 021)
+    return (
+      <g>
+        {/* Branch with leaf */}
+        <path d="M16 98 Q60 91 104 99" stroke="#08221E" strokeWidth="4.8" strokeLinecap="round" fill="none" />
+        <path d="M88 96 Q96 86 104 90 Q98 98 88 96 Z" fill="#08221E" />
+        {/* Legs */}
+        <path d="M55 77 L52 94 M63 77 L64 95" stroke="#061210" strokeWidth="2.8" strokeLinecap="round" />
+        {/* Tail */}
+        <path d="M39 68 L16 90 L25 96 L47 73 Z" fill="#061210" />
+        {/* Sleek songbird body & layered wing tip */}
+        <ellipse cx="57" cy="63" rx="22" ry="15" transform="rotate(-16 57 63)" fill="#061210" />
+        <path d="M44 58 Q62 54 70 67 Q54 71 40 69 Z" fill="#061210" />
+        {/* Head */}
+        <circle cx="73" cy="46" r="11.5" fill="#061210" />
+        {/* Crisp songbird beak */}
+        <path d="M83 43 L97 46 L83 50 Z" fill="#061210" />
+      </g>
+    );
+  };
+
+  return (
+    <svg
+      viewBox="0 0 120 120"
+      className={`${svgSizeClass} drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)] select-none pointer-events-none`}
+      aria-label={`Silueta vectorial #${bird.catalogNumber}`}
+    >
+      {/* Subtle circular halo behind the black bird silhouette for maximum contrast */}
+      <circle cx="60" cy="58" r="44" fill="rgba(255, 255, 255, 0.28)" />
+      {renderBirdPath()}
+    </svg>
+  );
+};
+
 export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = ({
   isOpen,
   onClose,
@@ -512,67 +699,35 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               }}
               className="relative rounded-3xl overflow-hidden border-2 border-teal-100/70 bg-gradient-to-b from-[#1AA693] via-[#138A79] to-[#0D6B5D] p-3.5 shadow-xl cursor-pointer group"
             >
-              {/* Circular Seal of "PARQUE BOTÁNICO MUNICIPAL BARÓN CARLOS MARÍA SCHUEL" */}
+              {/* Circular Seal of "PARQUE BOTÁNICO MUNICIPAL BARÓN CARLOS MARÍA SCHUEL" + Full Uncropped Bird Showcase */}
               <div className="relative flex flex-col items-center justify-center py-1">
-                <div className="relative w-36 h-36 flex items-center justify-center">
-                  <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+                <div className="relative w-full min-h-[250px] rounded-2xl bg-[#E8FAF6] border-3 border-amber-300 shadow-2xl flex flex-col items-center justify-center p-2.5 overflow-hidden">
+                  {/* Decorative Seal Watermark Ring */}
+                  <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full opacity-25 pointer-events-none">
                     <defs>
-                      <path
-                        id="sealTopArc"
-                        d="M 24,100 A 76,76 0 1,1 176,100"
-                      />
-                      <path
-                        id="sealBottomArc"
-                        d="M 176,100 A 76,76 0 1,1 24,100"
-                      />
+                      <path id="sealTopArc" d="M 24,100 A 76,76 0 1,1 176,100" />
+                      <path id="sealBottomArc" d="M 176,100 A 76,76 0 1,1 24,100" />
                     </defs>
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="92"
-                      fill="rgba(12, 110, 90, 0.45)"
-                      stroke="rgba(140, 231, 211, 0.55)"
-                      strokeWidth="3"
-                    />
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="64"
-                      fill="rgba(20, 155, 126, 0.35)"
-                      stroke="rgba(140, 231, 211, 0.4)"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 3"
-                    />
-                    <text
-                      fill="#BDF7EA"
-                      fontSize="10.5"
-                      fontWeight="800"
-                      letterSpacing="1.8"
-                    >
+                    <circle cx="100" cy="100" r="90" fill="none" stroke="#0D6B5D" strokeWidth="3" />
+                    <circle cx="100" cy="100" r="68" fill="none" stroke="#0D6B5D" strokeWidth="1.5" strokeDasharray="4 3" />
+                    <text fill="#064E3B" fontSize="9.5" fontWeight="800" letterSpacing="1.6">
                       <textPath href="#sealTopArc" startOffset="50%" textAnchor="middle">
                         PARQUE BOTÁNICO MUNICIPAL
                       </textPath>
                     </text>
-                    <text
-                      fill="#BDF7EA"
-                      fontSize="9.5"
-                      fontWeight="800"
-                      letterSpacing="1.4"
-                    >
+                    <text fill="#064E3B" fontSize="9" fontWeight="800" letterSpacing="1.3">
                       <textPath href="#sealBottomArc" startOffset="50%" textAnchor="middle">
                         BARÓN CARLOS MARÍA SCHUEL
                       </textPath>
                     </text>
                   </svg>
 
-                  {/* Chinchero Chico Color Illustration Centered Over the Seal */}
-                  <div className="relative z-10 w-24 h-24 rounded-full overflow-hidden border-3 border-amber-300 shadow-2xl bg-slate-900 group-hover:scale-105 transition-transform duration-300">
-                    <img
-                      src={featuredChinchero.image}
-                      alt="Chinchero Chico"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                  {/* Full Uncropped Chinchero Chico Illustration (object-contain, min-h 240px) */}
+                  <img
+                    src={featuredChinchero.image}
+                    alt="Chinchero Chico"
+                    className="relative z-10 w-full h-[240px] object-contain object-top rounded-xl group-hover:scale-102 transition-transform duration-300"
+                  />
 
                   {/* Sound Quick Button */}
                   <button
@@ -580,7 +735,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       e.stopPropagation();
                       playSoundForBird(featuredChinchero);
                     }}
-                    className="absolute bottom-1 right-1 z-20 w-8 h-8 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 border-2 border-slate-900 flex items-center justify-center shadow-lg active:scale-95"
+                    className="absolute bottom-2.5 right-2.5 z-20 w-9 h-9 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 border-2 border-slate-900 flex items-center justify-center shadow-lg active:scale-95"
                     title="Escuchar Canto del Chinchero Chico"
                   >
                     <Volume2 className="w-4 h-4" />
@@ -588,9 +743,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 </div>
 
                 {/* Title Banner Below the Seal */}
-                <div className="text-center mt-1">
+                <div className="text-center mt-2">
                   <span className="inline-block px-2.5 py-0.5 rounded-full bg-slate-950/60 border border-teal-300/40 text-[9px] font-black text-amber-300 uppercase tracking-widest">
-                    AVE DESTACADA · #010
+                    AVE DESTACADA · PARQUE BOTÁNICO BARÓN SCHUEL
                   </span>
                   <h4 className="text-lg font-black text-white uppercase tracking-wider drop-shadow mt-0.5">
                     CHINCHERO CHICO
@@ -626,12 +781,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               </div>
             </div>
 
-            {/* Vista Oficial del Catálogo de Siluetas (Editing_bird_images_and_silhouettes_b4122078.jpg) */}
-            <div className="rounded-2xl overflow-hidden border-2 border-teal-200/70 bg-slate-950 shadow-lg">
+            {/* Vista Oficial del Catálogo de Siluetas (Completa sin recortes) */}
+            <div className="rounded-2xl overflow-hidden border-2 border-teal-200/70 bg-[#E8FAF6] p-2 shadow-lg flex items-center justify-center min-h-[240px]">
               <img
                 src="/assets/aistudio/Editing_bird_images_and_silhouettes_b4122078.jpg"
                 alt="Catálogo Oficial de Siluetas Chinchero Chico"
-                className="w-full h-36 object-cover object-top"
+                className="w-full h-[240px] object-contain object-top rounded-xl"
               />
             </div>
 
@@ -740,17 +895,23 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         )}
                       </div>
 
-                      {/* Real Bird Image with CSS Silhouette Filter (brightness-0 contrast-100) when locked, Full Color when unlocked */}
-                      <div className="relative h-24 rounded-xl overflow-hidden flex items-center justify-center border border-teal-500/40 mb-2 bg-gradient-to-b from-[#9CF0E0] via-[#6BD9C6] to-[#38B8A4]">
-                        <img
-                          src={encodeURI(bird.image)}
-                          alt={isUnlocked ? bird.commonName : `Silueta #${bird.catalogNumber}`}
-                          className={`w-full h-full object-cover transition-all duration-300 ${
-                            isUnlocked
-                              ? 'brightness-100 contrast-100 hover:scale-105'
-                              : 'brightness-0 contrast-100 select-none pointer-events-none'
-                          }`}
-                        />
+                      {/* Vector Black SVG Silhouette when locked; Full Uncropped Photo (object-contain, min-h 240px) when unlocked */}
+                      <div
+                        className={`relative min-h-[240px] rounded-xl overflow-hidden flex items-center justify-center border border-teal-500/40 mb-2 p-2 ${
+                          isUnlocked
+                            ? 'bg-[#E8FAF6]'
+                            : 'bg-gradient-to-b from-[#9CF0E0] via-[#6BD9C6] to-[#38B8A4]'
+                        }`}
+                      >
+                        {isUnlocked ? (
+                          <img
+                            src={encodeURI(bird.image)}
+                            alt={bird.commonName}
+                            className="w-full h-[225px] object-contain object-top rounded-lg transition-all duration-300 hover:scale-105"
+                          />
+                        ) : (
+                          <BirdSilhouetteSvg bird={bird} size="card" />
+                        )}
                         {!isUnlocked && (
                           <span className="absolute bottom-1 right-1 text-[8px] font-black text-slate-950 bg-amber-300/95 px-1.5 py-0.2 rounded-full tracking-wider uppercase shadow-xs">
                             {tx('Pistas', 'Clues')}
@@ -807,12 +968,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* ============================================================== */}
         {activeTab === 'audio' && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
-            {/* Lámina Oficial Bioacústica (Add_bird_song_interface_data_9b786ba3.jpg) */}
-            <div className="rounded-2xl overflow-hidden border-2 border-teal-400/80 bg-slate-950 shadow-lg">
+            {/* Lámina Oficial Bioacústica sin recortes (min-h 240px + object-contain) */}
+            <div className="rounded-2xl overflow-hidden border-2 border-teal-400/80 bg-[#E8FAF6] p-2 shadow-lg flex items-center justify-center min-h-[240px]">
               <img
                 src="/assets/aistudio/Add_bird_song_interface_data_9b786ba3.jpg"
                 alt="Interfaz Oficial de Canto y Onda Sonora"
-                className="w-full h-40 object-cover object-center"
+                className="w-full h-[240px] object-contain object-top rounded-xl"
               />
             </div>
 
@@ -936,12 +1097,19 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 })}
               </div>
 
-              {/* Audio Success Banner */}
+              {/* Audio Success Banner + Full Uncropped Bird Photo */}
               {audioResult === 'correct' && (
-                <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500 text-xs text-emerald-200 space-y-1 animate-fadeIn">
+                <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500 text-xs text-emerald-200 space-y-2 animate-fadeIn">
                   <div className="font-bold flex items-center gap-1.5 text-amber-300">
                     <Sparkles className="w-4 h-4" />
                     ¡RECONOCIMIENTO EXITOSO! (+50 XP)
+                  </div>
+                  <div className="w-full min-h-[240px] rounded-xl bg-[#E8FAF6] border-2 border-amber-400 p-2 flex items-center justify-center shadow-lg">
+                    <img
+                      src={encodeURI(audioTargetBird.image)}
+                      alt={audioTargetBird.commonName}
+                      className="w-full h-[225px] object-contain object-top rounded-lg"
+                    />
                   </div>
                   <p className="text-[11px]">
                     Has desbloqueado el reproductor de audio con onda sonora en la Ficha Técnica del {audioTargetBird.commonName}.
@@ -979,12 +1147,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* ============================================================== */}
         {activeTab === 'journal' && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
-            {/* Lámina Oficial "DIARIO DE AVENTURAS: ¡Anota tus aventuras del día!" (Toucan_writing_adventure_diary_9f3bf558.jpg) */}
-            <div className="rounded-2xl overflow-hidden border-2 border-amber-400/80 bg-slate-950 shadow-xl">
+            {/* Lámina Oficial "DIARIO DE AVENTURAS: ¡Anota tus aventuras del día!" sin recortes */}
+            <div className="rounded-2xl overflow-hidden border-2 border-amber-400/80 bg-[#E8FAF6] p-2 shadow-xl flex items-center justify-center min-h-[240px]">
               <img
                 src="/assets/aistudio/Toucan_writing_adventure_diary_9f3bf558.jpg"
                 alt="Diario de Aventuras Oficial"
-                className="w-full h-44 object-cover object-top"
+                className="w-full h-[240px] object-contain object-top rounded-xl"
               />
             </div>
 
@@ -1293,29 +1461,27 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             </div>
 
             <div className="flex-1 overflow-y-auto py-2.5 space-y-2.5">
-              {/* Silhouette Stage: Real Image with brightness-0 contrast-100 when unrevealed, Full Color when guessed */}
-              <div className="relative h-36 rounded-2xl bg-gradient-to-b from-[#9CF0E0] via-[#5CD2BF] to-[#2BB5A0] border-2 border-teal-300 flex flex-col items-center justify-center p-2 text-center shadow-inner">
+              {/* Silhouette Stage: Vectorial Black SVG Silhouette when unrevealed; Full Uncropped Photo (object-contain, min-h 240px) when guessed */}
+              <div className="relative min-h-[260px] rounded-2xl bg-gradient-to-b from-[#9CF0E0] via-[#5CD2BF] to-[#2BB5A0] border-2 border-teal-300 flex flex-col items-center justify-center p-3 text-center shadow-inner">
                 {silhouetteResult === 'correct' ? (
-                  <div className="flex flex-col items-center animate-scaleIn">
-                    <img
-                      src={encodeURI(localizedSilBird.image)}
-                      alt={localizedSilBird.commonName}
-                      className="w-24 h-24 rounded-2xl object-cover brightness-100 contrast-100 border-3 border-amber-400 shadow-xl transition-all duration-500"
-                    />
-                    <span className="text-xs font-black text-slate-950 bg-amber-300 px-2.5 py-0.5 rounded-full mt-1 uppercase shadow">
+                  <div className="w-full flex flex-col items-center animate-scaleIn">
+                    <div className="w-full min-h-[240px] rounded-2xl bg-[#E8FAF6] border-3 border-amber-400 shadow-xl flex items-center justify-center p-2">
+                      <img
+                        src={encodeURI(localizedSilBird.image)}
+                        alt={localizedSilBird.commonName}
+                        className="w-full h-[230px] object-contain object-top rounded-xl transition-all duration-500"
+                      />
+                    </div>
+                    <span className="text-xs font-black text-slate-950 bg-amber-300 px-3 py-1 rounded-full mt-2 uppercase shadow">
                       {tx(`¡${localizedSilBird.commonName} ILUMINADO!`, `${localizedSilBird.commonName} ILLUMINATED!`)}
                     </span>
                   </div>
                 ) : (
                   <>
-                    <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-teal-900/40 shadow-md flex items-center justify-center bg-teal-200/40">
-                      <img
-                        src={encodeURI(localizedSilBird.image)}
-                        alt={`Silueta #${localizedSilBird.catalogNumber}`}
-                        className="w-full h-full object-cover brightness-0 contrast-100 select-none pointer-events-none transition-all duration-300"
-                      />
+                    <div className="w-full min-h-[200px] rounded-2xl border-2 border-teal-900/30 shadow-md flex items-center justify-center bg-[#A8F3E5]/60 p-2">
+                      <BirdSilhouetteSvg bird={localizedSilBird} size="stage" />
                     </div>
-                    <div className="text-[10px] font-black text-amber-300 bg-slate-950/85 px-2.5 py-0.5 rounded-full mt-1 border border-amber-400/50">
+                    <div className="text-[10px] font-black text-amber-300 bg-slate-950/90 px-3 py-1 rounded-full mt-2 border border-amber-400/50">
                       {tx(
                         `Recompensa activa (${hintsRevealed} ${hintsRevealed === 1 ? 'pista' : 'pistas'}): +${getSilhouetteXpReward()} XP`,
                         `Active reward (${hintsRevealed} ${hintsRevealed === 1 ? 'clue' : 'clues'}): +${getSilhouetteXpReward()} XP`
@@ -1324,6 +1490,20 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   </>
                 )}
               </div>
+
+              {/* Botón Destacado para Escuchar el Canto (.mp3) en Silueta Misteriosa */}
+              <button
+                type="button"
+                onClick={() => playSoundForBird(silhouetteGameBird)}
+                className="w-full py-3 px-3.5 rounded-2xl game-btn-orange text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg border-2 border-amber-300 active:scale-98 transition-all cursor-pointer"
+              >
+                <Volume2 className="w-4 h-4 text-amber-200 shrink-0" />
+                <span>
+                  {audioIsPlaying
+                    ? tx('🔊 Reproduciendo canto de esta especie...', '🔊 Playing this species call...')
+                    : tx('🔊 Escuchar el canto de esta especie', '🔊 Listen to this species call')}
+                </span>
+              </button>
 
               {/* The 4 Progressive Hints */}
               <div className="space-y-1.5">
@@ -1499,38 +1679,19 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             </div>
 
             <div className="flex-1 overflow-y-auto py-2.5 space-y-3">
-              {/* Prototype-Style Top Semicircular Arc with PC 2579, Avatar & 125 / 125 HP Bar */}
+              {/* Prototype-Style Top Card with PC 2579, Full Uncropped Bird Showcase (object-contain, min-h 250px) & 125 / 125 HP Bar */}
               <div className="relative rounded-3xl overflow-hidden border-2 border-teal-400/70 bg-gradient-to-b from-[#0E6E5C] via-[#134E48] to-slate-950 p-3 text-center shadow-xl">
                 <div className="text-amber-300 font-black text-sm tracking-widest uppercase drop-shadow">
                   PC <span className="text-xl text-white">{localizedInspBird.cp || 2579}</span>
                 </div>
 
-                <div className="relative w-44 h-32 mx-auto flex items-center justify-center">
-                  <svg viewBox="0 0 200 120" className="absolute inset-0 w-full h-full pointer-events-none">
-                    <path
-                      d="M 16 105 A 84 84 0 0 1 184 105"
-                      fill="none"
-                      stroke="rgba(255,255,255,0.2)"
-                      strokeWidth="6"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M 16 105 A 84 84 0 0 1 172 68"
-                      fill="none"
-                      stroke="#5EEAD4"
-                      strokeWidth="6"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="172" cy="68" r="5" fill="#FDE047" />
-                  </svg>
-
-                  <div className="relative z-10 w-24 h-24 rounded-full overflow-hidden border-3 border-amber-300 shadow-2xl bg-slate-900 mt-3">
-                    <img
-                      src={encodeURI(localizedInspBird.image)}
-                      alt={localizedInspBird.commonName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                {/* Full Uncropped Bird Photo Container (min-h 250px, object-contain, clean background) */}
+                <div className="relative w-full min-h-[250px] sm:min-h-[270px] rounded-2xl overflow-hidden border-3 border-amber-300 shadow-2xl bg-[#E8FAF6] flex items-center justify-center p-2.5 my-2">
+                  <img
+                    src={encodeURI(localizedInspBird.image)}
+                    alt={localizedInspBird.commonName}
+                    className="w-full h-[240px] sm:h-[260px] object-contain object-top rounded-xl"
+                  />
                 </div>
 
                 <h3 className="text-base font-black text-white uppercase tracking-wide mt-1">

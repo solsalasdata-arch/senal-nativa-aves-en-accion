@@ -157,12 +157,13 @@ class SoundManager {
     });
   }
 
-  // 1. Tucán Grande (Ramphastos toco) / Yapú: Deep resonant croak "grrr-ock, grrr-ock"
+  // 1. Tucán Grande (Ramphastos toco): Deep rhythmic croak "grrr-ock, grrr-ock, grrr-ock"
   public playToucanCall() {
+    this.stopCurrentAudio();
     const ctx = this.getContext();
     if (!ctx) return;
 
-    [0, 0.32].forEach((offset) => {
+    [0, 0.28, 0.56].forEach((offset) => {
       const start = ctx.currentTime + offset;
       const osc = ctx.createOscillator();
       const mod = ctx.createOscillator();
@@ -170,16 +171,16 @@ class SoundManager {
       const gain = ctx.createGain();
 
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(240, start);
-      osc.frequency.exponentialRampToValueAtTime(145, start + 0.22);
+      osc.frequency.setValueAtTime(220, start);
+      osc.frequency.exponentialRampToValueAtTime(130, start + 0.21);
 
-      // Rattle modulation for the guttural frog-like croak
+      // Rattle modulation for the guttural frog-like croak of Ramphastos toco
       mod.type = 'square';
-      mod.frequency.setValueAtTime(42, start);
-      modGain.gain.setValueAtTime(35, start);
+      mod.frequency.setValueAtTime(38, start);
+      modGain.gain.setValueAtTime(38, start);
 
-      gain.gain.setValueAtTime(0.14, start);
-      gain.gain.exponentialRampToValueAtTime(0.01, start + 0.24);
+      gain.gain.setValueAtTime(0.16, start);
+      gain.gain.exponentialRampToValueAtTime(0.01, start + 0.23);
 
       mod.connect(modGain);
       modGain.connect(osc.frequency);
@@ -188,9 +189,48 @@ class SoundManager {
 
       mod.start(start);
       osc.start(start);
-      mod.stop(start + 0.24);
-      osc.stop(start + 0.25);
+      mod.stop(start + 0.23);
+      osc.stop(start + 0.24);
     });
+  }
+
+  // Saludo hablado del Tucán Grande en el Menú Principal (Web Speech API + croar grave de Ramphastos toco)
+  public playToucanGreeting(lang: 'es' | 'en' = 'es') {
+    this.stopCurrentAudio();
+    this.playToucanCall();
+
+    if (this.isMuted || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+      const message =
+        lang === 'en'
+          ? 'These are the game options! You need more sightings to keep earning unlocks.'
+          : '¡Estas son las opciones del juego! Necesitas más avistamientos para seguir obteniendo desbloqueos';
+      const utterance = new SpeechSynthesisUtterance(message);
+      utterance.lang = lang === 'en' ? 'en-US' : 'es-ES';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.05;
+
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        const preferredVoice =
+          voices.find((v) =>
+            lang === 'en'
+              ? v.lang.toLowerCase().startsWith('en')
+              : v.lang.toLowerCase().startsWith('es-ar') || v.lang.toLowerCase().startsWith('es-419') || v.lang.toLowerCase().startsWith('es')
+          ) || null;
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+      }
+
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Fallback already handled by playToucanCall()
+    }
   }
 
   // 2. Benteveo Común (Pitangus sulphuratus): Bright trisilábico "¡Bien-te-veo!"

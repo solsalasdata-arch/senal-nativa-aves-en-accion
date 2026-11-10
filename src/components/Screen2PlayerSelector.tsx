@@ -166,32 +166,28 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
         </button>
       </div>
 
-      {/* Bottom section: Toucan avatar with overflow pop-out effect ("saliendo del marco") + Photo CTA */}
-      <div className="relative z-10 flex flex-col items-center w-full max-w-xs mx-auto pb-2 pt-3">
-        {/* Circular Frame + Waving Toucan with Open Wings Popping Out of the Frame */}
+      {/* Bottom section: Toucan avatar with single clean frame + Photo CTA */}
+      <div className="relative z-10 flex flex-col items-center w-full max-w-xs mx-auto pb-2 pt-2">
+        {/* Single Clean Toucan Illustration (already includes its golden circular emblem) */}
         <div
           onClick={() => {
             soundManager.playToucanCall();
             onTakePhoto();
           }}
-          className="relative mb-2 flex items-center justify-center overflow-visible cursor-pointer group"
+          className="relative mb-1.5 flex items-center justify-center overflow-visible cursor-pointer group"
           title={tx('¡Toca al Tucán Guía o toma una foto con tu ave favorita!', 'Tap the Toucan Guide or take a photo with your favorite bird!')}
         >
-          {/* Clean Circular Base Behind the Toucan (No trapped screenshot) */}
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-b from-[#43D8C9] via-[#1FA89A] to-[#0D6E63] border-4 border-[#E8C15A] shadow-[0_10px_28px_rgba(0,0,0,0.65),_0_0_20px_rgba(45,212,191,0.45)] ring-2 ring-[#F8E3A1]/70" />
-
-          {/* High-Res Transparent Cutout of the Tucán Grande Waving with Open Wings & Head Overflowing the Frame */}
           <img
             src="/assets/aistudio/toucan_waving_cutout.png"
             alt={tx(
               'Tucán Grande con visera verde y mochila del Parque Botánico saludando con las alas abiertas',
               'Toco Toucan with green visor and Botanical Park backpack waving with open wings'
             )}
-            className="absolute -top-6 sm:-top-7 left-1/2 -translate-x-1/2 w-44 sm:w-48 max-w-none h-auto object-contain pointer-events-none drop-shadow-[0_10px_14px_rgba(0,0,0,0.65)] group-hover:scale-105 transition-transform duration-300"
+            className="w-36 sm:w-40 h-auto object-contain pointer-events-none drop-shadow-[0_10px_16px_rgba(0,0,0,0.65)] group-hover:scale-105 transition-transform duration-300"
           />
 
           {/* Speech Bubble: "¿CUÁL ES TU AVE FAVORITA?" */}
-          <div className="absolute -top-7 -right-14 sm:-right-16 z-20 bg-white text-slate-900 px-3 py-1.5 rounded-2xl border-2 border-slate-900 shadow-xl text-center rotate-2 animate-bounce">
+          <div className="absolute -top-3 -right-10 sm:-right-12 z-20 bg-white text-slate-900 px-3 py-1.5 rounded-2xl border-2 border-slate-900 shadow-xl text-center rotate-2 animate-bounce">
             <div className="text-[10px] font-black tracking-tight uppercase leading-tight">
               {tx('¿CUÁL ES', "WHAT'S")}<br />
               {tx('TU AVE', 'YOUR')}<br />
