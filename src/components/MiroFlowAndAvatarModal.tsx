@@ -297,21 +297,25 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                   {/* Columna Izquierda (7 cols): Vista Oficial de Avatar de Cuerpo Entero con Ave en el Hombro */}
                   <div className="col-span-7 flex flex-col items-center">
                     <div className="relative w-full h-56 rounded-3xl bg-slate-950 border-2 border-amber-500/70 flex flex-col items-center justify-center overflow-hidden shadow-xl">
-                      <img
-                        src={
-                          activeProfile.avatarIcon && activeProfile.avatarIcon.startsWith('/')
-                            ? activeProfile.avatarIcon
-                            : selectedStudyAngle === 'frontal'
-                              ? '/assets/aistudio/Replace_clothing_store_with_birds_e4924cc4.jpg'
-                              : '/assets/aistudio/Editing_icons_and_background_colors_c78a8c38.jpg'
-                        }
-                        alt="Avatar YO / JUGADORES"
-                        className={`w-full h-full ${
-                          activeProfile.avatarIcon && activeProfile.avatarIcon.startsWith('/')
-                            ? 'object-contain bg-teal-100'
-                            : 'object-cover object-top'
-                        }`}
-                      />
+                      {(() => {
+                        const avatarIsImage = !!(activeProfile.avatarIcon && activeProfile.avatarIcon.startsWith('/'));
+                        const showCharacter = avatarIsImage && selectedStudyAngle === 'frontal';
+                        return (
+                          <img
+                            src={
+                              showCharacter
+                                ? activeProfile.avatarIcon
+                                : selectedStudyAngle === 'frontal'
+                                  ? '/assets/aistudio/Replace_clothing_store_with_birds_e4924cc4.jpg'
+                                  : '/assets/aistudio/Editing_icons_and_background_colors_c78a8c38.jpg'
+                            }
+                            alt="Avatar YO / JUGADORES"
+                            className={`w-full h-full ${
+                              showCharacter ? 'object-contain bg-teal-100' : 'object-cover object-top'
+                            }`}
+                          />
+                        );
+                      })()}
                       <div className="absolute top-1.5 right-1.5 flex gap-1">
                         <button
                           onClick={() => {

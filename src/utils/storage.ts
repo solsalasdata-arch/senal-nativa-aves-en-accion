@@ -5,6 +5,13 @@ const STORAGE_KEY_PROFILES = 'senial_nativa_profiles_list_v2';
 const STORAGE_KEY_ACTIVE_ID = 'senial_nativa_active_profile_id_v2';
 const STORAGE_KEY_SQUADS = 'senial_nativa_squads_list_v1';
 
+const COMPANION_BIRD_SCIENTIFIC_NAMES: Record<CompanionBirdId, string> = {
+  'Tucán Grande': 'Ramphastos toco',
+  'Benteveo': 'Pitangus sulphuratus',
+  'Chinchero Chico': 'Lepidocolaptes angustirostris',
+  'Picaflor Cometa': 'Chlorostilbon lucidus'
+};
+
 export function createDefaultProfile(
   name = 'Explorador Yungas',
   avatarId = 'avatar-santi',
@@ -44,7 +51,7 @@ export function createDefaultProfile(
       {
         id: 'j_init',
         birdName: resolvedBird,
-        scientificName: resolvedBird === 'Tucán Grande' ? 'Ramphastos toco' : 'Especie Nativa',
+        scientificName: COMPANION_BIRD_SCIENTIFIC_NAMES[resolvedBird] || 'Especie Nativa',
         trailName: 'Sendero de las Yungas (Entrada)',
         notes: '¡Compañero alado elegido para la expedición en el Parque Barón Schuel!',
         timestamp: now,

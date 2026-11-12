@@ -49,7 +49,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
   // Form states for New Player
   const [newPlayerName, setNewPlayerName] = useState('');
   const [selectedAvatarId, setSelectedAvatarId] = useState(EXPLORER_AVATARS[0].id);
-  const [selectedBird, setSelectedBird] = useState<CompanionBirdId>('Tucán Grande');
+  const [selectedBird, setSelectedBird] = useState<CompanionBirdId>(EXPLORER_AVATARS[0].favoriteBird);
   const [formError, setFormError] = useState('');
 
   const handleCreateSubmit = (e: React.FormEvent) => {
