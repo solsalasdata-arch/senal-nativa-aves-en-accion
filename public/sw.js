@@ -1,4 +1,4 @@
-const CACHE_NAME = 'senal-nativa-pwa-v4';
+const CACHE_NAME = 'senal-nativa-pwa-v5';
 
 // Core static assets and 21 species photos + 21 real .mp3 calls to pre-cache for offline trail usage
 const PRECACHE_ASSETS = [
@@ -38,6 +38,15 @@ const PRECACHE_ASSETS = [
   encodeURI('/assets/aves/19-Tangara azul y amarilla.png'),
   encodeURI('/assets/aves/20-Ticotico cejicanelo.jpg'),
   encodeURI('/assets/aves/21-Tordo bayo.jpg'),
+  // 8 Character Avatar portraits (/assets/characters/)
+  '/assets/characters/yunga-nino.jpg',
+  '/assets/characters/yunga-nina.jpg',
+  '/assets/characters/quebrada-nino.jpg',
+  '/assets/characters/quebrada-nina.jpg',
+  '/assets/characters/puna-nino.jpg',
+  '/assets/characters/puna-nina.jpg',
+  '/assets/characters/cientifico.jpg',
+  '/assets/characters/exploradora.jpg',
   // 21 Bird Songs (.mp3 in /assets/aves/)
   encodeURI('/assets/aves/1-Chingolo.mp3'),
   encodeURI('/assets/aves/2-Tangara sacaya.mp3'),
