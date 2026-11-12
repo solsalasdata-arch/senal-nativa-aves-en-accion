@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X, ShieldAlert, Sparkles, RefreshCw, CheckCircle2, Download, Upload } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+import { requestMobileCameraStream } from '../utils/camera';
 
 interface PhotoCompanionModalProps {
   isOpen: boolean;
@@ -75,7 +76,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const stopCamera = useCallback(() => {
+  const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -84,55 +85,34 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
       videoRef.current.srcObject = null;
     }
     setUseRealCamera(false);
-  }, []);
+  };
 
-  const startCamera = useCallback(
-    async (mode: 'user' | 'environment' = facingMode) => {
-      try {
-        setCameraError(null);
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((track) => track.stop());
-          streamRef.current = null;
-        }
+  // Real hardware camera switcher (stops tracks, requests exact environment or enumerateDevices back camera, or user front camera)
+  const startCamera = async (mode: 'user' | 'environment') => {
+    try {
+      setCameraError(null);
+      setFacingMode(mode);
 
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error('getUserMedia no soportado');
-        }
+      const stream = await requestMobileCameraStream(mode, streamRef.current, videoRef.current);
 
-        let stream: MediaStream;
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: mode } },
-            audio: false
-          });
-        } catch {
-          // Fallback sin restricciones si el modelo de celular rechaza facingMode
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-          });
-        }
+      streamRef.current = stream;
+      setNativePhotoUrl(null);
+      setUseRealCamera(true);
 
-        streamRef.current = stream;
-        setNativePhotoUrl(null);
-        setUseRealCamera(true);
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.setAttribute('playsinline', 'true');
-          videoRef.current.setAttribute('webkit-playsinline', 'true');
-          videoRef.current.muted = true;
-          videoRef.current.play().catch(() => {});
-        }
-      } catch {
-        setCameraError(
-          'Permiso de cámara bloqueado o navegador interno detectado. Pulsa "📷 Activar Cámara / Usar Cámara del Teléfono" abajo.'
-        );
-        setUseRealCamera(false);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
+        videoRef.current.muted = true;
+        await videoRef.current.play().catch(() => {});
       }
-    },
-    [facingMode]
-  );
+    } catch {
+      setCameraError(
+        'Permiso de cámara bloqueado o navegador interno detectado. Pulsa "📷 Activar Cámara / Usar Cámara del Teléfono" abajo.'
+      );
+      setUseRealCamera(false);
+    }
+  };
 
   // Sync companion with prop
   useEffect(() => {
@@ -142,7 +122,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
     }
   }, [currentBirdName, isOpen]);
 
-  // Auto-start front camera ("user") when modal opens; stop tracks when closing
+  // Only run when modal opens/closes (never re-run on facingMode change so rear camera is not overwritten!)
   useEffect(() => {
     if (isOpen) {
       startCamera('user');
@@ -157,13 +137,13 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
         streamRef.current = null;
       }
     };
-  }, [isOpen, startCamera, stopCamera]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // Toggle Front / Rear Camera ("user" <-> "environment")
   const handleFlipCamera = () => {
     soundManager.playClick();
     const nextMode: 'user' | 'environment' = facingMode === 'user' ? 'environment' : 'user';
-    setFacingMode(nextMode);
     startCamera(nextMode);
   };
 
@@ -192,7 +172,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
       img.src = src.includes('%') || src.startsWith('data:') ? src : encodeURI(src);
     });
 
-  // Real Canvas Capture: draws <video> frame (or native phone photo / park backdrop) + companion bird illustration overlay
+  // Real Canvas Capture: draws <video> frame + FULL UNCROPPED companion bird illustration inside a rounded card
   const handleTakePhoto = async () => {
     soundManager.playShutter();
     setIsCapturing(true);
@@ -219,6 +199,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
         const sy = (vh - sh) / 2;
 
         ctx.save();
+        // Mirror ONLY when front camera (mode === 'user') is active
         if (facingMode === 'user') {
           ctx.translate(width, 0);
           ctx.scale(-1, 1);
@@ -266,30 +247,36 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
       ctx.fillStyle = botGrad;
       ctx.fillRect(0, height - 160, width, 160);
 
-      // 3. Draw Companion Bird Illustration Overlay in bottom-right
+      // 3. Draw Companion Bird Illustration Overlay in bottom-right WITHOUT circular cropping (object-fit: contain inside rounded card)
       const birdImg = await loadImage(selectedCompanion.asset);
       if (birdImg) {
-        const boxSize = 185;
-        const bx = width - boxSize - 24;
-        const by = height - boxSize - 56;
+        const cardW = 196;
+        const cardH = 196;
+        const pad = 10;
+        const bx = width - cardW - 24;
+        const by = height - cardH - 56;
 
-        if (selectedCompanion.asset.endsWith('.png')) {
-          ctx.drawImage(birdImg, bx, by, boxSize, boxSize);
-        } else {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(bx + boxSize / 2, by + boxSize / 2, boxSize / 2, 0, Math.PI * 2);
-          ctx.closePath();
-          ctx.clip();
-          ctx.drawImage(birdImg, bx, by, boxSize, boxSize);
-          ctx.restore();
+        // Draw dark semi-transparent rounded card rgba(12, 35, 30, 0.75)
+        ctx.save();
+        ctx.fillStyle = 'rgba(12, 35, 30, 0.78)';
+        ctx.strokeStyle = '#FDBA2E';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, cardW, cardH, 22);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
 
-          ctx.strokeStyle = '#FDBA2E';
-          ctx.lineWidth = 5;
-          ctx.beginPath();
-          ctx.arc(bx + boxSize / 2, by + boxSize / 2, boxSize / 2, 0, Math.PI * 2);
-          ctx.stroke();
-        }
+        // Draw full bird inside card preserving aspect ratio (object-fit: contain)
+        const maxW = cardW - pad * 2;
+        const maxH = cardH - pad * 2;
+        const ratio = Math.min(maxW / birdImg.width, maxH / birdImg.height);
+        const drawW = birdImg.width * ratio;
+        const drawH = birdImg.height * ratio;
+        const dx = bx + (cardW - drawW) / 2;
+        const dy = by + (cardH - drawH) / 2;
+
+        ctx.drawImage(birdImg, dx, dy, drawW, drawH);
       }
 
       // 4. Draw Header & Footer Park Stamp
@@ -390,9 +377,10 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
             </div>
           ) : (
             <>
-              {/* 1) Live Video Feed with Mandatory Mobile Attributes OR Native Photo OR Park Backdrop */}
+              {/* 1) Live Video Feed with key={facingMode} & Mandatory Mobile Attributes */}
               {useRealCamera ? (
                 <video
+                  key={facingMode}
                   ref={(el) => {
                     videoRef.current = el;
                     if (el && streamRef.current && el.srcObject !== streamRef.current) {
@@ -406,9 +394,8 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
                   autoPlay
                   playsInline
                   muted
-                  className={`absolute inset-0 w-full h-full object-cover ${
-                    facingMode === 'user' ? 'transform -scale-x-100' : ''
-                  }`}
+                  style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
               ) : nativePhotoUrl ? (
                 <img
@@ -444,16 +431,19 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
                 </button>
               </div>
 
-              {/* 3) Companion Bird Overlay (Always visible over live camera so player can pose with the bird!) */}
+              {/* 3) Companion Bird Overlay: Uncropped Full-Body Floating Card (object-fit: contain, padding: 6px, rgba(12, 35, 30, 0.75)) */}
               <div className="absolute bottom-2.5 right-2.5 z-20 flex flex-col items-end pointer-events-none">
                 <div className="bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-2xl border border-teal-400/50 text-[10px] text-white max-w-[190px] mb-1.5 shadow-lg">
                   {selectedCompanion.speech}
                 </div>
-                <div className="relative w-28 h-28 rounded-full border-3 border-amber-400 shadow-2xl overflow-hidden bg-teal-950/80 flex items-center justify-center p-1">
+                <div
+                  style={{ backgroundColor: 'rgba(12, 35, 30, 0.75)', padding: '6px' }}
+                  className="relative w-32 h-32 rounded-2xl border-2 border-amber-400 shadow-2xl overflow-visible flex items-center justify-center"
+                >
                   <img
                     src={encodeURI(selectedCompanion.asset)}
                     alt={selectedCompanion.name}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]"
                   />
                 </div>
               </div>
@@ -467,7 +457,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
 
           {/* Fallback Button when permission is blocked or user is in WhatsApp/Instagram in-app browser */}
           {!capturedPhoto && (!useRealCamera || cameraError) && (
-            <div className="absolute bottom-2.5 left-2.5 z-20 max-w-[58%] space-y-1">
+            <div className="absolute bottom-2.5 left-2.5 z-20 max-w-[56%] space-y-1">
               {cameraError && (
                 <div className="bg-slate-950/90 text-amber-300 text-[9px] p-1.5 rounded-lg border border-amber-500/50 leading-tight">
                   {cameraError}
@@ -591,4 +581,5 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
     </div>
   );
 };
+
 

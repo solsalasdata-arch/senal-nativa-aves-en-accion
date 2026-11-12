@@ -14,6 +14,7 @@ import {
   Eye
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+import { requestMobileCameraStream } from '../utils/camera';
 import { CATALOG_BIRDS_DATA } from '../data/birdsData';
 import { CatalogBird, PlayerProfile } from '../types/game';
 
@@ -68,27 +69,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   const startCamera = async (mode: 'environment' | 'user' = facingMode) => {
     try {
       setCameraError(null);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      }
+      setFacingMode(mode);
 
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('getUserMedia no soportado');
-      }
-
-      let stream: MediaStream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: mode } },
-          audio: false
-        });
-      } catch {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false
-        });
-      }
+      const stream = await requestMobileCameraStream(mode, streamRef.current, videoRef.current);
 
       streamRef.current = stream;
       setNativePhotoUrl(null);
@@ -99,7 +82,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         videoRef.current.setAttribute('playsinline', 'true');
         videoRef.current.setAttribute('webkit-playsinline', 'true');
         videoRef.current.muted = true;
-        videoRef.current.play().catch(() => {});
+        await videoRef.current.play().catch(() => {});
       }
     } catch {
       setCameraError('Permiso de cámara bloqueado o navegador interno. Usa el botón de Cámara del Teléfono abajo.');
@@ -253,23 +236,38 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
         const birdImg = await loadImage(activeBirdData.image);
         if (birdImg) {
-          const boxSize = 220;
+          const boxSize = 230;
           const bx = (width - boxSize) / 2;
           const by = (height - boxSize) / 2;
+          const pad = 12;
 
+          // Rounded card container without circular clipping so the full bird is visible
           ctx.save();
-          ctx.beginPath();
-          ctx.arc(width / 2, height / 2, boxSize / 2, 0, Math.PI * 2);
-          ctx.closePath();
-          ctx.clip();
-          ctx.drawImage(birdImg, bx, by, boxSize, boxSize);
-          ctx.restore();
-
+          ctx.fillStyle = 'rgba(12, 35, 30, 0.78)';
           ctx.strokeStyle = '#38BDF8';
-          ctx.lineWidth = 5;
+          ctx.lineWidth = 4;
           ctx.beginPath();
-          ctx.arc(width / 2, height / 2, boxSize / 2, 0, Math.PI * 2);
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(bx, by, boxSize, boxSize, 22);
+          } else {
+            ctx.rect(bx, by, boxSize, boxSize);
+          }
+          ctx.fill();
           ctx.stroke();
+
+          // Draw bird with object-fit: contain inside padded box
+          const availW = boxSize - pad * 2;
+          const availH = boxSize - pad * 2;
+          const imgW = birdImg.naturalWidth || birdImg.width || boxSize;
+          const imgH = birdImg.naturalHeight || birdImg.height || boxSize;
+          const containScale = Math.min(availW / imgW, availH / imgH);
+          const drawW = imgW * containScale;
+          const drawH = imgH * containScale;
+          const dx = bx + (boxSize - drawW) / 2;
+          const dy = by + (boxSize - drawH) / 2;
+
+          ctx.drawImage(birdImg, dx, dy, drawW, drawH);
+          ctx.restore();
         }
 
         ctx.fillStyle = 'rgba(2, 6, 23, 0.8)';
@@ -366,6 +364,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           {/* Live Video Feed with Mandatory Mobile Attributes OR Native Photo OR Illustrated Backdrop */}
           {useRealCamera ? (
             <video
+              key={facingMode}
               ref={(el) => {
                 videoRef.current = el;
                 if (el && streamRef.current && el.srcObject !== streamRef.current) {
@@ -379,9 +378,10 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               autoPlay
               playsInline
               muted
-              className={`absolute inset-0 w-full h-full object-cover ${
-                facingMode === 'user' ? 'transform -scale-x-100' : ''
-              }`}
+              style={{
+                transform: facingMode === 'user' ? 'scaleX(-1)' : 'none'
+              }}
+              className="absolute inset-0 w-full h-full object-cover"
             />
           ) : nativePhotoUrl ? (
             <img
@@ -474,11 +474,14 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   <div className="absolute w-full h-0.5 bg-sky-400/50" />
                   <div className="absolute h-full w-0.5 bg-sky-400/50" />
 
-                  <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-sky-300 shadow-xl bg-slate-900/60">
+                  <div
+                    className="w-28 h-28 rounded-2xl border-2 border-sky-300 shadow-xl flex items-center justify-center overflow-visible"
+                    style={{ backgroundColor: 'rgba(12, 35, 30, 0.75)', padding: '6px' }}
+                  >
                     <img
                       src={encodeURI(activeBirdData.image)}
                       alt={activeBirdData.commonName}
-                      className="w-full h-full object-cover scale-110"
+                      className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
                     />
                   </div>
                 </div>
@@ -542,7 +545,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   </div>
                 </div>
 
-                {/* Real Bird Image from /assets/aves/ inside Cyan Circular Reticle */}
+                {/* Real Bird Image from /assets/aves/ inside Cyan Reticle with object-contain (no cropping) */}
                 <div className="relative w-36 h-36 flex flex-col items-center justify-center">
                   <div className="absolute -top-3 px-2 py-0.5 rounded-full bg-sky-500 text-slate-950 font-extrabold text-[8px] tracking-wider uppercase shadow-md truncate max-w-[140px]">
                     #{activeBirdData.catalogNumber} DETECTADO
@@ -551,11 +554,14 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                     <div className="w-2.5 h-2.5 rounded-full bg-sky-300" />
                   </div>
 
-                  <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-sky-300 shadow-xl bg-slate-900/80">
+                  <div
+                    className="w-28 h-28 rounded-2xl border-2 border-sky-300 shadow-xl flex items-center justify-center overflow-visible"
+                    style={{ backgroundColor: 'rgba(12, 35, 30, 0.75)', padding: '6px' }}
+                  >
                     <img
                       src={encodeURI(activeBirdData.image)}
                       alt={activeBirdData.commonName}
-                      className="w-full h-full object-cover scale-105"
+                      className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
                     />
                   </div>
                 </div>
@@ -570,11 +576,14 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           {/* POPUP DE RESULTADO DE "FOTO PERFECTA" */}
           {photoResult && (
             <div className="absolute inset-0 z-50 bg-slate-950/92 backdrop-blur-md flex flex-col items-center justify-center p-5 text-center animate-fadeIn">
-              <div className="w-20 h-20 rounded-full overflow-hidden border-3 border-amber-400 mb-2 shadow-xl">
+              <div
+                className="w-24 h-24 rounded-2xl border-3 border-amber-400 mb-2 shadow-xl flex items-center justify-center overflow-hidden"
+                style={{ backgroundColor: 'rgba(12, 35, 30, 0.85)', padding: '4px' }}
+              >
                 <img
                   src={photoResult.photoUrl}
                   alt={photoResult.birdName}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain rounded-xl"
                 />
               </div>
 

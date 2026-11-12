@@ -15,6 +15,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+import { requestMobileCameraStream } from '../utils/camera';
 import { CHECKPOINTS_DATA, RARE_BIRDS_DATA } from '../data/birdsData';
 import { CheckPoint, PlayerProfile, BirdSpecies } from '../types/game';
 import { useLanguage, localizeCheckpoint, LanguageSelector } from '../utils/i18n';
@@ -72,25 +73,10 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
   const startQrCamera = async (mode: 'environment' | 'user' = qrFacingMode) => {
     try {
       setQrCameraError(null);
-      if (qrStreamRef.current) {
-        qrStreamRef.current.getTracks().forEach((t) => t.stop());
-        qrStreamRef.current = null;
-      }
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('getUserMedia no disponible');
-      }
-      let stream: MediaStream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: mode } },
-          audio: false
-        });
-      } catch {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false
-        });
-      }
+      setQrFacingMode(mode);
+
+      const stream = await requestMobileCameraStream(mode, qrStreamRef.current, qrVideoRef.current);
+
       qrStreamRef.current = stream;
       setQrNativePhoto(null);
       setQrCameraActive(true);
@@ -99,7 +85,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
         qrVideoRef.current.setAttribute('playsinline', 'true');
         qrVideoRef.current.setAttribute('webkit-playsinline', 'true');
         qrVideoRef.current.muted = true;
-        qrVideoRef.current.play().catch(() => {});
+        await qrVideoRef.current.play().catch(() => {});
       }
     } catch {
       setQrCameraError(
@@ -717,6 +703,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 <div className="relative h-36 rounded-2xl overflow-hidden bg-black border-2 border-teal-400 flex items-center justify-center">
                   {qrCameraActive ? (
                     <video
+                      key={qrFacingMode}
                       ref={(el) => {
                         qrVideoRef.current = el;
                         if (el && qrStreamRef.current && el.srcObject !== qrStreamRef.current) {
@@ -730,9 +717,10 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                       autoPlay
                       playsInline
                       muted
-                      className={`w-full h-full object-cover ${
-                        qrFacingMode === 'user' ? 'transform -scale-x-100' : ''
-                      }`}
+                      style={{
+                        transform: qrFacingMode === 'user' ? 'scaleX(-1)' : 'none'
+                      }}
+                      className="w-full h-full object-cover"
                     />
                   ) : qrNativePhoto ? (
                     <img
