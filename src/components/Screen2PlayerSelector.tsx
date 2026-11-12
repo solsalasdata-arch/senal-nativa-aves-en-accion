@@ -14,6 +14,7 @@ import { soundManager } from '../utils/audio';
 import { PlayerProfile, CompanionBirdId } from '../types/game';
 import { EXPLORER_AVATARS, COMPANION_BIRDS_OPTIONS } from '../data/birdsData';
 import { useLanguage, LanguageSelector } from '../utils/i18n';
+import { AvatarIcon } from './AvatarIcon';
 
 interface Screen2PlayerSelectorProps {
   profiles: PlayerProfile[];
@@ -129,7 +130,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
             }}
             className="mt-1 flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-950/90 hover:bg-teal-900 border border-amber-400/60 text-[10px] text-teal-200 shadow cursor-pointer active:scale-95 transition-all"
           >
-            <span>{activeProfile.avatarIcon || '🧢'}</span>
+            <AvatarIcon icon={activeProfile.avatarIcon} className="w-5 h-5" alt={activeProfile.name} />
             <span className="font-black text-amber-300">{activeProfile.name}</span>
             <span className="text-white font-bold">&amp; {activeProfile.favoriteBird}</span>
             <span className="px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black text-[8px] uppercase">
@@ -270,9 +271,10 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                 <label className="block text-[11px] font-bold text-teal-300 uppercase mb-1">
                   {tx('2. Elige tu Personaje:', '2. Choose Your Character:')}
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-1.5 max-h-56 overflow-y-auto pr-0.5">
                   {EXPLORER_AVATARS.map((avatar) => {
                     const isSelected = selectedAvatarId === avatar.id;
+                    const isImage = avatar.icon.startsWith('/');
                     return (
                       <button
                         type="button"
@@ -281,17 +283,25 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                           soundManager.playClick();
                           setSelectedAvatarId(avatar.id);
                         }}
-                        className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all ${
+                        className={`p-1 rounded-xl border flex flex-col items-center gap-0.5 transition-all ${
                           isSelected
                             ? 'bg-teal-900/90 border-amber-400 ring-2 ring-amber-400/40 shadow-md'
                             : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        <span className="text-2xl">{avatar.icon}</span>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-white truncate">{avatar.name}</div>
-                          <div className="text-[9px] text-teal-300 truncate">{avatar.title}</div>
-                        </div>
+                        {isImage ? (
+                          <img
+                            src={avatar.icon}
+                            alt={avatar.name}
+                            className="w-full h-14 object-cover object-top rounded-lg"
+                            draggable={false}
+                          />
+                        ) : (
+                          <span className="w-full h-14 flex items-center justify-center text-3xl">{avatar.icon}</span>
+                        )}
+                        <span className="text-[9px] font-bold text-white leading-tight text-center truncate w-full">
+                          {avatar.name}
+                        </span>
                       </button>
                     );
                   })}
@@ -391,8 +401,8 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-2xl p-1.5 rounded-xl bg-teal-900/50 border border-teal-700/50">
-                          {profile.avatarIcon || '🧢'}
+                        <span className="text-2xl p-1.5 rounded-xl bg-teal-900/50 border border-teal-700/50 flex items-center justify-center overflow-hidden">
+                          <AvatarIcon icon={profile.avatarIcon} className="w-7 h-7" alt={profile.name} />
                         </span>
                         <div>
                           <div className="flex items-center gap-1.5">

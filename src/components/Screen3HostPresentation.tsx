@@ -3,6 +3,7 @@ import { Binoculars, ArrowLeft, Volume2, Info, X, Users } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { PlayerProfile } from '../types/game';
 import { useLanguage, LanguageSelector } from '../utils/i18n';
+import { AvatarIcon } from './AvatarIcon';
 
 interface Screen3HostPresentationProps {
   activeProfile: PlayerProfile;
@@ -58,7 +59,7 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-950/90 hover:bg-teal-900 border border-amber-400/50 text-[10px] text-white min-w-0 cursor-pointer"
             title={tx('Abrir Perfil YO / JUGADORES', 'Open ME / PLAYERS Profile')}
           >
-            <span className="shrink-0">{activeProfile.avatarIcon || '🧢'}</span>
+            <AvatarIcon icon={activeProfile.avatarIcon} className="w-5 h-5 shrink-0" alt={activeProfile.name} />
             <span className="font-bold text-amber-300 truncate max-w-[65px]">{activeProfile.name}</span>
           </button>
         </div>

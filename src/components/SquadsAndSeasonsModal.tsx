@@ -25,6 +25,7 @@ import {
 import { PlayerProfile, Squad, SquadMember, CompanionBirdId } from '../types/game';
 import { loadSquadsList, saveSquadsList } from '../utils/storage';
 import { useLanguage } from '../utils/i18n';
+import { AvatarIcon } from './AvatarIcon';
 
 interface SquadsAndSeasonsModalProps {
   isOpen: boolean;
@@ -537,8 +538,8 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                         className="p-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-7 h-7 rounded-lg bg-teal-950 border border-teal-600/50 flex items-center justify-center text-sm shrink-0">
-                            {member.avatarIcon}
+                          <span className="w-7 h-7 rounded-lg bg-teal-950 border border-teal-600/50 flex items-center justify-center text-sm shrink-0 overflow-hidden">
+                            <AvatarIcon icon={member.avatarIcon} className="w-6 h-6" alt={member.name} />
                           </span>
                           <div className="min-w-0">
                             <div className="font-black text-white truncate flex items-center gap-1">
@@ -939,7 +940,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                       >
                         #{idx + 1}
                       </div>
-                      <span className="text-lg shrink-0">{row.avatarIcon}</span>
+                      <AvatarIcon icon={row.avatarIcon} className="w-6 h-6 shrink-0" alt={row.name} />
                       <div className="min-w-0">
                         <div className="text-xs font-black text-white truncate flex items-center gap-1">
                           <span>{row.name}</span>

@@ -23,6 +23,7 @@ import {
 import { soundManager } from '../utils/audio';
 import { PlayerProfile, CompanionBirdId } from '../types/game';
 import { COMPANION_BIRDS_OPTIONS, SHOP_ITEMS, EXPLORER_AVATARS } from '../data/birdsData';
+import { AvatarIcon } from './AvatarIcon';
 import { useLanguage, LanguageSelector } from '../utils/i18n';
 
 interface MiroFlowAndAvatarModalProps {
@@ -453,7 +454,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                                   : 'bg-white text-slate-700 border-slate-300'
                               }`}
                             >
-                              <span>{av.icon}</span>
+                              <AvatarIcon icon={av.icon} className="w-4 h-4" alt={av.name} />
                               <span>{av.name.split(' ')[0]}</span>
                             </button>
                           );
@@ -527,8 +528,8 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <span className="text-2xl p-1.5 rounded-xl bg-amber-400/20">
-                            {prof.avatarIcon || '🧢'}
+                          <span className="text-2xl p-1.5 rounded-xl bg-amber-400/20 flex items-center justify-center overflow-hidden">
+                            <AvatarIcon icon={prof.avatarIcon} className="w-8 h-8" alt={prof.name} />
                           </span>
                           <div>
                             <div className="text-xs font-black flex items-center gap-1.5">
