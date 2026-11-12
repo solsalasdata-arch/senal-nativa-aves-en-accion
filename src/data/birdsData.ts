@@ -1,4 +1,4 @@
-import { BirdSpecies, TriviaQuestion, ParkTrail, Mission, CheckPoint, CatalogBird } from '../types/game';
+import { BirdSpecies, TriviaQuestion, ParkTrail, Mission, CheckPoint, CatalogBird, CompanionBirdId } from '../types/game';
 
 export const BIRDS_DATA: BirdSpecies[] = [
   {
@@ -108,91 +108,70 @@ export const BIRDS_DATA: BirdSpecies[] = [
   }
 ];
 
-export const EXPLORER_AVATARS: { id: string; name: string; title: string; icon: string; description: string }[] = [
-  {
-    id: 'avatar-mateo',
-    name: 'Mateo',
-    title: 'Rastreador de Senderos',
-    icon: '🧢',
-    description: 'Especialista en identificar huellas y nidos entre los helechos de la selva montana.'
-  },
-  {
-    id: 'avatar-sol',
-    name: 'Sol',
-    title: 'Exploradora Botánica',
-    icon: '🎒',
-    description: 'Siempre con su cuaderno de campo anotando frutos y épocas de floración de las Yungas.'
-  },
-  {
-    id: 'avatar-carlos',
-    name: 'Carlos',
-    title: 'Guardaparque Mayor',
-    icon: '🌲',
-    description: 'Conoce cada curva del Barón Schuel desde la entrada hasta el Mirador de la Cruz.'
-  },
-  {
-    id: 'avatar-vale',
-    name: 'Valentina',
-    title: 'Ornitóloga de las Yungas',
-    icon: '🔭',
-    description: 'Experta en cantos alados y en enfocar prismáticos en las copas de los árboles.'
-  },
-  // Personajes con ilustración oficial del Parque (carpeta Drive "Personajes")
+export const EXPLORER_AVATARS: { id: string; name: string; title: string; icon: string; description: string; favoriteBird: CompanionBirdId }[] = [
   {
     id: 'avatar-santi',
     name: 'Santi',
     title: 'Explorador de las Yungas',
     icon: '/assets/characters/yunga-nino.jpg',
-    description: 'Niño de la comunidad yunga con vincha roja; conoce los árboles y sus dueños birds.'
+    description: 'Niño de la comunidad yunga con vincha roja; conoce los árboles y sus dueños birds.',
+    favoriteBird: 'Benteveo'
   },
   {
     id: 'avatar-lucia',
     name: 'Lucía',
     title: 'Guardiana del Dosel',
     icon: '/assets/characters/yunga-nina.jpg',
-    description: 'Observadora de las copas de las Yungas; anota cada canto que escucha.'
+    description: 'Observadora de las copas de las Yungas; anota cada canto que escucha.',
+    favoriteBird: 'Picaflor Cometa'
   },
   {
     id: 'avatar-bruno',
     name: 'Bruno',
     title: 'Centinela de la Quebrada',
     icon: '/assets/characters/quebrada-nino.jpg',
-    description: 'Guía de los arroyos y quebradas; lee las huellas en la tierra mojada.'
+    description: 'Guía de los arroyos y quebradas; lee las huellas en la tierra mojada.',
+    favoriteBird: 'Chinchero Chico'
   },
   {
     id: 'avatar-mora',
     name: 'Mora',
     title: 'Rastreadora de Arroyos',
     icon: '/assets/characters/quebrada-nina.jpg',
-    description: 'Especialista en aves de quebrada y sus nidos colgantes.'
+    description: 'Especialista en aves de quebrada y sus nidos colgantes.',
+    favoriteBird: 'Benteveo'
   },
   {
     id: 'avatar-aimar',
     name: 'Aimar',
     title: 'Andino de Altura',
     icon: '/assets/characters/puna-nino.jpg',
-    description: 'Centinela de la Puna; conoce las aves que cruzan las quebradas hacia la alta montaña.'
+    description: 'Centinela de la Puna; conoce las aves que cruzan las quebradas hacia la alta montaña.',
+    favoriteBird: 'Tucán Grande'
   },
   {
     id: 'avatar-viento',
     name: 'Viento',
     title: 'Eco de la Puna',
     icon: '/assets/characters/puna-nina.jpg',
-    description: 'Guía de altura; escucha los cantos lejanos del quebradón.'
+    description: 'Guía de altura; escucha los cantos lejanos del quebradón.',
+    favoriteBird: 'Picaflor Cometa'
   },
   {
     id: 'avatar-nido',
     name: 'Dr. Nido',
     title: 'Científico de Campo',
     icon: '/assets/characters/cientifico.jpg',
-    description: 'Joven científico con su ave en el hombro; estudia comportamiento y conservación.'
+    description: 'Joven científico con su ave en el hombro; estudia comportamiento y conservación.',
+    favoriteBird: 'Tucán Grande'
   },
   {
     id: 'avatar-vale-calle',
     name: 'Vale',
     title: 'Exploradora Urbana',
     icon: '/assets/characters/exploradora.jpg',
-    description: 'Niña de la ciudad que descubre la selva montana del Parque Schuel.'
+    description: 'Niña de la ciudad que descubre la selva montana del Parque Schuel.',
+    favoriteBird: 'Chinchero Chico'
   }
 ];
 

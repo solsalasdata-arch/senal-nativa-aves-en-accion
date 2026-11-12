@@ -282,6 +282,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                         onClick={() => {
                           soundManager.playClick();
                           setSelectedAvatarId(avatar.id);
+                          setSelectedBird(avatar.favoriteBird);
                         }}
                         className={`p-1 rounded-xl border flex flex-col items-center gap-0.5 transition-all ${
                           isSelected
@@ -293,7 +294,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                           <img
                             src={avatar.icon}
                             alt={avatar.name}
-                            className="w-full h-14 object-cover object-top rounded-lg"
+                            className="w-full h-14 object-contain rounded-lg bg-teal-100"
                             draggable={false}
                           />
                         ) : (
@@ -301,6 +302,9 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                         )}
                         <span className="text-[9px] font-bold text-white leading-tight text-center truncate w-full">
                           {avatar.name}
+                        </span>
+                        <span className="text-[7.5px] font-semibold text-amber-300/90 leading-none truncate w-full">
+                          🦜 {avatar.favoriteBird}
                         </span>
                       </button>
                     );

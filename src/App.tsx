@@ -715,8 +715,12 @@ export default function App() {
           profiles={profiles}
           onSelectProfile={handleSelectProfile}
           onSelectCompanionBird={handleSelectCompanionBird}
-          onUpdateAvatar={(avatarId, avatarIcon) => {
-            handleUpdateProfile({ avatarId, avatarIcon });
+          onUpdateAvatar={(avatarId, avatarIcon, favoriteBird) => {
+            handleUpdateProfile({
+              avatarId,
+              avatarIcon,
+              ...(favoriteBird ? { favoriteBird } : {})
+            });
           }}
           onNavigateToScreen={(scr) => setCurrentScreen(scr)}
           onOpenMap={() => setShowMapModal(true)}

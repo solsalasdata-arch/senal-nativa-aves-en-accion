@@ -7,10 +7,11 @@ const STORAGE_KEY_SQUADS = 'senial_nativa_squads_list_v1';
 
 export function createDefaultProfile(
   name = 'Explorador Yungas',
-  avatarId = 'avatar-sol',
-  favoriteBird: CompanionBirdId = 'Tucán Grande'
+  avatarId = 'avatar-santi',
+  favoriteBird?: CompanionBirdId
 ): PlayerProfile {
   const avatar = EXPLORER_AVATARS.find(a => a.id === avatarId) || EXPLORER_AVATARS[0];
+  const resolvedBird: CompanionBirdId = favoriteBird || avatar.favoriteBird || 'Tucán Grande';
   const now = Date.now();
   return {
     id: 'prof_' + now + '_' + Math.random().toString(36).substring(2, 7),
@@ -18,7 +19,7 @@ export function createDefaultProfile(
     avatarId: avatar.id,
     avatarName: avatar.name,
     avatarIcon: avatar.icon,
-    favoriteBird,
+    favoriteBird: resolvedBird,
     level: 1,
     xp: 0,
     sightingsCompleted: 0,
@@ -42,8 +43,8 @@ export function createDefaultProfile(
     fieldJournal: [
       {
         id: 'j_init',
-        birdName: favoriteBird,
-        scientificName: favoriteBird === 'Tucán Grande' ? 'Ramphastos toco' : 'Especie Nativa',
+        birdName: resolvedBird,
+        scientificName: resolvedBird === 'Tucán Grande' ? 'Ramphastos toco' : 'Especie Nativa',
         trailName: 'Sendero de las Yungas (Entrada)',
         notes: '¡Compañero alado elegido para la expedición en el Parque Barón Schuel!',
         timestamp: now,
@@ -69,14 +70,14 @@ export function loadProfilesList(): PlayerProfile[] {
     const raw = localStorage.getItem(STORAGE_KEY_PROFILES);
     if (!raw) {
       // Seed initial default explorer if completely empty
-      const defaultProf = createDefaultProfile('Mateo Guardián', 'avatar-mateo', 'Tucán Grande');
+      const defaultProf = createDefaultProfile('Santi Guardián', 'avatar-santi', 'Benteveo');
       saveProfilesList([defaultProf]);
       setActiveProfileId(defaultProf.id);
       return [defaultProf];
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      const defaultProf = createDefaultProfile('Mateo Guardián', 'avatar-mateo', 'Tucán Grande');
+      const defaultProf = createDefaultProfile('Santi Guardián', 'avatar-santi', 'Benteveo');
       saveProfilesList([defaultProf]);
       setActiveProfileId(defaultProf.id);
       return [defaultProf];
@@ -107,7 +108,7 @@ export function loadProfilesList(): PlayerProfile[] {
       };
     });
   } catch {
-    const defaultProf = createDefaultProfile('Mateo Guardián', 'avatar-mateo', 'Tucán Grande');
+    const defaultProf = createDefaultProfile('Santi Guardián', 'avatar-santi', 'Benteveo');
     return [defaultProf];
   }
 }
@@ -201,7 +202,7 @@ export function deleteProfile(profileId: string): PlayerProfile[] {
   let profiles = loadProfilesList();
   profiles = profiles.filter(p => p.id !== profileId);
   if (profiles.length === 0) {
-    const fresh = createDefaultProfile('Nuevo Explorador', 'avatar-sol', 'Tucán Grande');
+    const fresh = createDefaultProfile('Nuevo Explorador', 'avatar-santi', 'Benteveo');
     profiles = [fresh];
   }
   saveProfilesList(profiles);
