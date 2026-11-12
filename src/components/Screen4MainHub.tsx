@@ -20,6 +20,7 @@ import { PlayerProfile, Mission } from '../types/game';
 import { SHOP_ITEMS } from '../data/birdsData';
 import { useLanguage, LanguageSelector, localizeMission, localizeDifficultyLabel } from '../utils/i18n';
 import { PWAInstallButton } from './PWAInstallButton';
+import { AvatarIcon } from './AvatarIcon';
 
 interface Screen4MainHubProps {
   playerProfile: PlayerProfile;
@@ -84,7 +85,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-teal-950/90 hover:bg-teal-900 border border-amber-400/60 text-white shadow min-w-0 cursor-pointer active:scale-95 transition-all"
             title={tx('Abrir Perfil YO / JUGADORES y Avatar con Ave Compañera', 'Open ME / PLAYERS Profile & Companion Bird Avatar')}
           >
-            <span className="text-sm shrink-0">{playerProfile.avatarIcon || '🧢'}</span>
+            <AvatarIcon icon={playerProfile.avatarIcon} className="w-5 h-5" alt={playerProfile.name} />
             <span className="text-[11px] font-black text-amber-300 truncate max-w-[58px]">
               {playerProfile.name}
             </span>

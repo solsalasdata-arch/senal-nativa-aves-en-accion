@@ -13,6 +13,7 @@ import {
 import { soundManager } from '../utils/audio';
 import { SHOP_ITEMS, PACK_EXTRA_BIRDS_DATA } from '../data/birdsData';
 import { PlayerProfile, CatalogBird } from '../types/game';
+import { AvatarIcon } from './AvatarIcon';
 
 interface ShopModalProps {
   isOpen: boolean;
@@ -122,8 +123,8 @@ export const ShopModal: React.FC<ShopModalProps> = ({
           {/* Player Avatar Preview + Active XP Balance */}
           <div className="mt-2 p-2 rounded-2xl bg-gradient-to-r from-teal-950 via-slate-900 to-teal-950 border border-teal-700/60 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-teal-900/90 border border-amber-400/70 flex items-center justify-center text-lg shrink-0 shadow">
-                {playerState.avatarIcon || '🧢'}
+              <div className="w-9 h-9 rounded-xl bg-teal-900/90 border border-amber-400/70 flex items-center justify-center text-lg shrink-0 shadow overflow-hidden">
+                <AvatarIcon icon={playerState.avatarIcon} className="w-8 h-8" alt={playerState.name} />
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-black text-white truncate">

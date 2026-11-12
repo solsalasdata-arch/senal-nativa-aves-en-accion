@@ -1,4 +1,4 @@
-const CACHE_NAME = 'senal-nativa-pwa-v4';
+const CACHE_NAME = 'senal-nativa-pwa-v6';
 
 // Core static assets and 21 species photos + 21 real .mp3 calls to pre-cache for offline trail usage
 const PRECACHE_ASSETS = [
@@ -38,7 +38,16 @@ const PRECACHE_ASSETS = [
   encodeURI('/assets/aves/19-Tangara azul y amarilla.png'),
   encodeURI('/assets/aves/20-Ticotico cejicanelo.jpg'),
   encodeURI('/assets/aves/21-Tordo bayo.jpg'),
-  // 21 Bird Songs (.mp3 in /assets/aves/)
+  // 8 Character Avatar portraits (/assets/characters/)
+  '/assets/characters/yunga-nino.jpg',
+  '/assets/characters/yunga-nina.jpg',
+  '/assets/characters/quebrada-nino.jpg',
+  '/assets/characters/quebrada-nina.jpg',
+  '/assets/characters/puna-nino.jpg',
+  '/assets/characters/puna-nina.jpg',
+  '/assets/characters/cientifico.jpg',
+  '/assets/characters/exploradora.jpg',
+  // 22 Bird Songs (.mp3 in /assets/aves/)
   encodeURI('/assets/aves/1-Chingolo.mp3'),
   encodeURI('/assets/aves/2-Tangara sacaya.mp3'),
   encodeURI('/assets/aves/3-Chercán.mp3'),
@@ -46,6 +55,7 @@ const PRECACHE_ASSETS = [
   encodeURI('/assets/aves/5-Paloma picazuro.mp3'),
   encodeURI('/assets/aves/6-Saltator de pico dorado.mp3'),
   encodeURI('/assets/aves/7-Benteveo.mp3'),
+  '/assets/aves/tucan-grande.mp3',
   encodeURI('/assets/aves/8-Tero.mp3'),
   encodeURI('/assets/aves/9-Jilguero azafranado.mp3'),
   encodeURI('/assets/aves/10-Tordo renegrido.mp3'),

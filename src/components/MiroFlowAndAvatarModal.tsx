@@ -23,6 +23,7 @@ import {
 import { soundManager } from '../utils/audio';
 import { PlayerProfile, CompanionBirdId } from '../types/game';
 import { COMPANION_BIRDS_OPTIONS, SHOP_ITEMS, EXPLORER_AVATARS } from '../data/birdsData';
+import { AvatarIcon } from './AvatarIcon';
 import { useLanguage, LanguageSelector } from '../utils/i18n';
 
 interface MiroFlowAndAvatarModalProps {
@@ -33,7 +34,7 @@ interface MiroFlowAndAvatarModalProps {
   profiles: PlayerProfile[];
   onSelectProfile: (profileId: string) => void;
   onSelectCompanionBird: (birdName: CompanionBirdId) => void;
-  onUpdateAvatar?: (avatarId: string, avatarIcon: string) => void;
+  onUpdateAvatar?: (avatarId: string, avatarIcon: string, favoriteBird?: CompanionBirdId) => void;
   onNavigateToScreen: (screen: 'screen1' | 'screen2' | 'screen3' | 'screen4') => void;
   onOpenMap: () => void;
   onOpenSighting: () => void;
@@ -296,15 +297,25 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                   {/* Columna Izquierda (7 cols): Vista Oficial de Avatar de Cuerpo Entero con Ave en el Hombro */}
                   <div className="col-span-7 flex flex-col items-center">
                     <div className="relative w-full h-56 rounded-3xl bg-slate-950 border-2 border-amber-500/70 flex flex-col items-center justify-center overflow-hidden shadow-xl">
-                      <img
-                        src={
-                          selectedStudyAngle === 'frontal'
-                            ? '/assets/aistudio/Replace_clothing_store_with_birds_e4924cc4.jpg'
-                            : '/assets/aistudio/Editing_icons_and_background_colors_c78a8c38.jpg'
-                        }
-                        alt="Avatar YO / JUGADORES"
-                        className="w-full h-full object-cover object-top"
-                      />
+                      {(() => {
+                        const avatarIsImage = !!(activeProfile.avatarIcon && activeProfile.avatarIcon.startsWith('/'));
+                        const showCharacter = avatarIsImage && selectedStudyAngle === 'frontal';
+                        return (
+                          <img
+                            src={
+                              showCharacter
+                                ? activeProfile.avatarIcon
+                                : selectedStudyAngle === 'frontal'
+                                  ? '/assets/aistudio/Replace_clothing_store_with_birds_e4924cc4.jpg'
+                                  : '/assets/aistudio/Editing_icons_and_background_colors_c78a8c38.jpg'
+                            }
+                            alt="Avatar YO / JUGADORES"
+                            className={`w-full h-full ${
+                              showCharacter ? 'object-contain bg-teal-100' : 'object-cover object-top'
+                            }`}
+                          />
+                        );
+                      })()}
                       <div className="absolute top-1.5 right-1.5 flex gap-1">
                         <button
                           onClick={() => {
@@ -445,7 +456,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                               key={av.id}
                               onClick={() => {
                                 soundManager.playClick();
-                                onUpdateAvatar(av.id, av.icon);
+                                onUpdateAvatar(av.id, av.icon, av.favoriteBird);
                               }}
                               className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 ${
                                 isCurrent
@@ -453,7 +464,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                                   : 'bg-white text-slate-700 border-slate-300'
                               }`}
                             >
-                              <span>{av.icon}</span>
+                              <AvatarIcon icon={av.icon} className="w-4 h-4" alt={av.name} />
                               <span>{av.name.split(' ')[0]}</span>
                             </button>
                           );
@@ -527,8 +538,8 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
-                          <span className="text-2xl p-1.5 rounded-xl bg-amber-400/20">
-                            {prof.avatarIcon || '🧢'}
+                          <span className="text-2xl p-1.5 rounded-xl bg-amber-400/20 flex items-center justify-center overflow-hidden">
+                            <AvatarIcon icon={prof.avatarIcon} className="w-8 h-8" alt={prof.name} />
                           </span>
                           <div>
                             <div className="text-xs font-black flex items-center gap-1.5">

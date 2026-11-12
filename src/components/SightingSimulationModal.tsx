@@ -434,6 +434,23 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             />
           )}
 
+          {/* Binocular lens effect: circular vignette + lens ring over the feed */}
+          <div
+            className="absolute inset-0 z-10 pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(ellipse 62% 56% at 50% 42%, transparent 48%, rgba(2,10,12,0.55) 80%, rgba(0,0,0,0.94) 100%)'
+            }}
+          />
+          <div
+            className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25 pointer-events-none z-10"
+            style={{
+              width: 'min(80%, 56vh)',
+              aspectRatio: '1 / 1',
+              boxShadow: 'inset 0 0 70px rgba(0,0,0,0.65), inset 0 0 18px rgba(125,211,252,0.15)'
+            }}
+          />
+
           {cameraError && !useRealCamera && !cleanViewMode && (
             <div className="absolute top-2.5 inset-x-3 z-30 bg-slate-950/90 border border-amber-500/60 rounded-xl p-2 flex items-center justify-between gap-2 text-[10px] text-amber-200 pointer-events-auto">
               <span className="leading-tight">{cameraError}</span>
