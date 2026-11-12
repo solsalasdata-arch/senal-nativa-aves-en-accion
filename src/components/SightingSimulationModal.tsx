@@ -37,6 +37,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === '007') || CATALOG_BIRDS_DATA[0]
   );
   const [useRealCamera, setUseRealCamera] = useState(false);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [nativePhotoUrl, setNativePhotoUrl] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [focusSlider, setFocusSlider] = useState(85);
   const [isPhotoCapturing, setIsPhotoCapturing] = useState(false);
   const [photoResult, setPhotoResult] = useState<{
@@ -48,38 +51,99 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      stopCamera();
-      soundManager.stopCurrentAudio();
-      setPhotoResult(null);
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     }
-  }, [isOpen]);
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setUseRealCamera(false);
+  };
 
-  const startCamera = async () => {
+  const startCamera = async (mode: 'environment' | 'user' = facingMode) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 720 }, height: { ideal: 1280 } },
-        audio: false
-      });
+      setCameraError(null);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia no soportado');
+      }
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: mode } },
+          audio: false
+        });
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      }
+
       streamRef.current = stream;
+      setNativePhotoUrl(null);
+      setUseRealCamera(true);
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
+        videoRef.current.muted = true;
+        videoRef.current.play().catch(() => {});
       }
-      setUseRealCamera(true);
     } catch {
+      setCameraError('Permiso de cámara bloqueado o navegador interno. Usa el botón de Cámara del Teléfono abajo.');
       setUseRealCamera(false);
     }
   };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
+  useEffect(() => {
+    if (isOpen) {
+      startCamera('environment');
+    } else {
+      stopCamera();
+      soundManager.stopCurrentAudio();
+      setPhotoResult(null);
+      setNativePhotoUrl(null);
     }
-    setUseRealCamera(false);
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const handleFlipCamera = () => {
+    soundManager.playClick();
+    const nextMode: 'environment' | 'user' = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextMode);
+    startCamera(nextMode);
+  };
+
+  const handleNativeFileCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        stopCamera();
+        setCameraError(null);
+        setNativePhotoUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   if (!isOpen) return null;
@@ -121,33 +185,144 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     soundManager.playBirdSound(activeBirdData.audioUrl || activeBirdData.id);
   };
 
-  // Handle Foto Perfecta Capture
-  const handleShutterCapture = () => {
+  const loadImage = (src: string): Promise<HTMLImageElement | null> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src.includes('%') || src.startsWith('data:') ? src : encodeURI(src);
+    });
+
+  // Handle Foto Perfecta Capture (draws live <video> frame + bird AR overlay onto <canvas>)
+  const handleShutterCapture = async () => {
     soundManager.playShutter();
     setIsPhotoCapturing(true);
     playActiveBirdAudio();
 
-    setTimeout(() => {
-      const isFocused = focusSlider >= 65 && focusSlider <= 95;
-      const centered = true;
-      const respectful = true;
-      const stars = isFocused ? 3 : 2;
+    const isFocused = focusSlider >= 65 && focusSlider <= 95;
+    const centered = true;
+    const respectful = true;
+    const stars = isFocused ? 3 : 2;
 
+    let finalPhotoUrl = encodeURI(activeBirdData.image);
+
+    try {
+      const canvas = canvasRef.current || document.createElement('canvas');
+      const width = 540;
+      const height = 720;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        let drewBase = false;
+        if (useRealCamera && videoRef.current && videoRef.current.readyState >= 2) {
+          const vid = videoRef.current;
+          const vw = vid.videoWidth || width;
+          const vh = vid.videoHeight || height;
+          const scale = Math.max(width / vw, height / vh);
+          const sw = width / scale;
+          const sh = height / scale;
+          const sx = (vw - sw) / 2;
+          const sy = (vh - sh) / 2;
+
+          ctx.save();
+          if (facingMode === 'user') {
+            ctx.translate(width, 0);
+            ctx.scale(-1, 1);
+          }
+          ctx.drawImage(vid, sx, sy, sw, sh, 0, 0, width, height);
+          ctx.restore();
+          drewBase = true;
+        } else if (nativePhotoUrl) {
+          const nativeImg = await loadImage(nativePhotoUrl);
+          if (nativeImg) {
+            ctx.drawImage(nativeImg, 0, 0, width, height);
+            drewBase = true;
+          }
+        }
+
+        if (!drewBase) {
+          const grad = ctx.createLinearGradient(0, 0, 0, height);
+          grad.addColorStop(0, '#073B32');
+          grad.addColorStop(1, '#0F172A');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, width, height);
+        }
+
+        const birdImg = await loadImage(activeBirdData.image);
+        if (birdImg) {
+          const boxSize = 220;
+          const bx = (width - boxSize) / 2;
+          const by = (height - boxSize) / 2;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(width / 2, height / 2, boxSize / 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(birdImg, bx, by, boxSize, boxSize);
+          ctx.restore();
+
+          ctx.strokeStyle = '#38BDF8';
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.arc(width / 2, height / 2, boxSize / 2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.8)';
+        ctx.fillRect(0, height - 90, width, 90);
+        ctx.fillStyle = '#FDE047';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(
+          `#${activeBirdData.catalogNumber} ${activeBirdData.commonName} (${'★'.repeat(stars)})`,
+          width / 2,
+          height - 50
+        );
+        ctx.fillStyle = '#5EEAD4';
+        ctx.font = '13px sans-serif';
+        ctx.fillText(
+          `${activeBirdData.scientificName} · Parque Botánico Barón Schuel`,
+          width / 2,
+          height - 24
+        );
+
+        finalPhotoUrl = canvas.toDataURL('image/jpeg', 0.92);
+      }
+    } catch {
+      // Fallback to bird image
+    }
+
+    setTimeout(() => {
       setPhotoResult({
         stars,
         criteria: { centered, focus: isFocused, respectful },
         birdName: activeBirdData.commonName,
-        photoUrl: encodeURI(activeBirdData.image)
+        photoUrl: finalPhotoUrl
       });
 
       soundManager.playSuccess();
       onSightingSuccess(activeBirdData.id, stars);
       setIsPhotoCapturing(false);
-    }, 450);
+    }, 350);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-black/90 backdrop-blur-md animate-fadeIn">
+      {/* Hidden Canvas & Native Mobile Camera Input Fallback */}
+      <canvas ref={canvasRef} className="hidden" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleNativeFileCapture}
+        className="hidden"
+      />
+
       <div className="relative w-full max-w-sm h-[94vh] max-h-[860px] flex flex-col rounded-3xl overflow-hidden bg-slate-950 border-2 border-teal-500 shadow-2xl">
         {/* HUD Top Bar: Battery, Flash OFF, Respectful Distance, Close */}
         <div className="relative z-30 px-3 py-2 bg-slate-950/80 backdrop-blur-md border-b border-teal-900/60 flex items-center justify-between text-xs text-white">
@@ -188,12 +363,30 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
         {/* Viewport Frame with HUD and AR Content */}
         <div className="relative flex-1 bg-black overflow-hidden flex items-center justify-center">
-          {/* Live Video Feed or Illustrated Backdrop */}
+          {/* Live Video Feed with Mandatory Mobile Attributes OR Native Photo OR Illustrated Backdrop */}
           {useRealCamera ? (
             <video
-              ref={videoRef}
+              ref={(el) => {
+                videoRef.current = el;
+                if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                  el.srcObject = streamRef.current;
+                  el.setAttribute('playsinline', 'true');
+                  el.setAttribute('webkit-playsinline', 'true');
+                  el.muted = true;
+                  el.play().catch(() => {});
+                }
+              }}
+              autoPlay
               playsInline
               muted
+              className={`absolute inset-0 w-full h-full object-cover ${
+                facingMode === 'user' ? 'transform -scale-x-100' : ''
+              }`}
+            />
+          ) : nativePhotoUrl ? (
+            <img
+              src={nativePhotoUrl}
+              alt="Captura de cámara del teléfono"
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
@@ -208,6 +401,43 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 focusSlider >= 65 && focusSlider <= 95 ? 'blur-none' : 'blur-[2px]'
               }`}
             />
+          )}
+
+          {/* Floating Camera Controls Inside XR Viewport: Flip Camera + Native Mobile Camera Fallback */}
+          <div className="absolute top-2.5 left-2.5 right-2.5 z-30 flex items-center justify-between gap-1.5 pointer-events-auto">
+            <button
+              type="button"
+              onClick={handleFlipCamera}
+              className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
+            >
+              <RefreshCw className="w-3 h-3 stroke-[2.5]" />
+              <span>🔄 Girar Cámara ({facingMode === 'environment' ? 'Trasera' : 'Frontal'})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!useRealCamera) startCamera(facingMode);
+                else fileInputRef.current?.click();
+              }}
+              className="px-2.5 py-1 rounded-full bg-teal-600/95 hover:bg-teal-500 text-white font-black text-[10px] border border-teal-300 shadow-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
+            >
+              <Camera className="w-3 h-3" />
+              <span>{useRealCamera ? '📱 Cámara Nativa' : '📷 Activar Cámara'}</span>
+            </button>
+          </div>
+
+          {cameraError && !useRealCamera && (
+            <div className="absolute top-11 inset-x-3 z-30 bg-slate-950/90 border border-amber-500/60 rounded-xl p-2 flex items-center justify-between gap-2 text-[10px] text-amber-200 pointer-events-auto">
+              <span className="leading-tight">{cameraError}</span>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black shrink-0"
+              >
+                📷 Usar Teléfono
+              </button>
+            </div>
           )}
 
           {/* Flash Shutter Animation */}

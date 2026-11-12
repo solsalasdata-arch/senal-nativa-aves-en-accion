@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Camera, X, ShieldAlert, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Camera, X, ShieldAlert, Sparkles, RefreshCw, CheckCircle2, Download, Upload } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 
 interface PhotoCompanionModalProps {
@@ -17,8 +17,8 @@ const COMPANIONS = [
     scientific: 'Ramphastos toco',
     badge: 'Ave Emblema',
     color: 'from-amber-400 to-orange-500',
-    asset: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
-    speech: '¡Hola explorador! Posaré de perfil para lucir mi pico.'
+    asset: '/assets/aistudio/toucan_waving_cutout.png',
+    speech: '¡Hola explorador! Posaré contigo para nuestra foto en el Parque.'
   },
   {
     id: 'benteveo',
@@ -26,8 +26,8 @@ const COMPANIONS = [
     scientific: 'Pitangus sulphuratus',
     badge: 'Centinela',
     color: 'from-yellow-400 to-amber-600',
-    asset: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
-    speech: '¡Bicho feo! No te muevas que capturamos la luz de la selva.'
+    asset: '/assets/aves/7-Benteveo.jpg',
+    speech: '¡Bien-te-veo! No te muevas que capturamos la luz de la selva.'
   },
   {
     id: 'chinchero',
@@ -35,7 +35,7 @@ const COMPANIONS = [
     scientific: 'Lepidocolaptes angustirostris',
     badge: 'Trepador',
     color: 'from-emerald-400 to-teal-600',
-    asset: '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg',
+    asset: '/assets/aistudio/chinchero_chico_portrait.jpg',
     speech: '¡Sujétate bien al tronco que sale la toma perfecta!'
   },
   {
@@ -44,8 +44,8 @@ const COMPANIONS = [
     scientific: 'Sappho sparganurus',
     badge: 'Joya Alada',
     color: 'from-rose-400 to-amber-500',
-    asset: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
-    speech: '¡Zumbido de alas! Mira cómo brilla mi cola en la quebrada.'
+    asset: '/assets/aves/15-Candelita de gorro pardo.jpg',
+    speech: '¡Zumbido de alas! Mira cómo brillan los colores en la quebrada.'
   }
 ];
 
@@ -58,130 +58,301 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
 }) => {
   const [selectedCompanion, setSelectedCompanion] = useState(() => {
     if (currentBirdName) {
-      const match = COMPANIONS.find(c => c.name === currentBirdName);
+      const match = COMPANIONS.find((c) => c.name === currentBirdName);
       if (match) return match;
     }
     return COMPANIONS[0];
   });
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [useRealCamera, setUseRealCamera] = useState(false);
+  const [nativePhotoUrl, setNativePhotoUrl] = useState<string | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    if (currentBirdName) {
-      const match = COMPANIONS.find(c => c.name === currentBirdName);
-      if (match) setSelectedCompanion(match);
-    }
-  }, [currentBirdName, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      stopCamera();
-      setCapturedPhoto(null);
-    }
-  }, [isOpen]);
-
-  const startCamera = async () => {
-    try {
-      setCameraError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 1280 } },
-        audio: false
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      setUseRealCamera(true);
-    } catch {
-      setCameraError('Cámara física no disponible o permiso denegado. Se activará el visor digital XR de simulación ambiental.');
-      setUseRealCamera(false);
-    }
-  };
-
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     setUseRealCamera(false);
+  }, []);
+
+  const startCamera = useCallback(
+    async (mode: 'user' | 'environment' = facingMode) => {
+      try {
+        setCameraError(null);
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('getUserMedia no soportado');
+        }
+
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: mode } },
+            audio: false
+          });
+        } catch {
+          // Fallback sin restricciones si el modelo de celular rechaza facingMode
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+        }
+
+        streamRef.current = stream;
+        setNativePhotoUrl(null);
+        setUseRealCamera(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.setAttribute('playsinline', 'true');
+          videoRef.current.setAttribute('webkit-playsinline', 'true');
+          videoRef.current.muted = true;
+          videoRef.current.play().catch(() => {});
+        }
+      } catch {
+        setCameraError(
+          'Permiso de cámara bloqueado o navegador interno detectado. Pulsa "📷 Activar Cámara / Usar Cámara del Teléfono" abajo.'
+        );
+        setUseRealCamera(false);
+      }
+    },
+    [facingMode]
+  );
+
+  // Sync companion with prop
+  useEffect(() => {
+    if (currentBirdName) {
+      const match = COMPANIONS.find((c) => c.name === currentBirdName);
+      if (match) setSelectedCompanion(match);
+    }
+  }, [currentBirdName, isOpen]);
+
+  // Auto-start front camera ("user") when modal opens; stop tracks when closing
+  useEffect(() => {
+    if (isOpen) {
+      startCamera('user');
+    } else {
+      stopCamera();
+      setCapturedPhoto(null);
+      setNativePhotoUrl(null);
+    }
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    };
+  }, [isOpen, startCamera, stopCamera]);
+
+  // Toggle Front / Rear Camera ("user" <-> "environment")
+  const handleFlipCamera = () => {
+    soundManager.playClick();
+    const nextMode: 'user' | 'environment' = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(nextMode);
+    startCamera(nextMode);
   };
 
-  const handleTakePhoto = () => {
+  // Handle native <input type="file" accept="image/*" capture="..." /> fallback
+  const handleNativeFileCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        stopCamera();
+        setCameraError(null);
+        setNativePhotoUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Helper to load an image URL into HTMLImageElement
+  const loadImage = (src: string): Promise<HTMLImageElement | null> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src.includes('%') || src.startsWith('data:') ? src : encodeURI(src);
+    });
+
+  // Real Canvas Capture: draws <video> frame (or native phone photo / park backdrop) + companion bird illustration overlay
+  const handleTakePhoto = async () => {
     soundManager.playShutter();
     setIsCapturing(true);
 
-    setTimeout(() => {
-      // Synthesize photo on canvas
-      const canvas = canvasRef.current || document.createElement('canvas');
-      canvas.width = 450;
-      canvas.height = 700;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Background
-        const grad = ctx.createLinearGradient(0, 0, 0, 700);
-        grad.addColorStop(0, '#0C6E5A');
-        grad.addColorStop(0.5, '#149B7E');
-        grad.addColorStop(1, '#064E3B');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 450, 700);
+    const canvas = canvasRef.current || document.createElement('canvas');
+    const width = 540;
+    const height = 720;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
 
-        // Watermark stamp
-        ctx.strokeStyle = 'rgba(140, 231, 211, 0.25)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(225, 300, 140, 0, Math.PI * 2);
-        ctx.stroke();
+    if (ctx) {
+      // 1. Draw base layer: Live <video> frame, or Native Phone Photo, or Jungle Backdrop
+      let drewCameraFrame = false;
 
-        ctx.fillStyle = 'rgba(140, 231, 211, 0.4)';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('PARQUE BOTÁNICO MUNICIPAL', 225, 290);
-        ctx.fillText('BARÓN CARLOS MARÍA SCHUEL', 225, 310);
-        ctx.fillText('YUNGAS · 1334-1463 msnm', 225, 330);
+      if (useRealCamera && videoRef.current && videoRef.current.readyState >= 2) {
+        const vid = videoRef.current;
+        const vw = vid.videoWidth || width;
+        const vh = vid.videoHeight || height;
+        const scale = Math.max(width / vw, height / vh);
+        const sw = width / scale;
+        const sh = height / scale;
+        const sx = (vw - sw) / 2;
+        const sy = (vh - sh) / 2;
 
-        // Decorative borders
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        ctx.font = 'bold 22px Fredoka, sans-serif';
-        ctx.fillText(`¡Con ${selectedCompanion.name}!`, 225, 80);
-
-        ctx.fillStyle = '#8CE7D3';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`${selectedCompanion.scientific} · Reserva Natural Urbana`, 225, 110);
-
-        // Frame
-        ctx.strokeStyle = '#FDBA2E';
-        ctx.lineWidth = 6;
-        ctx.strokeRect(16, 16, 418, 668);
-
-        // Date stamp
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = '12px sans-serif';
-        ctx.fillText(new Date().toLocaleDateString('es-AR', { dateStyle: 'long' }), 225, 650);
-
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        setCapturedPhoto(dataUrl);
-        if (onSavePhoto) onSavePhoto(dataUrl);
+        ctx.save();
+        if (facingMode === 'user') {
+          ctx.translate(width, 0);
+          ctx.scale(-1, 1);
+        }
+        ctx.drawImage(vid, sx, sy, sw, sh, 0, 0, width, height);
+        ctx.restore();
+        drewCameraFrame = true;
+      } else if (nativePhotoUrl) {
+        const nativeImg = await loadImage(nativePhotoUrl);
+        if (nativeImg) {
+          const scale = Math.max(width / nativeImg.width, height / nativeImg.height);
+          const sw = width / scale;
+          const sh = height / scale;
+          const sx = (nativeImg.width - sw) / 2;
+          const sy = (nativeImg.height - sh) / 2;
+          ctx.drawImage(nativeImg, sx, sy, sw, sh, 0, 0, width, height);
+          drewCameraFrame = true;
+        }
       }
+
+      if (!drewCameraFrame) {
+        const bgImg = await loadImage('/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg');
+        if (bgImg) {
+          ctx.drawImage(bgImg, 0, 0, width, height);
+        } else {
+          const grad = ctx.createLinearGradient(0, 0, 0, height);
+          grad.addColorStop(0, '#0C6E5A');
+          grad.addColorStop(0.5, '#149B7E');
+          grad.addColorStop(1, '#064E3B');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, width, height);
+        }
+      }
+
+      // 2. Draw subtle top & bottom gradient vignettes for legibility
+      const topGrad = ctx.createLinearGradient(0, 0, 0, 110);
+      topGrad.addColorStop(0, 'rgba(6, 38, 32, 0.85)');
+      topGrad.addColorStop(1, 'rgba(6, 38, 32, 0)');
+      ctx.fillStyle = topGrad;
+      ctx.fillRect(0, 0, width, 110);
+
+      const botGrad = ctx.createLinearGradient(0, height - 160, 0, height);
+      botGrad.addColorStop(0, 'rgba(6, 38, 32, 0)');
+      botGrad.addColorStop(1, 'rgba(6, 38, 32, 0.9)');
+      ctx.fillStyle = botGrad;
+      ctx.fillRect(0, height - 160, width, 160);
+
+      // 3. Draw Companion Bird Illustration Overlay in bottom-right
+      const birdImg = await loadImage(selectedCompanion.asset);
+      if (birdImg) {
+        const boxSize = 185;
+        const bx = width - boxSize - 24;
+        const by = height - boxSize - 56;
+
+        if (selectedCompanion.asset.endsWith('.png')) {
+          ctx.drawImage(birdImg, bx, by, boxSize, boxSize);
+        } else {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(bx + boxSize / 2, by + boxSize / 2, boxSize / 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(birdImg, bx, by, boxSize, boxSize);
+          ctx.restore();
+
+          ctx.strokeStyle = '#FDBA2E';
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.arc(bx + boxSize / 2, by + boxSize / 2, boxSize / 2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      // 4. Draw Header & Footer Park Stamp
+      ctx.strokeStyle = '#FDBA2E';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(14, 14, width - 28, height - 28);
+
+      ctx.fillStyle = '#FDE047';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`🦜 ¡Con ${selectedCompanion.name}!`, 30, 48);
+
+      ctx.fillStyle = '#A7F3D0';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(`${selectedCompanion.scientific} · Parque Botánico Barón Schuel`, 30, 70);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(
+        `San Salvador de Jujuy · ${new Date().toLocaleDateString('es-AR')}`,
+        30,
+        height - 28
+      );
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      setCapturedPhoto(dataUrl);
+      if (onSavePhoto) onSavePhoto(dataUrl);
+      soundManager.playSuccess();
+    }
+
+    setTimeout(() => {
       setIsCapturing(false);
-    }, 400);
+    }, 300);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-sm max-h-[92vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-emerald-500/50 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-3 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+      {/* Hidden Canvas & Native Mobile Camera Input Fallback */}
+      <canvas ref={canvasRef} className="hidden" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture={facingMode === 'user' ? 'user' : 'environment'}
+        onChange={handleNativeFileCapture}
+        className="hidden"
+      />
+
+      <div className="relative w-full max-w-sm max-h-[94vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-emerald-500/60 shadow-2xl">
         {/* Top Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-950/80 border-b border-teal-800/40">
+        <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-950/90 border-b border-teal-800/50">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-teal-400" />
-            <h3 className="font-bold text-sm tracking-wide text-white">FOTO COMPAÑERA</h3>
+            <div>
+              <h3 className="font-black text-xs sm:text-sm tracking-wide text-white uppercase">
+                FOTO CON TU AVE COMPAÑERA
+              </h3>
+              <p className="text-[9px] text-teal-300">
+                Cámara {facingMode === 'user' ? 'Frontal (Selfie)' : 'Trasera (Sendero)'} · Sin Flash
+              </p>
+            </div>
           </div>
           <button
             onClick={() => {
@@ -196,71 +367,96 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
         </div>
 
         {/* Environmental Care Warning Banner */}
-        <div className="bg-amber-950/90 border-b border-amber-600/40 px-3.5 py-2 flex items-start gap-2.5">
-          <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-          <div className="text-[11px] leading-tight text-amber-200">
-            <span className="font-bold text-amber-300 block">CUIDADO AMBIENTAL OBLIGATORIO</span>
-            Flash desactivado por defecto — Mantén una distancia respetuosa sin acercarte al ave para no perturbar su hábitat.
+        <div className="bg-amber-950/90 border-b border-amber-600/40 px-3 py-1.5 flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="text-[10px] leading-tight text-amber-200">
+            <span className="font-bold text-amber-300">Flash OFF obligatorio:</span> Cuida la fauna de las Yungas.
           </div>
         </div>
 
-        {/* Main Viewport */}
-        <div className="relative flex-1 min-h-[300px] max-h-[360px] bg-slate-950 overflow-hidden flex items-center justify-center">
+        {/* Main Camera / Photo Viewport */}
+        <div className="relative flex-1 min-h-[290px] max-h-[350px] bg-slate-950 overflow-hidden flex items-center justify-center">
           {capturedPhoto ? (
-            <div className="relative w-full h-full flex flex-col items-center justify-center p-4 bg-teal-950/80">
+            <div className="relative w-full h-full flex flex-col items-center justify-center p-3 bg-teal-950/80">
               <img
                 src={capturedPhoto}
                 alt="Foto compañera tomada"
-                className="max-h-[260px] rounded-2xl border-2 border-amber-400 shadow-xl object-contain"
+                className="max-h-[250px] rounded-2xl border-2 border-amber-400 shadow-xl object-contain"
               />
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-300 font-semibold">
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-emerald-300 font-bold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                ¡Foto guardada en tu Diario de Campo!
+                <span>¡Foto guardada en tu perfil y Diario de Campo!</span>
               </div>
             </div>
           ) : (
             <>
+              {/* 1) Live Video Feed with Mandatory Mobile Attributes OR Native Photo OR Park Backdrop */}
               {useRealCamera ? (
                 <video
-                  ref={videoRef}
+                  ref={(el) => {
+                    videoRef.current = el;
+                    if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                      el.srcObject = streamRef.current;
+                      el.setAttribute('playsinline', 'true');
+                      el.setAttribute('webkit-playsinline', 'true');
+                      el.muted = true;
+                      el.play().catch(() => {});
+                    }
+                  }}
+                  autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover transform -scale-x-100"
+                  className={`absolute inset-0 w-full h-full object-cover ${
+                    facingMode === 'user' ? 'transform -scale-x-100' : ''
+                  }`}
+                />
+              ) : nativePhotoUrl ? (
+                <img
+                  src={nativePhotoUrl}
+                  alt="Foto capturada desde el teléfono"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
               ) : (
                 <div
-                  className="w-full h-full bg-cover bg-center flex flex-col justify-between p-4 relative"
-                  style={{ backgroundImage: `url('/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg')` }}
+                  className="absolute inset-0 w-full h-full bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url('/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg')`
+                  }}
                 >
-                  <div className="absolute inset-0 bg-emerald-950/50 backdrop-blur-[1px]" />
-                  
-                  {/* Subtle target crosshair */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-44 h-44 rounded-full border-2 border-teal-300/40 border-dashed animate-pulse flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-teal-300" />
-                    </div>
-                  </div>
-
-                  {/* Watermark stamp inside camera */}
-                  <div className="relative z-10 self-start px-2.5 py-1 rounded-full bg-black/40 text-[10px] text-teal-200 border border-teal-500/30">
-                    🌿 Parque Botánico Barón Schuel · Selva Montana
-                  </div>
-
-                  {/* Bird Companion Overlay */}
-                  <div className="relative z-10 self-end flex flex-col items-end">
-                    <div className="bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-teal-400/40 text-[11px] text-white max-w-[200px] mb-2 shadow-lg">
-                      {selectedCompanion.speech}
-                    </div>
-                    <div className="relative w-28 h-28 rounded-full border-4 border-amber-400 shadow-xl overflow-hidden bg-slate-900">
-                      <img
-                        src={selectedCompanion.asset}
-                        alt={selectedCompanion.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </div>
+                  <div className="absolute inset-0 bg-emerald-950/45 backdrop-blur-[1px]" />
                 </div>
               )}
+
+              {/* 2) Top Controls Overlay Inside Viewport: Flip Camera ("🔄 Girar Cámara") */}
+              <div className="absolute top-2.5 inset-x-2.5 z-20 flex items-center justify-between gap-1.5">
+                <div className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-[10px] text-teal-200 border border-teal-500/40 font-bold">
+                  🌿 Parque Botánico Barón Schuel
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleFlipCamera}
+                  className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
+                  title="Alternar entre cámara frontal y trasera"
+                >
+                  <RefreshCw className="w-3 h-3 stroke-[2.5]" />
+                  <span>🔄 Girar Cámara ({facingMode === 'user' ? 'Frontal' : 'Trasera'})</span>
+                </button>
+              </div>
+
+              {/* 3) Companion Bird Overlay (Always visible over live camera so player can pose with the bird!) */}
+              <div className="absolute bottom-2.5 right-2.5 z-20 flex flex-col items-end pointer-events-none">
+                <div className="bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-2xl border border-teal-400/50 text-[10px] text-white max-w-[190px] mb-1.5 shadow-lg">
+                  {selectedCompanion.speech}
+                </div>
+                <div className="relative w-28 h-28 rounded-full border-3 border-amber-400 shadow-2xl overflow-hidden bg-teal-950/80 flex items-center justify-center p-1">
+                  <img
+                    src={encodeURI(selectedCompanion.asset)}
+                    alt={selectedCompanion.name}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
 
               {/* Shutter flash animation overlay */}
               {isCapturing && (
@@ -269,31 +465,48 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
             </>
           )}
 
-          {cameraError && (
-            <div className="absolute bottom-2 left-2 right-2 bg-slate-900/90 text-amber-300 text-[10px] p-2 rounded-lg border border-amber-600/50">
-              {cameraError}
+          {/* Fallback Button when permission is blocked or user is in WhatsApp/Instagram in-app browser */}
+          {!capturedPhoto && (!useRealCamera || cameraError) && (
+            <div className="absolute bottom-2.5 left-2.5 z-20 max-w-[58%] space-y-1">
+              {cameraError && (
+                <div className="bg-slate-950/90 text-amber-300 text-[9px] p-1.5 rounded-lg border border-amber-500/50 leading-tight">
+                  {cameraError}
+                </div>
+              )}
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => startCamera(facingMode)}
+                  className="px-2.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-black text-[10px] border border-teal-300 shadow-lg flex items-center gap-1 cursor-pointer"
+                >
+                  <Camera className="w-3.5 h-3.5 shrink-0" />
+                  <span>📷 Activar Cámara en Vivo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow-lg flex items-center gap-1 cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5 shrink-0" />
+                  <span>📱 Usar Cámara del Teléfono</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
 
         {/* Companion Selector Tabs */}
         {!capturedPhoto && (
-          <div className="p-3 bg-slate-950/95 border-t border-teal-900/60">
-            <div className="text-[11px] font-semibold text-teal-300 mb-2 flex items-center justify-between">
+          <div className="p-2.5 bg-slate-950/95 border-t border-teal-900/60 space-y-2">
+            <div className="text-[10px] font-bold text-teal-300 flex items-center justify-between gap-1">
               <span>ELIGE TU AVE COMPAÑERA:</span>
               <button
-                onClick={() => {
-                  soundManager.playClick();
-                  if (useRealCamera) {
-                    stopCamera();
-                  } else {
-                    startCamera();
-                  }
-                }}
-                className="text-[10px] text-teal-400 underline hover:text-teal-200 flex items-center gap-1"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[10px] text-amber-300 underline hover:text-amber-200 flex items-center gap-1 cursor-pointer"
               >
-                <RefreshCw className="w-3 h-3" />
-                {useRealCamera ? 'Modo XR Selva' : 'Activar Cámara'}
+                <Camera className="w-3 h-3" />
+                <span>Abrir Cámara Nativa del Celular</span>
               </button>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
@@ -302,6 +515,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
                 return (
                   <button
                     key={bird.id}
+                    type="button"
                     onClick={() => {
                       soundManager.playClick();
                       setSelectedCompanion(bird);
@@ -328,36 +542,48 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
         )}
 
         {/* Bottom Shutter Action Bar */}
-        <div className="p-3 bg-slate-950 border-t border-teal-900/80 flex items-center justify-between gap-3">
+        <div className="p-3 bg-slate-950 border-t border-teal-900/80 flex items-center justify-between gap-2">
           {capturedPhoto ? (
             <>
               <button
+                type="button"
                 onClick={() => {
                   soundManager.playClick();
                   setCapturedPhoto(null);
                 }}
-                className="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition-colors"
+                className="flex-1 py-2.5 px-2.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition-colors"
               >
-                Tomar otra foto
+                Otra foto
               </button>
+              <a
+                href={capturedPhoto}
+                download={`senal-nativa-${selectedCompanion.id}.jpg`}
+                className="py-2.5 px-3 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold flex items-center gap-1"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Descargar</span>
+              </a>
               <button
+                type="button"
                 onClick={() => {
                   soundManager.playClick();
+                  stopCamera();
                   onClose();
                 }}
-                className="flex-1 py-2.5 px-3 rounded-xl game-btn-orange text-white text-xs font-bold"
+                className="flex-1 py-2.5 px-2.5 rounded-xl game-btn-orange text-white text-xs font-bold"
               >
                 Guardar y Volver
               </button>
             </>
           ) : (
             <button
+              type="button"
               onClick={handleTakePhoto}
-              className="w-full py-3 rounded-2xl game-btn-orange flex items-center justify-center gap-2 text-white font-bold text-sm tracking-wide"
+              className="w-full py-3 rounded-2xl game-btn-orange flex items-center justify-center gap-2 text-white font-bold text-sm tracking-wide cursor-pointer"
             >
               <Camera className="w-5 h-5 text-amber-200" />
-              <span>CAPTURAR RECUERDO</span>
-              <Sparkles className="w-4 h-4 text-amber-200 animate-spin" />
+              <span>CAPTURAR FOTO CON {selectedCompanion.name.toUpperCase()}</span>
+              <Sparkles className="w-4 h-4 text-amber-200" />
             </button>
           )}
         </div>
@@ -365,3 +591,4 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
     </div>
   );
 };
+
