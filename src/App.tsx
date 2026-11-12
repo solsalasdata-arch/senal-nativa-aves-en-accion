@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Screen1Splash } from './components/Screen1Splash';
 import { Screen2PlayerSelector } from './components/Screen2PlayerSelector';
 import { Screen3HostPresentation } from './components/Screen3HostPresentation';
@@ -15,7 +15,7 @@ import { QuizConsignasModal } from './components/QuizConsignasModal';
 import { GoogleDriveModal } from './components/GoogleDriveModal';
 import { SquadsAndSeasonsModal } from './components/SquadsAndSeasonsModal';
 import { MiroFlowAndAvatarModal } from './components/MiroFlowAndAvatarModal';
-import { PACK_EXTRA_BIRDS_DATA } from './data/birdsData';
+import { CATALOG_BIRDS_DATA, PACK_EXTRA_BIRDS_DATA } from './data/birdsData';
 import {
   loadProfilesList,
   getActiveProfile,
@@ -56,6 +56,106 @@ export default function App() {
   const [showSquadsModal, setShowSquadsModal] = useState(false);
   const [showMiroModal, setShowMiroModal] = useState(false);
   const [miroModalInitialMode, setMiroModalInitialMode] = useState<'yo_jugadores' | 'miro_flow' | 'character_study'>('yo_jugadores');
+
+  // Compute current active modal identifier for History API
+  const activeModalId =
+    showDetailCelebration
+      ? 'detail_celebration'
+      : showLevelUpModal
+      ? 'levelup'
+      : showQuizConsignasModal
+      ? 'quiz'
+      : showSightingModal
+      ? 'sighting'
+      : showMapModal
+      ? 'map'
+      : showBirdsModal
+      ? 'birds'
+      : showShopModal
+      ? 'shop'
+      : showTipsModal
+      ? 'tips'
+      : showPhotoModal
+      ? 'photo'
+      : showOptionsModal
+      ? 'options'
+      : showDriveModal
+      ? 'drive'
+      : showSquadsModal
+      ? 'squads'
+      : showMiroModal
+      ? 'miro'
+      : null;
+
+  const closeAllModals = useCallback(() => {
+    setShowTipsModal(false);
+    setShowPhotoModal(false);
+    setShowSightingModal(false);
+    setShowBirdsModal(false);
+    setShowDetailCelebration(false);
+    setShowMapModal(false);
+    setShowShopModal(false);
+    setShowLevelUpModal(false);
+    setShowOptionsModal(false);
+    setShowQuizConsignasModal(false);
+    setShowDriveModal(false);
+    setShowSquadsModal(false);
+    setShowMiroModal(false);
+  }, []);
+
+  const navStateRef = useRef<{ screen: ScreenId; modal: string | null }>({
+    screen: currentScreen,
+    modal: activeModalId
+  });
+  const isHandlingPopStateRef = useRef(false);
+
+  // Keep ref updated with latest state
+  useEffect(() => {
+    navStateRef.current = { screen: currentScreen, modal: activeModalId };
+  }, [currentScreen, activeModalId]);
+
+  // Initialize History API and listen to physical/gesture mobile "Back" button (popstate)
+  useEffect(() => {
+    window.history.replaceState({ screen: 'screen1', modal: null, guard: true }, '');
+    window.history.pushState({ screen: 'screen1', modal: null }, '');
+
+    const handlePopState = () => {
+      isHandlingPopStateRef.current = true;
+      const { screen, modal } = navStateRef.current;
+
+      if (modal !== null) {
+        // a) If a modal is open, close it first and return to the underlying screen
+        closeAllModals();
+        window.history.pushState({ screen, modal: null }, '');
+      } else if (screen === 'screen4' || screen === 'screen3') {
+        // b) & c) From Main Hub (Screen 4) or Host Presentation (Screen 3), return to Player Selector (Screen 2)
+        setCurrentScreen('screen2');
+        window.history.pushState({ screen: 'screen2', modal: null }, '');
+      } else if (screen === 'screen2') {
+        // From Player Selector (Screen 2), return to Splash (Screen 1)
+        setCurrentScreen('screen1');
+        window.history.pushState({ screen: 'screen1', modal: null }, '');
+      } else {
+        // Already at Screen 1: re-push guard state so the app does not close
+        window.history.pushState({ screen: 'screen1', modal: null }, '');
+      }
+
+      setTimeout(() => {
+        isHandlingPopStateRef.current = false;
+      }, 50);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [closeAllModals]);
+
+  // Push history state whenever screen or modal changes via user UI actions
+  useEffect(() => {
+    if (isHandlingPopStateRef.current) return;
+    window.history.pushState({ screen: currentScreen, modal: activeModalId }, '');
+  }, [currentScreen, activeModalId]);
 
   // Sync profile update helper
   const handleUpdateProfile = (updates: Partial<PlayerProfile>) => {
@@ -120,7 +220,7 @@ export default function App() {
       ? Array.from(new Set([...(activeProfile.unlockedRareBirds || []), 'urutau', 'jote-real']))
       : activeProfile.unlockedRareBirds || [];
 
-    const updated = handleUpdateProfile({
+    handleUpdateProfile({
       completedCheckpoints: newCheckpoints,
       hasRouteCompleteSeal: isNowComplete || activeProfile.hasRouteCompleteSeal,
       unlockedRareBirds: newUnlockedRare,
@@ -143,14 +243,20 @@ export default function App() {
       [birdId]: Math.max(prevStars, stars)
     };
 
+    const matchedBird = CATALOG_BIRDS_DATA.find((b) => b.id === birdId);
     const birdDisplayName =
-      birdId === 'chinchero-chico' ? 'Chinchero Chico' : 'Benteveo';
+      birdId === 'chinchero-chico' || birdId === '020-ticotico-cejicanelo'
+        ? 'Chinchero Chico / Ticotico'
+        : matchedBird?.commonName || 'Benteveo';
+    const birdSciName =
+      birdId === 'chinchero-chico'
+        ? 'Lepidocolaptes angustirostris'
+        : matchedBird?.scientificName || 'Pitangus sulphuratus';
 
     const newJournalEntry: JournalEntry = {
       id: 'j_' + Date.now(),
       birdName: birdDisplayName,
-      scientificName:
-        birdId === 'chinchero-chico' ? 'Lepidocolaptes angustirostris' : 'Pitangus sulphuratus',
+      scientificName: birdSciName,
       trailName: 'Reserva Natural Urbana Barón Schuel · Selva Montana',
       notes: `Foto Perfecta XR (${stars} ⭐): Ave centrada, nitidez y distancia respetuosa sin flash.`,
       timestamp: Date.now(),

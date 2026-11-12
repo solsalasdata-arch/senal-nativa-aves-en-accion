@@ -43,6 +43,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [focusSlider, setFocusSlider] = useState(85);
   const [isPhotoCapturing, setIsPhotoCapturing] = useState(false);
+  const [showBirdInfoSheet, setShowBirdInfoSheet] = useState(false);
+  const [cleanViewMode, setCleanViewMode] = useState(false);
   const [photoResult, setPhotoResult] = useState<{
     stars: number;
     criteria: { centered: boolean; focus: boolean; respectful: boolean };
@@ -98,6 +100,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
       soundManager.stopCurrentAudio();
       setPhotoResult(null);
       setNativePhotoUrl(null);
+      setShowBirdInfoSheet(false);
+      setCleanViewMode(false);
     }
     return () => {
       if (streamRef.current) {
@@ -141,7 +145,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           size: '21 cm',
           weight: '36 g',
           family: 'FURNARIIDAE',
-          habitat: 'Bosques abiertos y troncos de Yungas',
+          habitat: 'Bosques abiertos y troncos de Selva Montana (Yungas)',
           stratum: 'Subdosel',
           conservationStatus: 'NA',
           presence: 'R',
@@ -308,6 +312,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     }, 350);
   };
 
+  const selectDropdownValue =
+    selectedBirdKey === 'chinchero' ? '020-ticotico-cejicanelo' : selectedCatalogBird.id;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-black/90 backdrop-blur-md animate-fadeIn">
       {/* Hidden Canvas & Native Mobile Camera Input Fallback */}
@@ -322,8 +329,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
       />
 
       <div className="relative w-full max-w-sm h-[94vh] max-h-[860px] flex flex-col rounded-3xl overflow-hidden bg-slate-950 border-2 border-teal-500 shadow-2xl">
-        {/* HUD Top Bar: Battery, Flash OFF, Respectful Distance, Close */}
-        <div className="relative z-30 px-3 py-2 bg-slate-950/80 backdrop-blur-md border-b border-teal-900/60 flex items-center justify-between text-xs text-white">
+        {/* HUD Top Bar: Title, Flash OFF, Battery, Close */}
+        <div className="relative z-30 px-3 py-2 bg-slate-950 border-b border-teal-900/60 flex items-center justify-between text-xs text-white">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-extrabold text-[11px] text-teal-300 tracking-wider uppercase">
@@ -359,7 +366,31 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           </div>
         </div>
 
-        {/* Viewport Frame with HUD and AR Content */}
+        {/* Dedicated Non-Overlapping Camera Controls Bar (Flex with gap-2, no conflicting absolute positions) */}
+        <div className="relative z-30 px-3 py-1.5 bg-slate-900/95 border-b border-teal-900/60 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={handleFlipCamera}
+            className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+          >
+            <RefreshCw className="w-3 h-3 stroke-[2.5]" />
+            <span>🔄 Girar Cámara ({facingMode === 'environment' ? 'Trasera' : 'Frontal'})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!useRealCamera) startCamera(facingMode);
+              else fileInputRef.current?.click();
+            }}
+            className="px-2.5 py-1 rounded-full bg-teal-600 hover:bg-teal-500 text-white font-black text-[10px] border border-teal-300 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+          >
+            <Camera className="w-3 h-3" />
+            <span>{useRealCamera ? '📱 Cámara Nativa' : '📷 Activar Cámara'}</span>
+          </button>
+        </div>
+
+        {/* Clean Unobstructed Camera Viewport (>80% free area) */}
         <div className="relative flex-1 bg-black overflow-hidden flex items-center justify-center">
           {/* Live Video Feed with Mandatory Mobile Attributes OR Native Photo OR Illustrated Backdrop */}
           {useRealCamera ? (
@@ -403,32 +434,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             />
           )}
 
-          {/* Floating Camera Controls Inside XR Viewport: Flip Camera + Native Mobile Camera Fallback */}
-          <div className="absolute top-2.5 left-2.5 right-2.5 z-30 flex items-center justify-between gap-1.5 pointer-events-auto">
-            <button
-              type="button"
-              onClick={handleFlipCamera}
-              className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
-            >
-              <RefreshCw className="w-3 h-3 stroke-[2.5]" />
-              <span>🔄 Girar Cámara ({facingMode === 'environment' ? 'Trasera' : 'Frontal'})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (!useRealCamera) startCamera(facingMode);
-                else fileInputRef.current?.click();
-              }}
-              className="px-2.5 py-1 rounded-full bg-teal-600/95 hover:bg-teal-500 text-white font-black text-[10px] border border-teal-300 shadow-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
-            >
-              <Camera className="w-3 h-3" />
-              <span>{useRealCamera ? '📱 Cámara Nativa' : '📷 Activar Cámara'}</span>
-            </button>
-          </div>
-
-          {cameraError && !useRealCamera && (
-            <div className="absolute top-11 inset-x-3 z-30 bg-slate-950/90 border border-amber-500/60 rounded-xl p-2 flex items-center justify-between gap-2 text-[10px] text-amber-200 pointer-events-auto">
+          {cameraError && !useRealCamera && !cleanViewMode && (
+            <div className="absolute top-2.5 inset-x-3 z-30 bg-slate-950/90 border border-amber-500/60 rounded-xl p-2 flex items-center justify-between gap-2 text-[10px] text-amber-200 pointer-events-auto">
               <span className="leading-tight">{cameraError}</span>
               <button
                 type="button"
@@ -445,133 +452,148 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             <div className="absolute inset-0 bg-white z-40 animate-ping opacity-90" />
           )}
 
-          {/* HUD CORNERS (Cuatro esquinas de encuadre HUD) */}
-          <div className="absolute inset-4 pointer-events-none z-20 flex flex-col justify-between">
-            <div className="flex justify-between">
-              <div className="w-6 h-6 border-t-3 border-l-3 border-teal-300/80 rounded-tl-lg" />
-              <div className="w-6 h-6 border-t-3 border-r-3 border-teal-300/80 rounded-tr-lg" />
-            </div>
-            <div className="flex justify-between">
-              <div className="w-6 h-6 border-b-3 border-l-3 border-teal-300/80 rounded-bl-lg" />
-              <div className="w-6 h-6 border-b-3 border-r-3 border-teal-300/80 rounded-br-lg" />
-            </div>
-          </div>
-
-          {/* Mode a) CHINCHERO CHICO (Mira celeste en centro + tarjeta RPG a la derecha) */}
-          {selectedBirdKey === 'chinchero' ? (
-            <div className="relative z-20 w-full h-full p-3 flex flex-col justify-between pointer-events-none">
-              <div className="self-start pointer-events-auto">
-                <span className="px-2.5 py-1 rounded-full bg-teal-950/80 backdrop-blur-sm border border-teal-400/50 text-[10px] font-bold text-teal-200">
-                  Estrato: Troncos de Selva Montana
-                </span>
+          {/* HUD CORNERS (Hidden in Clean View Mode) */}
+          {!cleanViewMode && (
+            <div className="absolute inset-3 pointer-events-none z-20 flex flex-col justify-between">
+              <div className="flex justify-between">
+                <div className="w-5 h-5 border-t-2 border-l-2 border-teal-300/60 rounded-tl-md" />
+                <div className="w-5 h-5 border-t-2 border-r-2 border-teal-300/60 rounded-tr-md" />
               </div>
-
-              <div className="flex items-center justify-between w-full my-auto px-1">
-                <div className="relative w-36 h-36 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border-2 border-sky-400 border-dashed animate-spin-slow flex items-center justify-center">
-                    <div className="w-2.5 h-2.5 rounded-full bg-sky-300" />
-                  </div>
-                  <div className="absolute w-full h-0.5 bg-sky-400/50" />
-                  <div className="absolute h-full w-0.5 bg-sky-400/50" />
-
-                  <div
-                    className="w-28 h-28 rounded-2xl border-2 border-sky-300 shadow-xl flex items-center justify-center overflow-visible"
-                    style={{ backgroundColor: 'rgba(12, 35, 30, 0.75)', padding: '6px' }}
-                  >
-                    <img
-                      src={encodeURI(activeBirdData.image)}
-                      alt={activeBirdData.commonName}
-                      className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
-                    />
-                  </div>
-                </div>
-
-                <div className="w-48 bg-slate-950/85 backdrop-blur-md rounded-2xl p-2.5 border-2 border-sky-400 shadow-2xl text-[10px] text-slate-200 pointer-events-auto space-y-1">
-                  <div className="flex items-center justify-between border-b border-sky-800 pb-1">
-                    <span className="font-black text-xs text-white truncate">{activeBirdData.commonName}</span>
-                    <span className="font-extrabold text-amber-300 text-[11px] shrink-0">PC 2579</span>
-                  </div>
-                  <div className="flex items-center justify-between text-emerald-300 font-bold text-[9px]">
-                    <span>125/125 HP</span>
-                    <span>Peso: {activeBirdData.weight} · Alt: {activeBirdData.size}</span>
-                  </div>
-                  <div className="text-[9px] text-teal-300">
-                    <span className="text-slate-400">Familia:</span> {activeBirdData.family}
-                  </div>
-                  <div className="text-[9px] text-teal-300">
-                    <span className="text-slate-400">Hábitat:</span> {activeBirdData.habitat} ({activeBirdData.stratum})
-                  </div>
-                  <div className="text-[9px] text-slate-300 pt-0.5 border-t border-slate-800 leading-tight">
-                    • {activeBirdData.beakDescription}<br />
-                    • {activeBirdData.songDescription}<br />
-                    • {activeBirdData.plumageDescription}
-                  </div>
-                </div>
-              </div>
-
-              <div className="self-center max-w-xs bg-white text-slate-900 p-2 rounded-2xl border-2 border-teal-900 shadow-xl text-[10px] font-bold text-center pointer-events-auto">
-                "¡Hola, explorador! ¿Qué tal se ve este bosque en realidad virtual? ¿Listo para buscar más aves?"
-              </div>
-            </div>
-          ) : (
-            /* Mode b) 21 ESPECIES DE /assets/aves/ (incluyendo #007 Benteveo) */
-            <div className="relative z-20 w-full h-full p-3 flex flex-col justify-between pointer-events-none">
-              <div className="self-end pointer-events-auto">
-                <span className="px-2.5 py-1 rounded-full bg-teal-950/80 backdrop-blur-sm border border-amber-400/50 text-[10px] font-bold text-amber-300">
-                  Estrato: {activeBirdData.stratum} · #{activeBirdData.catalogNumber}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between w-full my-auto px-1">
-                {/* RPG Card on Left */}
-                <div className="w-48 bg-slate-950/85 backdrop-blur-md rounded-2xl p-2.5 border-2 border-amber-400 shadow-2xl text-[10px] text-slate-200 pointer-events-auto space-y-1">
-                  <div className="flex items-center justify-between border-b border-amber-800 pb-1 gap-1">
-                    <span className="font-black text-xs text-white truncate">{activeBirdData.commonName}</span>
-                    <span className="font-extrabold text-amber-300 text-[10px] shrink-0">PC 2579</span>
-                  </div>
-                  <div className="flex items-center justify-between text-emerald-300 font-bold text-[9px]">
-                    <span>125/125 HP</span>
-                    <span>{activeBirdData.weight} · {activeBirdData.size}</span>
-                  </div>
-                  <div className="text-[9px] text-amber-300 truncate">
-                    <span className="text-slate-400">Familia:</span> {activeBirdData.family}
-                  </div>
-                  <div className="text-[9px] text-amber-300 leading-tight">
-                    <span className="text-slate-400">Hábitat:</span> {activeBirdData.habitat}
-                  </div>
-                  <div className="text-[9px] text-slate-300 pt-0.5 border-t border-slate-800 leading-tight line-clamp-3">
-                    • {activeBirdData.beakDescription}<br />
-                    • {activeBirdData.songDescription}
-                  </div>
-                </div>
-
-                {/* Real Bird Image from /assets/aves/ inside Cyan Reticle with object-contain (no cropping) */}
-                <div className="relative w-36 h-36 flex flex-col items-center justify-center">
-                  <div className="absolute -top-3 px-2 py-0.5 rounded-full bg-sky-500 text-slate-950 font-extrabold text-[8px] tracking-wider uppercase shadow-md truncate max-w-[140px]">
-                    #{activeBirdData.catalogNumber} DETECTADO
-                  </div>
-                  <div className="absolute inset-0 rounded-full border-3 border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.5)] flex items-center justify-center">
-                    <div className="w-2.5 h-2.5 rounded-full bg-sky-300" />
-                  </div>
-
-                  <div
-                    className="w-28 h-28 rounded-2xl border-2 border-sky-300 shadow-xl flex items-center justify-center overflow-visible"
-                    style={{ backgroundColor: 'rgba(12, 35, 30, 0.75)', padding: '6px' }}
-                  >
-                    <img
-                      src={encodeURI(activeBirdData.image)}
-                      alt={activeBirdData.commonName}
-                      className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="self-center max-w-xs bg-white text-slate-900 p-2 rounded-2xl border-2 border-amber-900 shadow-xl text-[10px] font-bold text-center pointer-events-auto">
-                "¡Mira en el visor XR: {activeBirdData.commonName} ({activeBirdData.scientificName})!"
+              <div className="flex justify-between">
+                <div className="w-5 h-5 border-b-2 border-l-2 border-teal-300/60 rounded-bl-md" />
+                <div className="w-5 h-5 border-b-2 border-r-2 border-teal-300/60 rounded-br-md" />
               </div>
             </div>
           )}
+
+          {/* CENTER OF VIEWPORT: Subtle & Transparent Reticle with Moderate-Sized Perched Bird */}
+          <div className="relative z-20 flex flex-col items-center justify-center pointer-events-none">
+            <div className="relative w-28 h-28 flex items-center justify-center">
+              {/* Subtle transparent crosshair reticle */}
+              <div className="absolute inset-0 rounded-full border border-sky-300/45 border-dashed" />
+              <div className="absolute w-full h-[1px] bg-sky-300/25" />
+              <div className="absolute h-full w-[1px] bg-sky-300/25" />
+
+              {/* Moderate-sized perched bird without blocking the camera view */}
+              <div
+                className="w-22 h-22 rounded-2xl border border-sky-300/70 shadow-lg flex items-center justify-center overflow-visible"
+                style={{ backgroundColor: 'rgba(12, 35, 30, 0.55)', padding: '5px' }}
+              >
+                <img
+                  src={encodeURI(activeBirdData.image)}
+                  alt={activeBirdData.commonName}
+                  className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* COLLAPSIBLE TECHNICAL / RPG SHEET (Only visible when player taps "ℹ️ Ver Ficha") */}
+          {showBirdInfoSheet && !cleanViewMode && (
+            <div className="absolute bottom-13 inset-x-3 z-30 bg-slate-950/92 backdrop-blur-md rounded-2xl p-3 border-2 border-sky-400 shadow-2xl text-[10px] text-slate-200 space-y-1.5 animate-fadeIn pointer-events-auto">
+              <div className="flex items-center justify-between border-b border-sky-800 pb-1 gap-2">
+                <div className="min-w-0">
+                  <span className="font-black text-xs text-white block truncate">
+                    #{activeBirdData.catalogNumber} {activeBirdData.commonName}
+                  </span>
+                  <span className="text-[9px] italic text-teal-300 block truncate">
+                    {activeBirdData.scientificName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/50 font-extrabold text-amber-300 text-[10px]">
+                    PC {activeBirdData.cp} · {activeBirdData.hp}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowBirdInfoSheet(false)}
+                    className="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-600 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 text-[9px]">
+                <span className="px-2 py-0.5 rounded-md bg-teal-950 border border-teal-600/50 text-teal-200 font-bold">
+                  Estrato: {activeBirdData.stratum}
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-emerald-300 font-bold">
+                  Peso: {activeBirdData.weight} · Tamaño: {activeBirdData.size}
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-amber-300 font-bold">
+                  Familia: {activeBirdData.family}
+                </span>
+              </div>
+
+              <div className="text-[9px] text-teal-200">
+                <span className="text-slate-400 font-semibold">Hábitat:</span> {activeBirdData.habitat}
+              </div>
+
+              <div className="text-[9px] text-slate-300 pt-1 border-t border-slate-800 leading-snug space-y-0.5">
+                <div>• {activeBirdData.beakDescription}</div>
+                <div>• {activeBirdData.songDescription}</div>
+                <div>• {activeBirdData.plumageDescription}</div>
+              </div>
+            </div>
+          )}
+
+          {/* BOTTOM EDGE OF VIEWPORT: Compact Pill with Focused Bird Name + "ℹ️ Ver Ficha" + "👁️ Limpiar Pantalla" */}
+          <div className="absolute bottom-2 inset-x-2.5 z-30 flex items-center justify-between gap-1.5 pointer-events-auto">
+            {!cleanViewMode ? (
+              <div className="flex-1 min-w-0 px-2.5 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-teal-500/60 shadow-lg flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+                  <span className="text-[10px] font-black text-white truncate">
+                    #{activeBirdData.catalogNumber} {activeBirdData.commonName}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundManager.playClick();
+                      setShowBirdInfoSheet((prev) => !prev);
+                    }}
+                    className={`px-2 py-0.5 rounded-full text-[9px] font-black border transition-all cursor-pointer ${
+                      showBirdInfoSheet
+                        ? 'bg-sky-400 text-slate-950 border-white'
+                        : 'bg-sky-950/90 text-sky-200 border-sky-400/60 hover:bg-sky-900'
+                    }`}
+                  >
+                    ℹ️ {showBirdInfoSheet ? 'Ocultar Ficha' : 'Ver Ficha'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundManager.playClick();
+                      setCleanViewMode(true);
+                      setShowBirdInfoSheet(false);
+                    }}
+                    className="px-2 py-0.5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-teal-200 text-[9px] font-black border border-teal-500/40 cursor-pointer"
+                    title="Limpiar Pantalla / Modo Visor Limpio"
+                  >
+                    👁️ Limpiar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="ml-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundManager.playClick();
+                    setCleanViewMode(false);
+                  }}
+                  className="px-3 py-1 rounded-full bg-slate-950/80 hover:bg-slate-900 text-amber-300 text-[10px] font-black border border-amber-400/60 shadow-lg cursor-pointer"
+                >
+                  👁️ Mostrar HUD
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* POPUP DE RESULTADO DE "FOTO PERFECTA" */}
           {photoResult && (
@@ -648,19 +670,25 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           )}
         </div>
 
-        {/* Bottom Controls Bar: 21 Species Selector, Bird Toggles, Shutter, and 5 Consignas Button */}
+        {/* Bottom Controls Bar: Synchronized 21 Species Selector, Bird Toggles, Shutter, and 5 Consignas Button */}
         {!photoResult && (
-          <div className="p-3 bg-slate-950 border-t border-teal-900/80 space-y-2">
-            {/* Selector of the 21 Species from /assets/aves/ */}
+          <div className="p-2.5 bg-slate-950 border-t border-teal-900/80 space-y-2">
+            {/* Synchronized Selector of the 21 Species from /assets/aves/ */}
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] font-black text-teal-300 uppercase shrink-0">Especie XR:</span>
               <select
-                value={selectedCatalogBird.id}
+                value={selectDropdownValue}
                 onChange={(e) => {
                   const found = CATALOG_BIRDS_DATA.find((b) => b.id === e.target.value);
                   if (found) {
                     setSelectedCatalogBird(found);
-                    setSelectedBirdKey('catalog');
+                    if (found.catalogNumber === '020') {
+                      setSelectedBirdKey('chinchero');
+                    } else if (found.catalogNumber === '007') {
+                      setSelectedBirdKey('benteveo');
+                    } else {
+                      setSelectedBirdKey('catalog');
+                    }
                     soundManager.playBirdSound(found.audioUrl);
                   }
                 }}
@@ -668,7 +696,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               >
                 {CATALOG_BIRDS_DATA.map((b) => (
                   <option key={b.id} value={b.id}>
-                    #{b.catalogNumber} - {b.commonName} ({b.scientificName})
+                    {b.catalogNumber === '020'
+                      ? '#020 - Chinchero Chico / Ticotico (Furnariidae)'
+                      : `#${b.catalogNumber} - ${b.commonName} (${b.scientificName})`}
                   </option>
                 ))}
               </select>
@@ -680,9 +710,12 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 <button
                   onClick={() => {
                     soundManager.playClick();
+                    const chinchero =
+                      CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === '020') || CATALOG_BIRDS_DATA[0];
+                    setSelectedCatalogBird(chinchero);
                     setSelectedBirdKey('chinchero');
                   }}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                     selectedBirdKey === 'chinchero'
                       ? 'bg-sky-500 text-slate-950 shadow-md'
                       : 'text-slate-400 hover:text-slate-200'
@@ -693,11 +726,12 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 <button
                   onClick={() => {
                     soundManager.playClick();
-                    const benteveo = CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === '007') || CATALOG_BIRDS_DATA[0];
+                    const benteveo =
+                      CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === '007') || CATALOG_BIRDS_DATA[0];
                     setSelectedCatalogBird(benteveo);
                     setSelectedBirdKey('benteveo');
                   }}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                     selectedBirdKey !== 'chinchero' && selectedCatalogBird.catalogNumber === '007'
                       ? 'bg-amber-400 text-slate-950 shadow-md'
                       : 'text-slate-400 hover:text-slate-200'
@@ -714,7 +748,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   if (useRealCamera) stopCamera();
                   else startCamera();
                 }}
-                className="flex items-center gap-1 text-[10px] text-teal-300 px-2.5 py-1 rounded-xl bg-slate-900 border border-teal-800/60 hover:text-white"
+                className="flex items-center gap-1 text-[10px] text-teal-300 px-2.5 py-1 rounded-xl bg-slate-900 border border-teal-800/60 hover:text-white cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3 text-teal-400" />
                 <span>{useRealCamera ? 'Modo Selva XR' : 'Activar Cámara'}</span>
@@ -739,11 +773,11 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               {/* WHITE CIRCULAR SHUTTER BUTTON */}
               <button
                 onClick={handleShutterCapture}
-                className="w-15 h-15 rounded-full bg-white p-1 border-4 border-slate-900 shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+                className="w-14 h-14 rounded-full bg-white p-1 border-4 border-slate-900 shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer"
                 title="Tomar Foto Perfecta"
               >
-                <div className="w-11 h-11 rounded-full border-2 border-slate-400 bg-slate-100 flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full bg-white shadow-inner" />
+                <div className="w-10 h-10 rounded-full border-2 border-slate-400 bg-slate-100 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-full bg-white shadow-inner" />
                 </div>
               </button>
 
@@ -763,7 +797,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 soundManager.playClick();
                 onOpenQuizConsignas();
               }}
-              className="w-full py-2.5 rounded-2xl game-btn-orange text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg"
+              className="w-full py-2 rounded-2xl game-btn-orange text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg cursor-pointer"
             >
               <HelpCircle className="w-4 h-4 text-amber-200" />
               <span>RESPONDER LAS 5 CONSIGNAS DEL TUCÁN</span>
