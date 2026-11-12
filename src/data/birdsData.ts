@@ -14,6 +14,7 @@ export const BIRDS_DATA: BirdSpecies[] = [
     diet: 'Frutos silvestres (higuerones, laureles de la falda), insectos, huevos y pequeños vertebrados.',
     callDescription: 'Croar grave y resonante "grrr-ock" que retumba en las laderas boscosas.',
     soundType: 'toucan',
+    audioUrl: '/assets/aves/tucan-grande.mp3',
     silhouette: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z',
     image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
     funFact: 'Su pico parece pesado pero es sumamente liviano: posee una estructura trabecular interna de queratina que actúa además como radiador térmico para regular su temperatura corporal en los días cálidos de Jujuy.'
