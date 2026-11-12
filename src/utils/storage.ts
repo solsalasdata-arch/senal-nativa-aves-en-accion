@@ -9,7 +9,7 @@ const COMPANION_BIRD_SCIENTIFIC_NAMES: Record<CompanionBirdId, string> = {
   'Tucán Grande': 'Ramphastos toco',
   'Benteveo': 'Pitangus sulphuratus',
   'Chinchero Chico': 'Lepidocolaptes angustirostris',
-  'Picaflor Cometa': 'Chlorostilbon lucidus'
+  'Picaflor Cometa': 'Sappho sparganurus'
 };
 
 export function createDefaultProfile(
