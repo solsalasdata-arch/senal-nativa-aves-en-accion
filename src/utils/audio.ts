@@ -597,6 +597,7 @@ class SoundManager {
     if (key.includes('002') || key.includes('sayaca') || key.includes('sacaya') || key.includes('celestino')) return '/assets/aves/2-Tangara sacaya.mp3';
     if (key.includes('003') || key.includes('chercan') || key.includes('chercán') || key.includes('ratona')) return '/assets/aves/3-Chercán.mp3';
     if (key.includes('004') || key.includes('zorzal')) return '/assets/aves/4-Zorzal colorado.mp3';
+    if (key.includes('tucan') || key.includes('tucán')) return '/assets/aves/tucan-grande.mp3';
     if (key.includes('005') || key.includes('paloma') || key.includes('picazuro') || key.includes('picazuró')) return '/assets/aves/5-Paloma picazuro.mp3';
     if (key.includes('006') || key.includes('saltator') || key.includes('rey del bosque') || key.includes('rey')) return '/assets/aves/6-Saltator de pico dorado.mp3';
     if (key.includes('007') || key.includes('benteveo')) return '/assets/aves/7-Benteveo.mp3';
