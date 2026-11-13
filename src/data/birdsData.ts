@@ -87,7 +87,7 @@ export const BIRDS_DATA: BirdSpecies[] = [
     callDescription: 'Chirrido seco y zumbido ultrasónico de alas (hasta 80 aleteos por segundo).',
     soundType: 'hummingbird',
     silhouette: 'M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z',
-    image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
+    image: '/assets/aistudio/picaflor_comun.jpg',
     funFact: 'Es el polinizador clave de las bromelias epífitas que cuelgan de las ramas gigantes en el Parque Botánico Schuel.'
   },
   {
@@ -104,7 +104,7 @@ export const BIRDS_DATA: BirdSpecies[] = [
     callDescription: 'Vibrante zumbido de cola y gorjeo agudo "tsik-tsik".',
     soundType: 'hummingbird',
     silhouette: 'M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z',
-    image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
+    image: '/assets/aistudio/picaflor_cometa.jpg',
     funFact: 'Cuando realiza el vuelo nupcial sobre el Mirador de la Cruz, despliega su cola como un cometa de fuego reflejando la luz solar.'
   }
 ];
@@ -194,7 +194,7 @@ export const COMPANION_BIRDS_OPTIONS: {
     name: 'Benteveo',
     scientific: 'Pitangus sulphuratus',
     badge: 'Centinela',
-    asset: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
+    asset: '/assets/aves/7-Benteveo.jpg',
     desc: 'Vigilante alegre de pecho amarillo y ceja blanca en los senderos.'
   },
   {
@@ -208,7 +208,7 @@ export const COMPANION_BIRDS_OPTIONS: {
     name: 'Picaflor Cometa',
     scientific: 'Sappho sparganurus',
     badge: 'Joya Alada',
-    asset: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
+    asset: '/assets/aistudio/picaflor_cometa.jpg',
     desc: 'Cola resplandeciente como cometa dorado en las quebradas floridas.'
   }
 ];
@@ -711,7 +711,7 @@ export const RARE_BIRDS_DATA: BirdSpecies[] = [
     callDescription: 'Canto lastimero descendente melancólico: "¡pua-pua-pua-pua-uh!", origen del llanto del monte.',
     soundType: 'urutau',
     silhouette: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z',
-    image: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
+    image: '/assets/aistudio/urutau.jpg',
     funFact: 'Inspiró la conmovedora leyenda quichua del Kakuy: el lamento de la hermana abandonada en la cima de un árbol seco que ruega perdón en las noches de luna.',
     isRare: true,
     legend: 'Leyenda del Kakuy: Según la tradición ancestral de las Yungas, una hermana que desobedeció a su hermano fue dejada en lo alto de un árbol talado. Al caer la noche sus pies se volvieron garras y sus brazos alas de plumaje ceniciento, clamando eternamente su canto en la selva.'
@@ -719,7 +719,7 @@ export const RARE_BIRDS_DATA: BirdSpecies[] = [
   {
     id: 'jote-real',
     commonName: 'Jote Real / Cóndor de la Selva',
-    scientificName: 'Sarcoramphus papa',
+    scientificName: 'Coragyps atratus',
     family: 'Cathartidae',
     size: '71 - 81 cm (Envergadura: 1.8 a 2 m)',
     weight: '3000 - 3800 g',
@@ -730,7 +730,7 @@ export const RARE_BIRDS_DATA: BirdSpecies[] = [
     callDescription: 'Siseos y chasquidos sordos en los riscos.',
     soundType: 'raptor',
     silhouette: 'M12 2l10 10-10 10L2 12z',
-    image: '/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg',
+    image: '/assets/aistudio/jote_real.jpg',
     funFact: 'En la cosmovisión andina y de las tierras bajas era considerado el mensajero del sol entre el cielo y la tierra por su majestuoso vuelo en las alturas del Parque.',
     isRare: true
   }
