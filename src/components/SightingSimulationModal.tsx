@@ -19,6 +19,7 @@ import { soundManager } from '../utils/audio';
 import { requestMobileCameraStream, switchToOtherCamera, countVideoInputs } from '../utils/camera';
 import { CATALOG_BIRDS_DATA } from '../data/birdsData';
 import { CatalogBird, PlayerProfile } from '../types/game';
+import type { IdentifyBirdResult } from '../../api/identify-bird';
 
 interface SightingSimulationModalProps {
   isOpen: boolean;
@@ -29,7 +30,27 @@ interface SightingSimulationModalProps {
 }
 
 const XR_TUTORIAL_SEEN_KEY = 'senial_nativa_xr_tutorial_seen_v1';
-const XR_SCAN_MS = 2600;
+const XR_MAX_SCAN_ATTEMPTS = 4;
+
+type ScanState = 'scanning' | 'detected' | 'other_bird' | 'no_bird' | 'error' | 'no_camera';
+
+const SCAN_LABELS: Record<ScanState, string> = {
+  scanning: 'Buscando aves…',
+  detected: '¡Especie detectada!',
+  other_bird: 'Ave en proceso de carga',
+  no_bird: 'No veo un ave',
+  error: 'No se pudo identificar',
+  no_camera: 'Activa la cámara'
+};
+
+const SCAN_HINTS: Record<ScanState, string> = {
+  scanning: 'Apunta hacia un ave y espera…',
+  detected: '',
+  other_bird: 'Esta ave todavía no está en el catálogo',
+  no_bird: 'No veo un ave. Apunta a una y busca de nuevo',
+  error: 'No se pudo identificar ahora. Busca de nuevo',
+  no_camera: 'Activa la cámara para identificar aves'
+};
 
 // #020 is presented in XR as the park's featured Chinchero Chico
 const XR_CHINCHERO: CatalogBird = {
@@ -62,15 +83,50 @@ const XR_CHINCHERO: CatalogBird = {
   silhouetteIcon: '🪵'
 };
 
+// The park's emblem bird is identified too, although it has no catalog card (number 000 in the API)
+const XR_TUCAN: CatalogBird = {
+  id: 'tucan-grande',
+  catalogNumber: '',
+  commonName: 'Tucán Grande',
+  scientificName: 'Ramphastos toco',
+  size: '55 - 63 cm',
+  weight: '500 - 860 g',
+  family: 'RAMPHASTIDAE',
+  habitat: 'Selva Montana y Bosque de Transición de las Yungas',
+  stratum: 'Dosel',
+  conservationStatus: 'NA',
+  presence: 'R',
+  observationPossibility: 'M',
+  beakDescription: 'Pico amarillo-anaranjado de 20 cm con punta negra',
+  songDescription: 'Croar grave y resonante "grrr-ock"',
+  plumageDescription: 'Cuerpo negro y babero blanco',
+  cp: 2800,
+  hp: '140 / 140 HP',
+  hints: {
+    size: '55 - 63 cm',
+    habitat: 'Dosel',
+    morphology: 'Pico enorme',
+    loreOrFact: 'Ave insignia del Parque'
+  },
+  soundType: 'toucan',
+  image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
+  audioUrl: '/assets/aves/tucan-grande.mp3',
+  silhouetteIcon: '🦜'
+};
+
+const birdLabel = (bird: CatalogBird) =>
+  bird.catalogNumber ? `#${bird.catalogNumber} ${bird.commonName}` : bird.commonName;
+
 export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = ({
   isOpen,
   onClose,
-  playerProfile,
   onSightingSuccess,
   onOpenQuizConsignas
 }) => {
-  // The XR viewer detects the species by itself: null while it is still searching
+  // The XR viewer identifies the species from the camera image: null until a catalog bird is recognised
   const [detectedBird, setDetectedBird] = useState<CatalogBird | null>(null);
+  const [scanState, setScanState] = useState<ScanState>('scanning');
+  const [otherBirdName, setOtherBirdName] = useState('');
   const [isSongPlaying, setIsSongPlaying] = useState(false);
   const [canFlipCamera, setCanFlipCamera] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -94,28 +150,122 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scanTimerRef = useRef<number | null>(null);
-  const lastDetectedIdRef = useRef<string | null>(null);
+  const scanIdRef = useRef(0);
+  const scanAbortRef = useRef<AbortController | null>(null);
+  const cameraStartingRef = useRef(false);
+  const nativePhotoRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    nativePhotoRef.current = nativePhotoUrl;
+  }, [nativePhotoUrl]);
 
   const stopSong = () => {
     soundManager.stopCurrentAudio();
     setIsSongPlaying(false);
   };
 
+  // Also invalidates an identification request that is still in flight
   const clearScanTimer = () => {
+    scanIdRef.current += 1;
+    scanAbortRef.current?.abort();
+    scanAbortRef.current = null;
     if (scanTimerRef.current !== null) {
       window.clearTimeout(scanTimerRef.current);
       scanTimerRef.current = null;
     }
   };
 
-  // Species the player has not classified yet come first, and never the same one twice in a row
-  const pickDetectedBird = (): CatalogBird => {
-    const classified = playerProfile.unlockedSilhouettes || [];
-    const candidates = CATALOG_BIRDS_DATA.filter((b) => b.id !== lastDetectedIdRef.current);
-    const pending = candidates.filter((b) => !classified.includes(b.id));
-    const pool = pending.length > 0 ? pending : candidates;
-    const bird = pool[Math.floor(Math.random() * pool.length)] || CATALOG_BIRDS_DATA[0];
-    return bird.catalogNumber === '020' ? XR_CHINCHERO : bird;
+  // Current camera frame (or the photo taken with the phone camera) as a small JPEG
+  const captureFrameForIdentification = async (): Promise<string | null> => {
+    const video = videoRef.current;
+    let source: HTMLVideoElement | HTMLImageElement | null = null;
+    let sourceW = 0;
+    let sourceH = 0;
+    if (streamRef.current && video && video.readyState >= 2 && video.videoWidth > 0) {
+      source = video;
+      sourceW = video.videoWidth;
+      sourceH = video.videoHeight;
+    } else if (nativePhotoRef.current) {
+      const photo = new Image();
+      photo.src = nativePhotoRef.current;
+      try {
+        await photo.decode();
+        source = photo;
+        sourceW = photo.naturalWidth;
+        sourceH = photo.naturalHeight;
+      } catch {
+        // unreadable photo
+      }
+    }
+    if (!source || !sourceW || !sourceH) return null;
+
+    const scale = Math.min(1, 640 / Math.max(sourceW, sourceH));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(sourceW * scale);
+    canvas.height = Math.round(sourceH * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.8);
+  };
+
+  const runScanAttempt = (scanId: number, attempt: number, missingFrames: number) => {
+    const delay = missingFrames > 0 ? 500 : attempt === 1 ? 900 : 2500;
+    scanTimerRef.current = window.setTimeout(async () => {
+      scanTimerRef.current = null;
+      const frame = await captureFrameForIdentification();
+      if (scanIdRef.current !== scanId) return;
+      if (!frame) {
+        // Nothing to look at yet: wait while the camera is opening, otherwise ask for it
+        if (missingFrames < (cameraStartingRef.current ? 12 : 2)) runScanAttempt(scanId, attempt, missingFrames + 1);
+        else setScanState('no_camera');
+        return;
+      }
+
+      let result: IdentifyBirdResult | null = null;
+      const controller = new AbortController();
+      scanAbortRef.current = controller;
+      const timeout = window.setTimeout(() => controller.abort(), 25000);
+      try {
+        const res = await fetch('/api/identify-bird', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: frame }),
+          signal: controller.signal
+        });
+        if (res.ok) result = (await res.json()) as IdentifyBirdResult;
+      } catch {
+        // offline, timed out or cancelled
+      } finally {
+        window.clearTimeout(timeout);
+      }
+      if (scanIdRef.current !== scanId) return;
+
+      if (!result) {
+        setScanState('error');
+        return;
+      }
+      if (result.kind === 'catalog') {
+        const catalogNumber = result.catalogNumber;
+        const bird =
+          catalogNumber === '000' ? XR_TUCAN : CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === catalogNumber);
+        if (bird) {
+          setDetectedBird(bird.catalogNumber === '020' ? XR_CHINCHERO : bird);
+          setScanState('detected');
+          soundManager.playSuccess();
+          return;
+        }
+      }
+      if (result.kind === 'catalog' || result.kind === 'other_bird') {
+        setOtherBirdName(result.kind === 'other_bird' ? result.name : '');
+        setScanState('other_bird');
+        soundManager.playSuccess();
+        return;
+      }
+      // No bird in view: look again a few times before asking the player to retry
+      if (attempt < XR_MAX_SCAN_ATTEMPTS) runScanAttempt(scanId, attempt + 1, 0);
+      else setScanState('no_bird');
+    }, delay);
   };
 
   const startScan = () => {
@@ -123,13 +273,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     stopSong();
     setDetectedBird(null);
     setShowBirdInfoSheet(false);
-    scanTimerRef.current = window.setTimeout(() => {
-      scanTimerRef.current = null;
-      const bird = pickDetectedBird();
-      lastDetectedIdRef.current = bird.id;
-      setDetectedBird(bird);
-      soundManager.playSuccess();
-    }, XR_SCAN_MS);
+    setScanState('scanning');
+    runScanAttempt(scanIdRef.current, 1, 0);
   };
 
   const stopCamera = () => {
@@ -144,6 +289,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   };
 
   const startCamera = async (mode: 'environment' | 'user' = facingMode, avoidDeviceId?: string) => {
+    cameraStartingRef.current = true;
     try {
       setCameraError(null);
       setFacingMode(mode);
@@ -174,6 +320,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     } catch {
       setCameraError('No se pudo abrir la cámara. Revisa el permiso del navegador o usa la cámara del teléfono.');
       setUseRealCamera(false);
+    } finally {
+      cameraStartingRef.current = false;
     }
   };
 
@@ -190,6 +338,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         startScan();
       } else {
         setDetectedBird(null);
+        setScanState('scanning');
         setShowTutorial(true);
       }
     } else {
@@ -218,6 +367,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     const nextMode: 'environment' | 'user' = facingMode === 'environment' ? 'user' : 'environment';
     const currentDeviceId = streamRef.current?.getVideoTracks()[0]?.getSettings?.().deviceId;
     startCamera(nextMode, currentDeviceId);
+    startScan();
   };
 
   const closeTutorial = () => {
@@ -228,7 +378,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
       // ignore
     }
     setShowTutorial(false);
-    if (!detectedBird && scanTimerRef.current === null) startScan();
+    if (scanState !== 'detected') startScan();
   };
 
   const handleNativeFileCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,6 +390,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         stopCamera();
         setCameraError(null);
         setNativePhotoUrl(reader.result);
+        nativePhotoRef.current = reader.result;
+        startScan();
       }
     };
     reader.readAsDataURL(file);
@@ -364,7 +516,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         ctx.font = 'bold 20px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(
-          `#${activeBirdData.catalogNumber} ${activeBirdData.commonName} (${'★'.repeat(stars)})`,
+          `${birdLabel(activeBirdData)} (${'★'.repeat(stars)})`,
           width / 2,
           height - 50
         );
@@ -415,7 +567,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span className="font-extrabold text-[11px] text-teal-300 tracking-wider uppercase truncate">
-              XR AVISTAMIENTO{detectedBird ? ` · #${detectedBird.catalogNumber}` : ''}
+              XR AVISTAMIENTO{detectedBird?.catalogNumber ? ` · #${detectedBird.catalogNumber}` : ''}
             </span>
           </div>
 
@@ -482,7 +634,10 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           <button
             type="button"
             onClick={() => {
-              if (!useRealCamera) startCamera(facingMode);
+              if (!useRealCamera) {
+                startCamera(facingMode);
+                startScan();
+              }
               else fileInputRef.current?.click();
             }}
             className="px-2.5 py-1 rounded-full bg-teal-600 hover:bg-teal-500 text-white font-black text-[10px] border border-teal-300 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
@@ -610,9 +765,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                     className="w-full h-full object-cover rounded-xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
                   />
                 </div>
-              ) : (
+              ) : scanState === 'scanning' ? (
                 <div className="absolute inset-2 rounded-full border-2 border-amber-300/80 animate-ping" />
-              )}
+              ) : null}
             </div>
             <span
               className={`mt-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide border shadow ${
@@ -621,7 +776,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   : 'bg-slate-950/85 text-amber-300 border-amber-400/60'
               }`}
             >
-              {detectedBird ? '¡Especie detectada!' : 'Buscando aves…'}
+              {SCAN_LABELS[scanState]}
             </span>
           </div>
 
@@ -631,7 +786,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               <div className="flex items-center justify-between border-b border-sky-800 pb-1 gap-2">
                 <div className="min-w-0">
                   <span className="font-black text-xs text-white block truncate">
-                    #{detectedBird.catalogNumber} {detectedBird.commonName}
+                    {birdLabel(detectedBird)}
                   </span>
                   <span className="text-[9px] italic text-teal-300 block truncate">
                     {detectedBird.scientificName}
@@ -687,8 +842,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   />
                   <span className="text-[10px] font-black text-white truncate">
                     {detectedBird
-                      ? `#${detectedBird.catalogNumber} ${detectedBird.commonName}`
-                      : 'Apunta hacia los árboles y espera…'}
+                      ? birdLabel(detectedBird)
+                      : SCAN_HINTS[scanState]}
                   </span>
                 </div>
 
@@ -738,6 +893,37 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               </div>
             )}
           </div>
+
+          {/* A real bird that is not one of the loaded species */}
+          {scanState === 'other_bird' && !photoResult && !showTutorial && (
+            <div className="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 animate-fadeIn pointer-events-auto overflow-y-auto">
+              <div className="w-full max-w-xs bg-slate-900 border-2 border-amber-400 rounded-3xl p-4 shadow-2xl text-center text-slate-100 my-auto">
+                <div className="w-12 h-12 mx-auto rounded-full bg-amber-400 text-slate-950 flex items-center justify-center border-2 border-slate-900">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h4 className="mt-2 text-sm font-black text-amber-300 uppercase tracking-wide">
+                  ¡Felicitaciones, explorador!
+                </h4>
+                <p className="mt-1.5 text-xs text-slate-100 leading-snug">
+                  {otherBirdName ? `Viste un ave (${otherBirdName}) que` : 'Viste un ave que'} todavía no está en
+                  nuestro catálogo: hay aves en proceso de carga.
+                </p>
+                <p className="mt-1.5 text-[11px] text-teal-200 leading-snug">
+                  Gracias por seguir aportando al catálogo de aves del Parque Botánico.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundManager.playClick();
+                    startScan();
+                  }}
+                  className="w-full mt-3 py-2.5 rounded-xl game-btn-orange text-white text-xs font-black cursor-pointer"
+                >
+                  SEGUIR BUSCANDO
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* TUTORIAL: 3 short steps, shown the first time and from "¿Cómo se usa?" */}
           {showTutorial && !photoResult && (
@@ -882,7 +1068,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 title="Volver a buscar un ave con el visor"
               >
                 <ScanSearch className="w-3.5 h-3.5" />
-                <span>{detectedBird ? 'Buscar otra ave' : 'Buscando…'}</span>
+                <span>
+                  {detectedBird ? 'Buscar otra ave' : scanState === 'scanning' ? 'Buscando…' : 'Buscar de nuevo'}
+                </span>
               </button>
 
               {/* Camera mode toggle */}
@@ -891,6 +1079,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   soundManager.playClick();
                   if (useRealCamera) stopCamera();
                   else startCamera();
+                  startScan();
                 }}
                 className="flex items-center gap-1 text-[10px] text-teal-300 px-2.5 py-1 rounded-xl bg-slate-900 border border-teal-800/60 hover:text-white cursor-pointer"
               >

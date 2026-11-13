@@ -1,4 +1,4 @@
-const CACHE_NAME = 'senal-nativa-pwa-v7';
+const CACHE_NAME = 'senal-nativa-pwa-v8';
 
 // Core static assets and 21 species photos + 21 real .mp3 calls to pre-cache for offline trail usage
 const PRECACHE_ASSETS = [
