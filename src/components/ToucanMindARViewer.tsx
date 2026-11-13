@@ -38,7 +38,37 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
  target.addEventListener('targetFound',()=>notify('found'));
  target.addEventListener('targetLost',()=>notify('lost'));
  const scene=document.querySelector('a-scene');
- scene.addEventListener('arReady',()=>{\n  const renderer=scene.renderer;\n  if(renderer){renderer.setClearColor(0x000000,0);renderer.setClearAlpha(0);}\n  notify('ready');\n });
+ async function improveCameraFocus(){
+  // Reuse MindAR's own video stream; never open a second camera.
+  const video=document.querySelector('video');
+  const track=video && video.srcObject && video.srcObject.getVideoTracks()[0];
+  if(!track || !track.applyConstraints) return;
+  const capabilities=track.getCapabilities ? track.getCapabilities() : {};
+  const advanced={};
+  if(Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('continuous')){
+    advanced.focusMode='continuous';
+  }
+  // Only request a higher resolution when supported. Never require it.
+  const constraints={};
+  if(capabilities.width && capabilities.width.max>=1280) constraints.width={ideal:Math.min(1920,capabilities.width.max)};
+  if(capabilities.height && capabilities.height.max>=720) constraints.height={ideal:Math.min(1080,capabilities.height.max)};
+  if(Object.keys(advanced).length) constraints.advanced=[advanced];
+  if(!Object.keys(constraints).length) return;
+  try{
+    await track.applyConstraints(constraints);
+  }catch(e){
+    // Some Samsung/Chrome cameras reject combined constraints; retry focus alone.
+    if(Object.keys(advanced).length){
+      try{await track.applyConstraints({advanced:[advanced]});}catch(_){}
+    }
+  }
+ }
+ scene.addEventListener('arReady',()=>{
+  const renderer=scene.renderer;
+  if(renderer){renderer.setClearColor(0x000000,0);renderer.setClearAlpha(0);}
+  improveCameraFocus().catch(()=>{});
+  notify('ready');
+ });
  scene.addEventListener('arError',()=>notify('error','No se pudo iniciar MindAR o la cámara.'));
  window.addEventListener('error',(event)=>notify('error',event.message));
 })();
