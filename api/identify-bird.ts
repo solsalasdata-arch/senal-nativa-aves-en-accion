@@ -30,6 +30,29 @@ const CATALOG_SPECIES = [
 
 const MAX_IMAGE_BASE64_LENGTH = 1_500_000;
 
+// Abuse limits on calls that reach Gemini. A whole school group can share one IP, so the per-IP
+// limit is generous. They live in this instance's memory and reset on a cold start: the hard
+// ceiling on spending is the quota configured on the Gemini key itself.
+const RATE_WINDOW_MS = 60_000;
+const MAX_CALLS_PER_IP = 60;
+const MAX_CALLS_TOTAL = 240;
+const recentCalls = new Map<string, number[]>();
+
+function isRateLimited(ip: string, now: number): boolean {
+  let total = 0;
+  for (const [key, times] of recentCalls) {
+    const fresh = times.filter((t) => now - t < RATE_WINDOW_MS);
+    if (fresh.length > 0) recentCalls.set(key, fresh);
+    else recentCalls.delete(key);
+    total += fresh.length;
+  }
+  const mine = recentCalls.get(ip) || [];
+  if (mine.length >= MAX_CALLS_PER_IP || total >= MAX_CALLS_TOTAL) return true;
+  mine.push(now);
+  recentCalls.set(ip, mine);
+  return false;
+}
+
 export type IdentifyBirdResult =
   | { kind: 'catalog'; catalogNumber: string }
   | { kind: 'other_bird'; name: string }
@@ -73,17 +96,15 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return send(res, 405, { error: 'method_not_allowed' });
   }
 
-  // Only the app itself may spend the key: reject calls coming from other sites
-  const origin = req.headers.origin;
-  if (origin) {
-    let originHost = '';
-    try {
-      originHost = new URL(origin).host;
-    } catch {
-      // malformed Origin
-    }
-    if (originHost !== req.headers.host) return send(res, 403, { error: 'forbidden' });
+  // Only the app itself may spend the key. Browsers always send Origin on a POST fetch,
+  // so a missing one is not the app either.
+  let originHost = '';
+  try {
+    originHost = new URL(req.headers.origin || '').host;
+  } catch {
+    // missing or malformed Origin
   }
+  if (!originHost || originHost !== req.headers.host) return send(res, 403, { error: 'forbidden' });
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return send(res, 503, { error: 'not_configured' });
@@ -98,6 +119,17 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const match = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(image);
   if (!match || match[2].length > MAX_IMAGE_BASE64_LENGTH) {
     return send(res, 400, { error: 'invalid_image' });
+  }
+
+  const forwardedFor = req.headers['x-forwarded-for'];
+  const clientIp =
+    String(req.headers['x-real-ip'] || '') ||
+    String(Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor || '').split(',')[0].trim() ||
+    req.socket?.remoteAddress ||
+    'unknown';
+  if (isRateLimited(clientIp, Date.now())) {
+    res.setHeader('Retry-After', '60');
+    return send(res, 429, { error: 'rate_limited' });
   }
 
   try {
