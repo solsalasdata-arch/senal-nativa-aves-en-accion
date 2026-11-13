@@ -5,6 +5,8 @@ import { GoogleGenAI, Type } from '@google/genai';
 // Server-side bird identification for the XR viewer. The Gemini key never reaches the browser.
 // Species the app has loaded: `number` must match `catalogNumber` in src/data/birdsData.ts.
 const CATALOG_SPECIES = [
+  // The park's emblem bird has no catalog card, but the viewer recognises it too
+  { number: '000', common: 'Tucán grande (Tucán toco)', scientific: 'Ramphastos toco' },
   { number: '001', common: 'Chingolo', scientific: 'Zonotrichia capensis' },
   { number: '002', common: 'Tangara sayaca (Celestino)', scientific: 'Thraupis sayaca' },
   { number: '003', common: 'Chercán (Ratona)', scientific: 'Troglodytes aedon' },
@@ -177,7 +179,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const answer = JSON.parse(response.text || '{}') as { kind?: string; catalogNumber?: string; name?: string };
     let result: IdentifyBirdResult = { kind: 'no_bird' };
     if (answer.kind === 'catalog') {
-      const number = String(answer.catalogNumber || '').replace(/\D/g, '').padStart(3, '0');
+      // An empty number must not turn into 000 (the Tucán)
+      const digits = String(answer.catalogNumber || '').replace(/\D/g, '');
+      const number = digits ? digits.padStart(3, '0') : '';
       // A number outside the list means the model saw a bird we have not loaded
       result = CATALOG_SPECIES.some((s) => s.number === number)
         ? { kind: 'catalog', catalogNumber: number }

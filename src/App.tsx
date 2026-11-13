@@ -15,7 +15,7 @@ import { QuizConsignasModal } from './components/QuizConsignasModal';
 import { GoogleDriveModal } from './components/GoogleDriveModal';
 import { SquadsAndSeasonsModal } from './components/SquadsAndSeasonsModal';
 import { MiroFlowAndAvatarModal } from './components/MiroFlowAndAvatarModal';
-import { CATALOG_BIRDS_DATA, PACK_EXTRA_BIRDS_DATA } from './data/birdsData';
+import { BIRDS_DATA, CATALOG_BIRDS_DATA, PACK_EXTRA_BIRDS_DATA } from './data/birdsData';
 import {
   loadProfilesList,
   getActiveProfile,
@@ -244,14 +244,16 @@ export default function App() {
     };
 
     const matchedBird = CATALOG_BIRDS_DATA.find((b) => b.id === birdId);
+    // The Tucán Grande is sighted in XR but has no catalog card
+    const sightedSpecies = matchedBird || BIRDS_DATA.find((b) => b.id === birdId);
     const birdDisplayName =
       birdId === 'chinchero-chico' || birdId === '020-ticotico-cejicanelo'
         ? 'Chinchero Chico / Ticotico'
-        : matchedBird?.commonName || 'Benteveo';
+        : sightedSpecies?.commonName || 'Benteveo';
     const birdSciName =
       birdId === 'chinchero-chico'
         ? 'Lepidocolaptes angustirostris'
-        : matchedBird?.scientificName || 'Pitangus sulphuratus';
+        : sightedSpecies?.scientificName || 'Pitangus sulphuratus';
 
     const newJournalEntry: JournalEntry = {
       id: 'j_' + Date.now(),

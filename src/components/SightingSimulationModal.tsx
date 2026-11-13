@@ -83,6 +83,40 @@ const XR_CHINCHERO: CatalogBird = {
   silhouetteIcon: '🪵'
 };
 
+// The park's emblem bird is identified too, although it has no catalog card (number 000 in the API)
+const XR_TUCAN: CatalogBird = {
+  id: 'tucan-grande',
+  catalogNumber: '',
+  commonName: 'Tucán Grande',
+  scientificName: 'Ramphastos toco',
+  size: '55 - 63 cm',
+  weight: '500 - 860 g',
+  family: 'RAMPHASTIDAE',
+  habitat: 'Selva Montana y Bosque de Transición de las Yungas',
+  stratum: 'Dosel',
+  conservationStatus: 'NA',
+  presence: 'R',
+  observationPossibility: 'M',
+  beakDescription: 'Pico amarillo-anaranjado de 20 cm con punta negra',
+  songDescription: 'Croar grave y resonante "grrr-ock"',
+  plumageDescription: 'Cuerpo negro y babero blanco',
+  cp: 2800,
+  hp: '140 / 140 HP',
+  hints: {
+    size: '55 - 63 cm',
+    habitat: 'Dosel',
+    morphology: 'Pico enorme',
+    loreOrFact: 'Ave insignia del Parque'
+  },
+  soundType: 'toucan',
+  image: '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
+  audioUrl: '/assets/aves/tucan-grande.mp3',
+  silhouetteIcon: '🦜'
+};
+
+const birdLabel = (bird: CatalogBird) =>
+  bird.catalogNumber ? `#${bird.catalogNumber} ${bird.commonName}` : bird.commonName;
+
 export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = ({
   isOpen,
   onClose,
@@ -213,7 +247,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
       }
       if (result.kind === 'catalog') {
         const catalogNumber = result.catalogNumber;
-        const bird = CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === catalogNumber);
+        const bird =
+          catalogNumber === '000' ? XR_TUCAN : CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === catalogNumber);
         if (bird) {
           setDetectedBird(bird.catalogNumber === '020' ? XR_CHINCHERO : bird);
           setScanState('detected');
@@ -481,7 +516,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         ctx.font = 'bold 20px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(
-          `#${activeBirdData.catalogNumber} ${activeBirdData.commonName} (${'★'.repeat(stars)})`,
+          `${birdLabel(activeBirdData)} (${'★'.repeat(stars)})`,
           width / 2,
           height - 50
         );
@@ -532,7 +567,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span className="font-extrabold text-[11px] text-teal-300 tracking-wider uppercase truncate">
-              XR AVISTAMIENTO{detectedBird ? ` · #${detectedBird.catalogNumber}` : ''}
+              XR AVISTAMIENTO{detectedBird?.catalogNumber ? ` · #${detectedBird.catalogNumber}` : ''}
             </span>
           </div>
 
@@ -751,7 +786,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               <div className="flex items-center justify-between border-b border-sky-800 pb-1 gap-2">
                 <div className="min-w-0">
                   <span className="font-black text-xs text-white block truncate">
-                    #{detectedBird.catalogNumber} {detectedBird.commonName}
+                    {birdLabel(detectedBird)}
                   </span>
                   <span className="text-[9px] italic text-teal-300 block truncate">
                     {detectedBird.scientificName}
@@ -807,7 +842,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   />
                   <span className="text-[10px] font-black text-white truncate">
                     {detectedBird
-                      ? `#${detectedBird.catalogNumber} ${detectedBird.commonName}`
+                      ? birdLabel(detectedBird)
                       : SCAN_HINTS[scanState]}
                   </span>
                 </div>
