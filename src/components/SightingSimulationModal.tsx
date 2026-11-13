@@ -20,6 +20,7 @@ import { requestMobileCameraStream, switchToOtherCamera, countVideoInputs } from
 import { CATALOG_BIRDS_DATA } from '../data/birdsData';
 import { CatalogBird, PlayerProfile } from '../types/game';
 import type { IdentifyBirdResult } from '../../api/identify-bird';
+import { ToucanMindARViewer } from './ToucanMindARViewer';
 
 interface SightingSimulationModalProps {
   isOpen: boolean;
@@ -124,6 +125,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   onOpenQuizConsignas
 }) => {
   // The XR viewer identifies the species from the camera image: null until a catalog bird is recognised
+  const [arMode, setArMode] = useState<'checking' | 'ar' | 'legacy'>('checking');
   const [detectedBird, setDetectedBird] = useState<CatalogBird | null>(null);
   const [scanState, setScanState] = useState<ScanState>('scanning');
   const [otherBirdName, setOtherBirdName] = useState('');
@@ -326,8 +328,29 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   };
 
   useEffect(() => {
+    let cancelled = false;
     if (isOpen) {
-      startCamera('environment');
+      setArMode('checking');
+      // Only MindAR or the legacy Gemini camera can own getUserMedia, never both.
+      // HEAD check avoids starting MindAR until the image target file is available.
+      Promise.all(['/ar/targets.mind'].map(async (path) => {
+        try {
+          const response = await fetch(path, { method: 'HEAD', cache: 'no-store' });
+          return response.ok && !response.headers.get('content-type')?.includes('text/html');
+        } catch { return false; }
+      })).then((assetsReady) => {
+        if (cancelled) return;
+        if (assetsReady.every(Boolean)) {
+          clearScanTimer();
+          stopCamera();
+          setShowTutorial(false);
+          setArMode('ar');
+        } else {
+          setArMode('legacy');
+          startCamera('environment');
+          if (tutorialSeen) startScan();
+        }
+      });
       let tutorialSeen = false;
       try {
         tutorialSeen = window.localStorage.getItem(XR_TUTORIAL_SEEN_KEY) === '1';
@@ -335,13 +358,14 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         // storage unavailable: show the tutorial
       }
       if (tutorialSeen) {
-        startScan();
+        // Identification starts only if AR assets are unavailable (legacy fallback).
       } else {
         setDetectedBird(null);
         setScanState('scanning');
         setShowTutorial(true);
       }
     } else {
+      setArMode('checking');
       stopCamera();
       clearScanTimer();
       stopSong();
@@ -353,6 +377,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
       setCleanViewMode(false);
     }
     return () => {
+      cancelled = true;
       clearScanTimer();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
@@ -398,6 +423,12 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   };
 
   if (!isOpen) return null;
+  if (arMode === 'checking') return (
+    <div className="fixed inset-0 z-50 bg-slate-950 text-teal-100 flex items-center justify-center text-sm font-bold">
+      Preparando visor XR…
+    </div>
+  );
+  if (arMode === 'ar') return <ToucanMindARViewer onClose={onClose} />;
 
   const toggleBirdSong = () => {
     if (!detectedBird) return;
