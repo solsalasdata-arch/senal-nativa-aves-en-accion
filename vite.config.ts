@@ -1,11 +1,32 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import {defineConfig, loadEnv, type Plugin} from 'vite';
 
-export default defineConfig(() => {
+// `npm run dev` has no Vercel runtime: serve the functions in /api from the dev server
+function devApiFunctions(env: Record<string, string>): Plugin {
   return {
-    plugins: [react(), tailwindcss()],
+    name: 'dev-api-functions',
+    configureServer(server) {
+      if (env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY) process.env.GEMINI_API_KEY = env.GEMINI_API_KEY;
+      if (env.GEMINI_MODEL && !process.env.GEMINI_MODEL) process.env.GEMINI_MODEL = env.GEMINI_MODEL;
+      server.middlewares.use('/api/identify-bird', async (req, res) => {
+        try {
+          const mod = await server.ssrLoadModule('/api/identify-bird.ts');
+          await mod.default(req, res);
+        } catch (err) {
+          console.error(err);
+          res.statusCode = 500;
+          res.end(JSON.stringify({error: 'dev_api_failed'}));
+        }
+      });
+    },
+  };
+}
+
+export default defineConfig(({mode}) => {
+  return {
+    plugins: [react(), tailwindcss(), devApiFunctions(loadEnv(mode, process.cwd(), ''))],
     resolve: {
       dedupe: ['react', 'react-dom'],
       alias: {
