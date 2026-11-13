@@ -269,9 +269,15 @@ export default function App() {
       m.id === 'm-media' ? { ...m, progress: 1, completed: true } : m
     );
 
+    // An XR sighting also classifies the species in the catalog
+    const prevUnlocked = activeProfile.unlockedSilhouettes || [];
+    const updatedUnlocked =
+      matchedBird && !prevUnlocked.includes(matchedBird.id) ? [...prevUnlocked, matchedBird.id] : prevUnlocked;
+
     const updated = handleUpdateProfile({
       sightingsCompleted: newSightings,
       birdPhotoStars: updatedStars,
+      unlockedSilhouettes: updatedUnlocked,
       xp: newXP,
       fieldJournal: updatedJournal,
       missions: updatedMissions

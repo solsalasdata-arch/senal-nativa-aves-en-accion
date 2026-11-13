@@ -303,7 +303,7 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({
                         <span className="text-[9px] font-bold text-white leading-tight text-center truncate w-full">
                           {avatar.name}
                         </span>
-                        <span className="text-[7.5px] font-semibold text-amber-300/90 leading-none truncate w-full">
+                        <span className="text-[7.5px] font-semibold text-amber-300/90 leading-tight text-center w-full">
                           🦜 {avatar.favoriteBird}
                         </span>
                       </button>

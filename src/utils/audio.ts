@@ -1,11 +1,38 @@
 // Web Audio API Synthesizer for 100% Offline Bioacoustics & UI Sounds
 
+type ToucanVoiceLine = 'menu' | 'welcome';
+
+// Lines of the Toucan guide recorded with the same voice as his intro videos
+const TOUCAN_VOICE_LINES: Record<ToucanVoiceLine, Record<'es' | 'en', { url: string; text: string }>> = {
+  menu: {
+    es: {
+      url: '/assets/voz/tucan-saludo-menu-es.mp3',
+      text: '¡Estas son las opciones del juego! Necesitas más avistamientos para seguir obteniendo desbloqueos.'
+    },
+    en: {
+      url: '/assets/voz/tucan-saludo-menu-en.mp3',
+      text: 'These are the game options! You need more sightings to keep earning unlocks.'
+    }
+  },
+  welcome: {
+    es: {
+      url: '/assets/voz/tucan-bienvenida-es.mp3',
+      text: '¡Bienvenidos! Deben prestar atención al guía para luego responder las preguntas de la trivia y ganar puntos.'
+    },
+    en: {
+      url: '/assets/voz/tucan-bienvenida-en.mp3',
+      text: 'Welcome! Pay close attention to the guide so you can answer the trivia questions and earn points!'
+    }
+  }
+};
+
 class SoundManager {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
   private bgmInterval: number | null = null;
   private isBgmPlaying: boolean = false;
   private currentAudio: HTMLAudioElement | null = null;
+  private currentAudioUrl: string | null = null;
 
   private getContext(): AudioContext | null {
     if (this.isMuted) return null;
@@ -39,6 +66,20 @@ class SoundManager {
       }
       this.currentAudio = null;
     }
+    this.currentAudioUrl = null;
+  }
+
+  public pauseCurrentAudio() {
+    if (this.currentAudio && !this.currentAudio.paused) {
+      this.currentAudio.pause();
+    }
+  }
+
+  // Resumes the clip that pauseCurrentAudio() paused; false when there is nothing to resume
+  public resumeCurrentAudio(): boolean {
+    if (this.isMuted || !this.currentAudio || !this.currentAudio.paused) return false;
+    this.currentAudio.play().catch(() => {});
+    return true;
   }
 
   public playAudioUrl(rawUrl: string, onEnd?: () => void, fallbackFn?: () => void): HTMLAudioElement | null {
@@ -52,6 +93,7 @@ class SoundManager {
       const audio = new Audio(encodedSrc);
       audio.preload = 'auto';
       this.currentAudio = audio;
+      this.currentAudioUrl = rawUrl;
 
       let endedCalled = false;
       const finish = () => {
@@ -59,22 +101,27 @@ class SoundManager {
         endedCalled = true;
         if (this.currentAudio === audio) {
           this.currentAudio = null;
+          this.currentAudioUrl = null;
         }
         if (onEnd) onEnd();
       };
 
-      audio.onended = finish;
-      audio.onerror = () => {
+      // A clip that cannot load fires both `error` and the play() rejection: fall back once.
+      let failureHandled = false;
+      const handleFailure = (err?: unknown) => {
+        // pause() before playback starts rejects play() with AbortError: a stop, not a failed load
+        if (failureHandled || (err as { name?: string } | undefined)?.name === 'AbortError') return;
+        failureHandled = true;
         if (fallbackFn) fallbackFn();
         setTimeout(finish, 1400);
       };
 
+      audio.onended = finish;
+      audio.onerror = () => handleFailure();
+
       const playPromise = audio.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          if (fallbackFn) fallbackFn();
-          setTimeout(finish, 1400);
-        });
+        playPromise.catch(handleFailure);
       }
       return audio;
     } catch {
@@ -194,43 +241,44 @@ class SoundManager {
     });
   }
 
-  // Saludo hablado del Tucán Grande en el Menú Principal (Web Speech API + croar grave de Ramphastos toco)
-  public playToucanGreeting(lang: 'es' | 'en' = 'es') {
-    this.stopCurrentAudio();
-    this.playToucanCall();
+  // The Toucan guide speaking. Tapping again while the same line is playing stops it.
+  public playToucanVoice(line: ToucanVoiceLine, lang: 'es' | 'en' = 'es') {
+    const { url, text } = TOUCAN_VOICE_LINES[line][lang];
+    const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
+    if (hasSpeech) window.speechSynthesis.cancel();
 
-    if (this.isMuted || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    if (this.currentAudio && this.currentAudioUrl === url) {
+      this.stopCurrentAudio();
       return;
     }
 
-    try {
-      window.speechSynthesis.cancel();
-      const message =
-        lang === 'en'
-          ? 'These are the game options! You need more sightings to keep earning unlocks.'
-          : '¡Estas son las opciones del juego! Necesitas más avistamientos para seguir obteniendo desbloqueos';
-      const utterance = new SpeechSynthesisUtterance(message);
-      utterance.lang = lang === 'en' ? 'en-US' : 'es-ES';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.05;
-
-      const voices = window.speechSynthesis.getVoices();
-      if (voices && voices.length > 0) {
-        const preferredVoice =
-          voices.find((v) =>
-            lang === 'en'
-              ? v.lang.toLowerCase().startsWith('en')
-              : v.lang.toLowerCase().startsWith('es-ar') || v.lang.toLowerCase().startsWith('es-419') || v.lang.toLowerCase().startsWith('es')
-          ) || null;
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
+    this.playAudioUrl(url, undefined, () => {
+      // Recording unavailable: read the line with the device voice, raised towards the Toucan's tone
+      if (this.isMuted || !hasSpeech) return;
+      try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang === 'en' ? 'en-US' : 'es-AR';
+        utterance.rate = 1.05;
+        utterance.pitch = 1.5;
+        const prefixes = lang === 'en' ? ['en'] : ['es-ar', 'es-419', 'es-mx', 'es-us', 'es'];
+        const voices = window.speechSynthesis.getVoices() || [];
+        for (const prefix of prefixes) {
+          const voice = voices.find((v) => v.lang.toLowerCase().startsWith(prefix));
+          if (voice) {
+            utterance.voice = voice;
+            break;
+          }
         }
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        // no voice available on this device
       }
+    });
+  }
 
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // Fallback already handled by playToucanCall()
-    }
+  // Saludo hablado del Tucán Grande en el Menú Principal
+  public playToucanGreeting(lang: 'es' | 'en' = 'es') {
+    this.playToucanVoice('menu', lang);
   }
 
   // 2. Benteveo Común (Pitangus sulphuratus): Bright trisilábico "¡Bien-te-veo!"

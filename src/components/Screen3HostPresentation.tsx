@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { Binoculars, ArrowLeft, Volume2, Info, X, Users } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { PlayerProfile } from '../types/game';
@@ -20,7 +20,7 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
   onChangePlayer,
   onOpenMiroAvatar
 }) => {
-  const { tx } = useLanguage();
+  const { tx, lang } = useLanguage();
   const [showSilhouettesModal, setShowSilhouettesModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [welcomeScene, setWelcomeScene] = useState<'entrance' | 'branch'>('entrance');
@@ -30,11 +30,32 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
       ? '/assets/aistudio/En_el_dialogo_que_diga_c420835e.jpg'
       : '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg';
 
+  // The entrance artwork has the toucan and his speech bubble painted in its lower half:
+  // anchor it above the bottom panel so the panel never covers them on short screens.
+  const bottomPanelRef = useRef<HTMLDivElement | null>(null);
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const panel = bottomPanelRef.current;
+    if (!panel) return;
+    const measure = () => setBottomPanelHeight(panel.offsetHeight);
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, []);
+
+  const artBottomOffset = welcomeScene === 'entrance' ? Math.max(0, bottomPanelHeight - 28) : 0;
+
   return (
-    <div
-      className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-cover bg-center select-none transition-all duration-300"
-      style={{ backgroundImage: `url('${bgImage}')` }}
-    >
+    <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-slate-950 select-none">
+      <div
+        className={`absolute inset-x-0 top-0 bg-cover transition-all duration-300 ${
+          welcomeScene === 'entrance' ? 'bg-bottom' : 'bg-center'
+        }`}
+        style={{ backgroundImage: `url('${bgImage}')`, bottom: artBottomOffset }}
+      />
       {/* Top Header controls with Active Player Chip, LanguageSelector and "Cambiar Jugador" */}
       <div className="relative z-10 flex items-center justify-between p-3 bg-slate-950/65 backdrop-blur-md border-b border-teal-800/40 gap-1.5">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -92,15 +113,16 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
             <span className="hidden xs:inline">{tx('Cambiar', 'Switch')}</span>
           </button>
 
-          {/* Toucan call audition */}
+          {/* The Toucan guide says his welcome line */}
           <button
             onClick={() => {
-              soundManager.playToucanCall();
+              soundManager.playToucanVoice('welcome', lang);
             }}
+            title={tx('Escuchar la bienvenida del Tucán Grande', 'Listen to the Toco Toucan welcome')}
             className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-900/80 border border-teal-400/40 text-[10px] font-bold text-teal-200 hover:text-white shadow"
           >
             <Volume2 className="w-3 h-3 text-teal-400" />
-            <span>{tx('Canto', 'Call')}</span>
+            <span className="hidden min-[420px]:inline">{tx('Voz', 'Voice')}</span>
           </button>
 
           <button
@@ -119,10 +141,13 @@ export const Screen3HostPresentation: React.FC<Screen3HostPresentationProps> = (
       <div className="flex-1" />
 
       {/* Bottom Translucent Info Panel */}
-      <div className="relative z-10 p-4 pb-6 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent">
+      <div
+        ref={bottomPanelRef}
+        className="relative z-10 p-4 pb-6 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent"
+      >
         {/* Title & Subtitle Card */}
         <div className="w-full bg-teal-900/65 backdrop-blur-md border-2 border-teal-400/60 rounded-3xl p-3 shadow-2xl text-center mb-3">
-          <h2 className="text-xl font-black text-white tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+          <h2 className="text-base min-[390px]:text-xl font-black text-white tracking-wider min-[390px]:tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
             {tx('TUCÁN GRANDE · BIENVENIDA', 'TOCO TOUCAN · WELCOME')}
           </h2>
           <div className="text-[10px] font-bold text-amber-200 leading-snug mt-0.5">

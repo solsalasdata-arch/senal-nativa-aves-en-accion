@@ -826,6 +826,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '001-chingolo',
     image: '/assets/aves/1-Chingolo.jpg',
+    imageFocus: '38% 50%',
     audioUrl: '/assets/aves/1-Chingolo.mp3',
     silhouetteIcon: '🐦'
   },
@@ -855,6 +856,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '002-tangara-sayaca',
     image: '/assets/aves/2-Tangara sacaya.jpg',
+    imageFocus: '46% 50%',
     audioUrl: '/assets/aves/2-Tangara sacaya.mp3',
     silhouetteIcon: '💎'
   },
@@ -884,6 +886,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '003-chercan',
     image: '/assets/aves/3-Chercán.jpg',
+    imageFocus: '47% 50%',
     audioUrl: '/assets/aves/3-Chercán.mp3',
     silhouetteIcon: '🪶'
   },
@@ -914,6 +917,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     legend: 'Leyenda del Zorzal Colorado: El joven guaraní Zorzal tocaba la flauta dulce para su amada Agüaí; de su pecho surgió esta ave de pecho rojo y bello canto de flauta.',
     soundType: '004-zorzal-colorado',
     image: '/assets/aves/4-Zorzal colorado.jpg',
+    imageFocus: '42% 50%',
     audioUrl: '/assets/aves/4-Zorzal colorado.mp3',
     silhouetteIcon: '🎻'
   },
@@ -943,6 +947,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '005-paloma-picazuro',
     image: '/assets/aves/5-Paloma picazuro.jpg',
+    imageFocus: '58% 50%',
     audioUrl: '/assets/aves/5-Paloma picazuro.mp3',
     silhouetteIcon: '🕊️'
   },
@@ -972,6 +977,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '006-saltator-pico-dorado',
     image: '/assets/aves/6-Saltator de pico dorado.jpg',
+    imageFocus: '45% 50%',
     audioUrl: '/assets/aves/6-Saltator de pico dorado.mp3',
     silhouetteIcon: '👑'
   },
@@ -1001,6 +1007,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '007-benteveo',
     image: '/assets/aves/7-Benteveo.jpg',
+    imageFocus: '47% 50%',
     audioUrl: '/assets/aves/7-Benteveo.mp3',
     silhouetteIcon: '🐤'
   },
@@ -1030,6 +1037,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '008-tero',
     image: '/assets/aves/8-Tero.jpg',
+    imageFocus: '47% 50%',
     audioUrl: '/assets/aves/8-Tero.mp3',
     silhouetteIcon: '🛡️'
   },
@@ -1059,6 +1067,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '009-jilguero-azafranado',
     image: '/assets/aves/9-Jilguero azafranado.jpg',
+    imageFocus: '45% 50%',
     audioUrl: '/assets/aves/9-Jilguero azafranado.mp3',
     silhouetteIcon: '☀️'
   },
@@ -1088,6 +1097,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '010-tordo-renegrido',
     image: '/assets/aves/10-Tordo renegrido.jpg',
+    imageFocus: '42% 50%',
     audioUrl: '/assets/aves/10-Tordo renegrido.mp3',
     silhouetteIcon: '🐦‍⬛'
   },
@@ -1117,6 +1127,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '011-urraca-morada',
     image: '/assets/aves/11-Urraca morada.JPG',
+    imageFocus: '50% 50%',
     audioUrl: '/assets/aves/11-Urraca morada.mp3',
     silhouetteIcon: '🪶'
   },
@@ -1146,6 +1157,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '012-suiriri-real',
     image: '/assets/aves/12-Suirirí real.jpg',
+    imageFocus: '39% 50%',
     audioUrl: '/assets/aves/12-Suirirí real.mp3',
     silhouetteIcon: '⚡'
   },
@@ -1175,6 +1187,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '013-carancho',
     image: '/assets/aves/13-Carancho.jpg',
+    imageFocus: '35% 50%',
     audioUrl: '/assets/aves/13-Carancho.mp3',
     silhouetteIcon: '🦅'
   },
@@ -1205,6 +1218,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     legend: 'Leyenda del Hornero: Dos jóvenes alfareros enamorados fueron transformados en el ave nacional que modela su hogar en nidos de barro.',
     soundType: '014-hornero',
     image: '/assets/aves/14-Hornero.jpg',
+    imageFocus: '42% 50%',
     audioUrl: '/assets/aves/14-Hornero.mp3',
     silhouetteIcon: '🏺'
   },
@@ -1234,6 +1248,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '015-candelita-gorro-pardo',
     image: '/assets/aves/15-Candelita de gorro pardo.jpg',
+    imageFocus: '45% 50%',
     audioUrl: '/assets/aves/15-Candelita de gorro pardo.mp3',
     silhouetteIcon: '✨'
   },
@@ -1263,6 +1278,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '016-parula-tropical',
     image: '/assets/aves/16-Parula tropical.jpg',
+    imageFocus: '42% 50%',
     audioUrl: '/assets/aves/16-Parula tropical.mp3',
     silhouetteIcon: '🎶'
   },
@@ -1292,6 +1308,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '017-pava-de-las-yungas',
     image: '/assets/aves/17-Pava de los yungas.png',
+    imageFocus: '47% 50%',
     audioUrl: '/assets/aves/17-Pava de los yungas.mp3',
     silhouetteIcon: '🌿'
   },
@@ -1321,6 +1338,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '018-aratinga-mitrada',
     image: '/assets/aves/18-Aratinga mitrada.jpg',
+    imageFocus: '19% 50%',
     audioUrl: '/assets/aves/18-Aratinga mitrada.mp3',
     silhouetteIcon: '🦜'
   },
@@ -1350,6 +1368,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '019-tangara-azul-y-amarilla',
     image: '/assets/aves/19-Tangara azul y amarilla.png',
+    imageFocus: '50% 50%',
     audioUrl: '/assets/aves/19-Tangara azul y amarilla.mp3',
     silhouetteIcon: '🍊'
   },
@@ -1379,6 +1398,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '020-ticotico-cejicanelo',
     image: '/assets/aves/20-Ticotico cejicanelo.jpg',
+    imageFocus: '53% 50%',
     audioUrl: '/assets/aves/20-Ticotico cejicanelo.mp3',
     silhouetteIcon: '🍂'
   },
@@ -1408,6 +1428,7 @@ export const CATALOG_BIRDS_DATA: CatalogBird[] = [
     },
     soundType: '021-tordo-bayo',
     image: '/assets/aves/21-Tordo bayo.jpg',
+    imageFocus: '54% 50%',
     audioUrl: '/assets/aves/21-Tordo bayo.mp3',
     silhouetteIcon: '🎵'
   }
@@ -1506,6 +1527,7 @@ export const SPECIAL_EVENT_CARDS = [
     xpReward: 100,
     badgeIcon: '🌿',
     image: '/assets/aves/17-Pava de los yungas.png',
+    imageFocus: '47% 50%',
     specialNote: "Ficha Especial de Conservación Q'MI RAYMI (Fiesta Verde): La Pava de Monte Yungueña (72 cm, Vulnerable) encuentra en las 15,5 hectáreas del Parque Botánico un santuario vital libre de caza y perturbación urbana."
   }
 ];

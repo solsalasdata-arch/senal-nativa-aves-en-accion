@@ -11,10 +11,12 @@ import {
   Camera,
   RefreshCw,
   HelpCircle,
-  Eye
+  Eye,
+  Pause,
+  ScanSearch
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
-import { requestMobileCameraStream } from '../utils/camera';
+import { requestMobileCameraStream, switchToOtherCamera, countVideoInputs } from '../utils/camera';
 import { CATALOG_BIRDS_DATA } from '../data/birdsData';
 import { CatalogBird, PlayerProfile } from '../types/game';
 
@@ -26,17 +28,52 @@ interface SightingSimulationModalProps {
   onOpenQuizConsignas: () => void;
 }
 
+const XR_TUTORIAL_SEEN_KEY = 'senial_nativa_xr_tutorial_seen_v1';
+const XR_SCAN_MS = 2600;
+
+// #020 is presented in XR as the park's featured Chinchero Chico
+const XR_CHINCHERO: CatalogBird = {
+  id: '020-ticotico-cejicanelo',
+  catalogNumber: '020',
+  commonName: 'Chinchero Chico / Ticotico',
+  scientificName: 'Lepidocolaptes angustirostris',
+  size: '21 cm',
+  weight: '36 g',
+  family: 'FURNARIIDAE',
+  habitat: 'Bosques abiertos y troncos de Selva Montana (Yungas)',
+  stratum: 'Subdosel',
+  conservationStatus: 'NA',
+  presence: 'R',
+  observationPossibility: 'A',
+  beakDescription: 'Pico delgado y decurvado',
+  songDescription: 'Trino descendente de llamada',
+  plumageDescription: 'Dorso pardo-rufo y ceja blanca',
+  cp: 2579,
+  hp: '125 / 125 HP',
+  hints: {
+    size: '21 cm',
+    habitat: 'Subdosel',
+    morphology: 'Pico curvo',
+    loreOrFact: 'Trepa cortezas'
+  },
+  soundType: '020-ticotico-cejicanelo',
+  image: '/assets/aistudio/chinchero_chico_portrait.jpg',
+  audioUrl: '/assets/aves/20-Ticotico cejicanelo.mp3',
+  silhouetteIcon: '🪵'
+};
+
 export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = ({
   isOpen,
   onClose,
+  playerProfile,
   onSightingSuccess,
   onOpenQuizConsignas
 }) => {
-  // Active AR bird mode: 'chinchero' | 'benteveo' | 'catalog'
-  const [selectedBirdKey, setSelectedBirdKey] = useState<'chinchero' | 'benteveo' | 'catalog'>('benteveo');
-  const [selectedCatalogBird, setSelectedCatalogBird] = useState<CatalogBird>(
-    CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === '007') || CATALOG_BIRDS_DATA[0]
-  );
+  // The XR viewer detects the species by itself: null while it is still searching
+  const [detectedBird, setDetectedBird] = useState<CatalogBird | null>(null);
+  const [isSongPlaying, setIsSongPlaying] = useState(false);
+  const [canFlipCamera, setCanFlipCamera] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [useRealCamera, setUseRealCamera] = useState(false);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [nativePhotoUrl, setNativePhotoUrl] = useState<string | null>(null);
@@ -56,6 +93,44 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const scanTimerRef = useRef<number | null>(null);
+  const lastDetectedIdRef = useRef<string | null>(null);
+
+  const stopSong = () => {
+    soundManager.stopCurrentAudio();
+    setIsSongPlaying(false);
+  };
+
+  const clearScanTimer = () => {
+    if (scanTimerRef.current !== null) {
+      window.clearTimeout(scanTimerRef.current);
+      scanTimerRef.current = null;
+    }
+  };
+
+  // Species the player has not classified yet come first, and never the same one twice in a row
+  const pickDetectedBird = (): CatalogBird => {
+    const classified = playerProfile.unlockedSilhouettes || [];
+    const candidates = CATALOG_BIRDS_DATA.filter((b) => b.id !== lastDetectedIdRef.current);
+    const pending = candidates.filter((b) => !classified.includes(b.id));
+    const pool = pending.length > 0 ? pending : candidates;
+    const bird = pool[Math.floor(Math.random() * pool.length)] || CATALOG_BIRDS_DATA[0];
+    return bird.catalogNumber === '020' ? XR_CHINCHERO : bird;
+  };
+
+  const startScan = () => {
+    clearScanTimer();
+    stopSong();
+    setDetectedBird(null);
+    setShowBirdInfoSheet(false);
+    scanTimerRef.current = window.setTimeout(() => {
+      scanTimerRef.current = null;
+      const bird = pickDetectedBird();
+      lastDetectedIdRef.current = bird.id;
+      setDetectedBird(bird);
+      soundManager.playSuccess();
+    }, XR_SCAN_MS);
+  };
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -68,14 +143,24 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     setUseRealCamera(false);
   };
 
-  const startCamera = async (mode: 'environment' | 'user' = facingMode) => {
+  const startCamera = async (mode: 'environment' | 'user' = facingMode, avoidDeviceId?: string) => {
     try {
       setCameraError(null);
       setFacingMode(mode);
 
-      const stream = await requestMobileCameraStream(mode, streamRef.current, videoRef.current);
+      let stream = await requestMobileCameraStream(mode, streamRef.current, videoRef.current);
+      // Some phones ignore facingMode: if we got the same lens again, force the other one
+      if (avoidDeviceId) {
+        stream = await switchToOtherCamera(stream, avoidDeviceId, mode);
+      }
 
       streamRef.current = stream;
+      const actualFacing = stream.getVideoTracks()[0]?.getSettings?.().facingMode;
+      if (actualFacing === 'user' || actualFacing === 'environment') {
+        setFacingMode(actualFacing);
+      }
+      // Hide the flip button only when the device is known to have a single camera
+      countVideoInputs().then((n) => setCanFlipCamera(n !== 1));
       setNativePhotoUrl(null);
       setUseRealCamera(true);
 
@@ -87,7 +172,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         await videoRef.current.play().catch(() => {});
       }
     } catch {
-      setCameraError('Permiso de cámara bloqueado o navegador interno. Usa el botón de Cámara del Teléfono abajo.');
+      setCameraError('No se pudo abrir la cámara. Revisa el permiso del navegador o usa la cámara del teléfono.');
       setUseRealCamera(false);
     }
   };
@@ -95,15 +180,31 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   useEffect(() => {
     if (isOpen) {
       startCamera('environment');
+      let tutorialSeen = false;
+      try {
+        tutorialSeen = window.localStorage.getItem(XR_TUTORIAL_SEEN_KEY) === '1';
+      } catch {
+        // storage unavailable: show the tutorial
+      }
+      if (tutorialSeen) {
+        startScan();
+      } else {
+        setDetectedBird(null);
+        setShowTutorial(true);
+      }
     } else {
       stopCamera();
-      soundManager.stopCurrentAudio();
+      clearScanTimer();
+      stopSong();
+      setDetectedBird(null);
+      setShowTutorial(false);
       setPhotoResult(null);
       setNativePhotoUrl(null);
       setShowBirdInfoSheet(false);
       setCleanViewMode(false);
     }
     return () => {
+      clearScanTimer();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
@@ -115,8 +216,19 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   const handleFlipCamera = () => {
     soundManager.playClick();
     const nextMode: 'environment' | 'user' = facingMode === 'environment' ? 'user' : 'environment';
-    setFacingMode(nextMode);
-    startCamera(nextMode);
+    const currentDeviceId = streamRef.current?.getVideoTracks()[0]?.getSettings?.().deviceId;
+    startCamera(nextMode, currentDeviceId);
+  };
+
+  const closeTutorial = () => {
+    soundManager.playClick();
+    try {
+      window.localStorage.setItem(XR_TUTORIAL_SEEN_KEY, '1');
+    } catch {
+      // ignore
+    }
+    setShowTutorial(false);
+    if (!detectedBird && scanTimerRef.current === null) startScan();
   };
 
   const handleNativeFileCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,41 +247,17 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
   if (!isOpen) return null;
 
-  const activeBirdData: CatalogBird =
-    selectedBirdKey === 'chinchero'
-      ? {
-          id: '020-ticotico-cejicanelo',
-          catalogNumber: '020',
-          commonName: 'Chinchero Chico / Ticotico',
-          scientificName: 'Lepidocolaptes angustirostris',
-          size: '21 cm',
-          weight: '36 g',
-          family: 'FURNARIIDAE',
-          habitat: 'Bosques abiertos y troncos de Selva Montana (Yungas)',
-          stratum: 'Subdosel',
-          conservationStatus: 'NA',
-          presence: 'R',
-          observationPossibility: 'A',
-          beakDescription: 'Pico delgado y decurvado',
-          songDescription: 'Trino descendente de llamada',
-          plumageDescription: 'Dorso pardo-rufo y ceja blanca',
-          cp: 2579,
-          hp: '125 / 125 HP',
-          hints: {
-            size: '21 cm',
-            habitat: 'Subdosel',
-            morphology: 'Pico curvo',
-            loreOrFact: 'Trepa cortezas'
-          },
-          soundType: '020-ticotico-cejicanelo',
-          image: '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg',
-          audioUrl: '/assets/aves/20-Ticotico cejicanelo.mp3',
-          silhouetteIcon: '🪵'
-        }
-      : selectedCatalogBird;
-
-  const playActiveBirdAudio = () => {
-    soundManager.playBirdSound(activeBirdData.audioUrl || activeBirdData.id);
+  const toggleBirdSong = () => {
+    if (!detectedBird) return;
+    if (isSongPlaying) {
+      soundManager.pauseCurrentAudio();
+      setIsSongPlaying(false);
+      return;
+    }
+    setIsSongPlaying(true);
+    if (!soundManager.resumeCurrentAudio()) {
+      soundManager.playBirdSound(detectedBird.audioUrl || detectedBird.id, () => setIsSongPlaying(false));
+    }
   };
 
   const loadImage = (src: string): Promise<HTMLImageElement | null> =>
@@ -183,9 +271,11 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
   // Handle Foto Perfecta Capture (draws live <video> frame + bird AR overlay onto <canvas>)
   const handleShutterCapture = async () => {
+    if (!detectedBird) return;
+    const activeBirdData = detectedBird;
+    stopSong();
     soundManager.playShutter();
     setIsPhotoCapturing(true);
-    playActiveBirdAudio();
 
     const isFocused = focusSlider >= 65 && focusSlider <= 95;
     const centered = true;
@@ -214,13 +304,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           const sx = (vw - sw) / 2;
           const sy = (vh - sh) / 2;
 
-          ctx.save();
-          if (facingMode === 'user') {
-            ctx.translate(width, 0);
-            ctx.scale(-1, 1);
-          }
           ctx.drawImage(vid, sx, sy, sw, sh, 0, 0, width, height);
-          ctx.restore();
           drewBase = true;
         } else if (nativePhotoUrl) {
           const nativeImg = await loadImage(nativePhotoUrl);
@@ -312,9 +396,6 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     }, 350);
   };
 
-  const selectDropdownValue =
-    selectedBirdKey === 'chinchero' ? '020-ticotico-cejicanelo' : selectedCatalogBird.id;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-black/90 backdrop-blur-md animate-fadeIn">
       {/* Hidden Canvas & Native Mobile Camera Input Fallback */}
@@ -331,18 +412,18 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
       <div className="relative w-full max-w-sm h-[94vh] max-h-[860px] flex flex-col rounded-3xl overflow-hidden bg-slate-950 border-2 border-teal-500 shadow-2xl">
         {/* HUD Top Bar: Title, Flash OFF, Battery, Close */}
         <div className="relative z-30 px-3 py-2 bg-slate-950 border-b border-teal-900/60 flex items-center justify-between text-xs text-white">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-extrabold text-[11px] text-teal-300 tracking-wider uppercase">
-              XR AVISTAMIENTO · #{activeBirdData.catalogNumber}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="font-extrabold text-[11px] text-teal-300 tracking-wider uppercase truncate">
+              XR AVISTAMIENTO{detectedBird ? ` · #${detectedBird.catalogNumber}` : ''}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Environmental Care Status */}
             <div className="flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-teal-950/80 border border-teal-500/40 text-teal-200">
               <ShieldCheck className="w-3 h-3 text-emerald-400" />
-              <span>Flash: OFF | Distancia: OK</span>
+              <span className="whitespace-nowrap">Flash: OFF</span>
             </div>
 
             {/* Battery Indicator */}
@@ -356,7 +437,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               onClick={() => {
                 soundManager.playClick();
                 stopCamera();
-                soundManager.stopCurrentAudio();
+                clearScanTimer();
+                stopSong();
                 onClose();
               }}
               className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700"
@@ -368,13 +450,33 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
         {/* Dedicated Non-Overlapping Camera Controls Bar (Flex with gap-2, no conflicting absolute positions) */}
         <div className="relative z-30 px-3 py-1.5 bg-slate-900/95 border-b border-teal-900/60 flex items-center justify-between gap-2">
+          {canFlipCamera ? (
+            <button
+              type="button"
+              onClick={handleFlipCamera}
+              className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+              title="Cambiar entre cámara trasera y delantera"
+            >
+              <RefreshCw className="w-3 h-3 stroke-[2.5]" />
+              <span>Girar ({facingMode === 'environment' ? 'Trasera' : 'Delantera'})</span>
+            </button>
+          ) : (
+            <span className="text-[10px] font-bold text-teal-300/80 truncate">
+              {useRealCamera ? 'Cámara activa' : 'Cámara apagada'}
+            </span>
+          )}
+
           <button
             type="button"
-            onClick={handleFlipCamera}
-            className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+            onClick={() => {
+              soundManager.playClick();
+              setShowTutorial(true);
+            }}
+            className="ml-auto px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 font-black text-[10px] border border-amber-400/60 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+            title="Ver cómo se usa el avistamiento"
           >
-            <RefreshCw className="w-3 h-3 stroke-[2.5]" />
-            <span>🔄 Girar Cámara ({facingMode === 'environment' ? 'Trasera' : 'Frontal'})</span>
+            <HelpCircle className="w-3 h-3" />
+            <span>Ayuda</span>
           </button>
 
           <button
@@ -386,7 +488,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             className="px-2.5 py-1 rounded-full bg-teal-600 hover:bg-teal-500 text-white font-black text-[10px] border border-teal-300 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
           >
             <Camera className="w-3 h-3" />
-            <span>{useRealCamera ? '📱 Cámara Nativa' : '📷 Activar Cámara'}</span>
+            <span>{useRealCamera ? 'Cámara Nativa' : 'Activar Cámara'}</span>
           </button>
         </div>
 
@@ -395,7 +497,6 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           {/* Live Video Feed with Mandatory Mobile Attributes OR Native Photo OR Illustrated Backdrop */}
           {useRealCamera ? (
             <video
-              key={facingMode}
               ref={(el) => {
                 videoRef.current = el;
                 if (el && streamRef.current && el.srcObject !== streamRef.current) {
@@ -409,9 +510,6 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               autoPlay
               playsInline
               muted
-              style={{
-                transform: facingMode === 'user' ? 'scaleX(-1)' : 'none'
-              }}
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : nativePhotoUrl ? (
@@ -422,11 +520,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             />
           ) : (
             <img
-              src={
-                selectedBirdKey === 'chinchero'
-                  ? '/assets/aistudio/Toucan_asking_user_question_1451548d.jpg'
-                  : '/assets/aistudio/Toucan_presenting_benteveo_data_…_1e5a6f2b.jpg'
-              }
+              src="/assets/aistudio/Botanical_park_start_screen_logo_546dfb3b_47fb3d00.jpg"
               alt="Fondo XR Yungas"
               className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${
                 focusSlider >= 65 && focusSlider <= 95 ? 'blur-none' : 'blur-[2px]'
@@ -434,22 +528,35 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             />
           )}
 
-          {/* Binocular lens effect: circular vignette + lens ring over the feed */}
-          <div
-            className="absolute inset-0 z-10 pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(ellipse 62% 56% at 50% 42%, transparent 48%, rgba(2,10,12,0.55) 80%, rgba(0,0,0,0.94) 100%)'
-            }}
-          />
-          <div
-            className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25 pointer-events-none z-10"
-            style={{
-              width: 'min(80%, 56vh)',
-              aspectRatio: '1 / 1',
-              boxShadow: 'inset 0 0 70px rgba(0,0,0,0.65), inset 0 0 18px rgba(125,211,252,0.15)'
-            }}
-          />
+          {/* Binocular view: everything outside the two overlapping lenses is blacked out */}
+          <svg
+            className="absolute inset-0 w-full h-full z-10 pointer-events-none"
+            viewBox="0 0 200 150"
+            preserveAspectRatio="xMidYMid meet"
+            aria-hidden="true"
+          >
+            <defs>
+              <mask id="xrBinocularMask" maskUnits="userSpaceOnUse" x="-2000" y="-2000" width="4200" height="4200">
+                <rect x="-2000" y="-2000" width="4200" height="4200" fill="white" />
+                <circle cx="75" cy="75" r="72" fill="black" />
+                <circle cx="125" cy="75" r="72" fill="black" />
+              </mask>
+              <radialGradient id="xrLensShade">
+                <stop offset="72%" stopColor="#000" stopOpacity="0" />
+                <stop offset="93%" stopColor="#000" stopOpacity="0.55" />
+                <stop offset="100%" stopColor="#000" stopOpacity="0.95" />
+              </radialGradient>
+              <clipPath id="xrLeftHalf">
+                <rect x="-2000" y="-2000" width="2100" height="4200" />
+              </clipPath>
+              <clipPath id="xrRightHalf">
+                <rect x="100" y="-2000" width="2100" height="4200" />
+              </clipPath>
+            </defs>
+            <circle cx="75" cy="75" r="72" fill="url(#xrLensShade)" clipPath="url(#xrLeftHalf)" />
+            <circle cx="125" cy="75" r="72" fill="url(#xrLensShade)" clipPath="url(#xrRightHalf)" />
+            <rect x="-2000" y="-2000" width="4200" height="4200" fill="#000" mask="url(#xrBinocularMask)" />
+          </svg>
 
           {cameraError && !useRealCamera && !cleanViewMode && (
             <div className="absolute top-2.5 inset-x-3 z-30 bg-slate-950/90 border border-amber-500/60 rounded-xl p-2 flex items-center justify-between gap-2 text-[10px] text-amber-200 pointer-events-auto">
@@ -491,35 +598,48 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               <div className="absolute w-full h-[1px] bg-sky-300/25" />
               <div className="absolute h-full w-[1px] bg-sky-300/25" />
 
-              {/* Moderate-sized perched bird without blocking the camera view */}
-              <div
-                className="w-22 h-22 rounded-2xl border border-sky-300/70 shadow-lg flex items-center justify-center overflow-visible"
-                style={{ backgroundColor: 'rgba(12, 35, 30, 0.55)', padding: '5px' }}
-              >
-                <img
-                  src={encodeURI(activeBirdData.image)}
-                  alt={activeBirdData.commonName}
-                  className="w-full h-full object-contain rounded-xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
-                />
-              </div>
+              {detectedBird ? (
+                <div
+                  className="w-22 h-22 rounded-2xl border border-sky-300/70 shadow-lg flex items-center justify-center overflow-visible animate-fadeIn"
+                  style={{ backgroundColor: 'rgba(12, 35, 30, 0.55)', padding: '5px' }}
+                >
+                  <img
+                    src={encodeURI(detectedBird.image)}
+                    alt={detectedBird.commonName}
+                    style={{ objectPosition: detectedBird.imageFocus || 'center' }}
+                    className="w-full h-full object-cover rounded-xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
+                  />
+                </div>
+              ) : (
+                <div className="absolute inset-2 rounded-full border-2 border-amber-300/80 animate-ping" />
+              )}
             </div>
+            <span
+              className={`mt-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide border shadow ${
+                detectedBird
+                  ? 'bg-emerald-400 text-slate-950 border-slate-900'
+                  : 'bg-slate-950/85 text-amber-300 border-amber-400/60'
+              }`}
+            >
+              {detectedBird ? '¡Especie detectada!' : 'Buscando aves…'}
+            </span>
           </div>
 
           {/* COLLAPSIBLE TECHNICAL / RPG SHEET (Only visible when player taps "ℹ️ Ver Ficha") */}
-          {showBirdInfoSheet && !cleanViewMode && (
+          {showBirdInfoSheet && !cleanViewMode && detectedBird && (
             <div className="absolute bottom-13 inset-x-3 z-30 bg-slate-950/92 backdrop-blur-md rounded-2xl p-3 border-2 border-sky-400 shadow-2xl text-[10px] text-slate-200 space-y-1.5 animate-fadeIn pointer-events-auto">
               <div className="flex items-center justify-between border-b border-sky-800 pb-1 gap-2">
                 <div className="min-w-0">
                   <span className="font-black text-xs text-white block truncate">
-                    #{activeBirdData.catalogNumber} {activeBirdData.commonName}
+                    #{detectedBird.catalogNumber} {detectedBird.commonName}
                   </span>
                   <span className="text-[9px] italic text-teal-300 block truncate">
-                    {activeBirdData.scientificName}
+                    {detectedBird.scientificName}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/50 font-extrabold text-amber-300 text-[10px]">
-                    PC {activeBirdData.cp} · {activeBirdData.hp}
+                    PC {detectedBird.cp} · {detectedBird.hp}
                   </span>
                   <button
                     type="button"
@@ -533,24 +653,24 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
               <div className="flex flex-wrap items-center gap-1.5 text-[9px]">
                 <span className="px-2 py-0.5 rounded-md bg-teal-950 border border-teal-600/50 text-teal-200 font-bold">
-                  Estrato: {activeBirdData.stratum}
+                  Estrato: {detectedBird.stratum}
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-emerald-300 font-bold">
-                  Peso: {activeBirdData.weight} · Tamaño: {activeBirdData.size}
+                  Peso: {detectedBird.weight} · Tamaño: {detectedBird.size}
                 </span>
                 <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-amber-300 font-bold">
-                  Familia: {activeBirdData.family}
+                  Familia: {detectedBird.family}
                 </span>
               </div>
 
               <div className="text-[9px] text-teal-200">
-                <span className="text-slate-400 font-semibold">Hábitat:</span> {activeBirdData.habitat}
+                <span className="text-slate-400 font-semibold">Hábitat:</span> {detectedBird.habitat}
               </div>
 
               <div className="text-[9px] text-slate-300 pt-1 border-t border-slate-800 leading-snug space-y-0.5">
-                <div>• {activeBirdData.beakDescription}</div>
-                <div>• {activeBirdData.songDescription}</div>
-                <div>• {activeBirdData.plumageDescription}</div>
+                <div>• {detectedBird.beakDescription}</div>
+                <div>• {detectedBird.songDescription}</div>
+                <div>• {detectedBird.plumageDescription}</div>
               </div>
             </div>
           )}
@@ -560,20 +680,27 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             {!cleanViewMode ? (
               <div className="flex-1 min-w-0 px-2.5 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-teal-500/60 shadow-lg flex items-center justify-between gap-1.5">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      detectedBird ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
+                    }`}
+                  />
                   <span className="text-[10px] font-black text-white truncate">
-                    #{activeBirdData.catalogNumber} {activeBirdData.commonName}
+                    {detectedBird
+                      ? `#${detectedBird.catalogNumber} ${detectedBird.commonName}`
+                      : 'Apunta hacia los árboles y espera…'}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
+                    disabled={!detectedBird}
                     onClick={() => {
                       soundManager.playClick();
                       setShowBirdInfoSheet((prev) => !prev);
                     }}
-                    className={`px-2 py-0.5 rounded-full text-[9px] font-black border transition-all cursor-pointer ${
+                    className={`px-2 py-0.5 disabled:opacity-40 disabled:cursor-default rounded-full text-[9px] font-black border transition-all cursor-pointer ${
                       showBirdInfoSheet
                         ? 'bg-sky-400 text-slate-950 border-white'
                         : 'bg-sky-950/90 text-sky-200 border-sky-400/60 hover:bg-sky-900'
@@ -612,17 +739,69 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             )}
           </div>
 
+          {/* TUTORIAL: 3 short steps, shown the first time and from "¿Cómo se usa?" */}
+          {showTutorial && !photoResult && (
+            <div className="absolute inset-0 z-40 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-3 animate-fadeIn pointer-events-auto overflow-y-auto">
+              <div className="w-full max-w-xs bg-slate-900 border-2 border-teal-400 rounded-3xl p-3.5 shadow-2xl text-slate-100 my-auto">
+                <h4 className="text-sm font-black text-white text-center uppercase tracking-wide">
+                  ¿Cómo avistar un ave?
+                </h4>
+                <ol className="mt-2.5 space-y-2">
+                  {[
+                    {
+                      icon: <Binoculars className="w-4 h-4" />,
+                      title: 'Apunta',
+                      text: 'Mira por los binoculares hacia los árboles.'
+                    },
+                    {
+                      icon: <ScanSearch className="w-4 h-4" />,
+                      title: 'Espera',
+                      text: 'El visor detecta el ave y te dice qué especie es.'
+                    },
+                    {
+                      icon: <Camera className="w-4 h-4" />,
+                      title: 'Toma la foto',
+                      text: 'Toca el botón blanco y queda guardada en tu catálogo.'
+                    }
+                  ].map((step, idx) => (
+                    <li
+                      key={step.title}
+                      className="flex items-center gap-2.5 p-2 rounded-2xl bg-teal-950/60 border border-teal-800/50"
+                    >
+                      <span className="w-8 h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 border-2 border-slate-900">
+                        {step.icon}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-xs font-black text-amber-300">
+                          {idx + 1}. {step.title}
+                        </div>
+                        <div className="text-[11px] text-slate-200 leading-snug">{step.text}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+                <button
+                  type="button"
+                  onClick={closeTutorial}
+                  className="w-full mt-3 py-2.5 rounded-xl game-btn-orange text-white text-xs font-black cursor-pointer"
+                >
+                  ¡ENTENDIDO!
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* POPUP DE RESULTADO DE "FOTO PERFECTA" */}
           {photoResult && (
             <div className="absolute inset-0 z-50 bg-slate-950/92 backdrop-blur-md flex flex-col items-center justify-center p-5 text-center animate-fadeIn">
               <div
-                className="w-24 h-24 rounded-2xl border-3 border-amber-400 mb-2 shadow-xl flex items-center justify-center overflow-hidden"
-                style={{ backgroundColor: 'rgba(12, 35, 30, 0.85)', padding: '4px' }}
+                className="w-27 h-36 rounded-2xl border-3 border-amber-400 mb-2 shadow-xl flex items-center justify-center overflow-hidden"
+                style={{ backgroundColor: 'rgba(12, 35, 30, 0.85)' }}
               >
                 <img
                   src={photoResult.photoUrl}
                   alt={photoResult.birdName}
-                  className="w-full h-full object-contain rounded-xl"
+                  className="w-full h-full object-cover"
                 />
               </div>
 
@@ -667,6 +846,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   onClick={() => {
                     soundManager.playClick();
                     setPhotoResult(null);
+                    startScan();
                   }}
                   className="flex-1 py-3 rounded-2xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700"
                 >
@@ -687,76 +867,23 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           )}
         </div>
 
-        {/* Bottom Controls Bar: Synchronized 21 Species Selector, Bird Toggles, Shutter, and 5 Consignas Button */}
+        {/* Bottom Controls Bar: search another bird, shutter, bird song play/pause and 5 Consignas Button */}
         {!photoResult && (
           <div className="p-2.5 bg-slate-950 border-t border-teal-900/80 space-y-2">
-            {/* Synchronized Selector of the 21 Species from /assets/aves/ */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-black text-teal-300 uppercase shrink-0">Especie XR:</span>
-              <select
-                value={selectDropdownValue}
-                onChange={(e) => {
-                  const found = CATALOG_BIRDS_DATA.find((b) => b.id === e.target.value);
-                  if (found) {
-                    setSelectedCatalogBird(found);
-                    if (found.catalogNumber === '020') {
-                      setSelectedBirdKey('chinchero');
-                    } else if (found.catalogNumber === '007') {
-                      setSelectedBirdKey('benteveo');
-                    } else {
-                      setSelectedBirdKey('catalog');
-                    }
-                    soundManager.playBirdSound(found.audioUrl);
-                  }
-                }}
-                className="flex-1 bg-slate-900 border border-teal-700/80 rounded-xl px-2 py-1 text-[10px] font-bold text-white outline-none"
-              >
-                {CATALOG_BIRDS_DATA.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.catalogNumber === '020'
-                      ? '#020 - Chinchero Chico / Ticotico (Furnariidae)'
-                      : `#${b.catalogNumber} - ${b.commonName} (${b.scientificName})`}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Top row of bottom controls: Bird AR switch and camera switch */}
+            {/* Top row of bottom controls: search another bird and camera switch */}
             <div className="flex items-center justify-between gap-2">
-              <div className="flex gap-1.5 p-1 bg-slate-900 rounded-xl border border-teal-900/50">
-                <button
-                  onClick={() => {
-                    soundManager.playClick();
-                    const chinchero =
-                      CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === '020') || CATALOG_BIRDS_DATA[0];
-                    setSelectedCatalogBird(chinchero);
-                    setSelectedBirdKey('chinchero');
-                  }}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                    selectedBirdKey === 'chinchero'
-                      ? 'bg-sky-500 text-slate-950 shadow-md'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Chinchero Chico
-                </button>
-                <button
-                  onClick={() => {
-                    soundManager.playClick();
-                    const benteveo =
-                      CATALOG_BIRDS_DATA.find((b) => b.catalogNumber === '007') || CATALOG_BIRDS_DATA[0];
-                    setSelectedCatalogBird(benteveo);
-                    setSelectedBirdKey('benteveo');
-                  }}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                    selectedBirdKey !== 'chinchero' && selectedCatalogBird.catalogNumber === '007'
-                      ? 'bg-amber-400 text-slate-950 shadow-md'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  #007 Benteveo
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.playClick();
+                  startScan();
+                }}
+                className="flex items-center gap-1 text-[11px] font-bold text-slate-950 px-2.5 py-1 rounded-xl bg-sky-400 hover:bg-sky-300 border border-slate-900 shadow-md cursor-pointer active:scale-95 transition-all"
+                title="Volver a buscar un ave con el visor"
+              >
+                <ScanSearch className="w-3.5 h-3.5" />
+                <span>{detectedBird ? 'Buscar otra ave' : 'Buscando…'}</span>
+              </button>
 
               {/* Camera mode toggle */}
               <button
@@ -790,7 +917,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               {/* WHITE CIRCULAR SHUTTER BUTTON */}
               <button
                 onClick={handleShutterCapture}
-                className="w-14 h-14 rounded-full bg-white p-1 border-4 border-slate-900 shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+                disabled={!detectedBird}
+                className="w-14 h-14 rounded-full bg-white p-1 border-4 border-slate-900 shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:scale-100"
                 title="Tomar Foto Perfecta"
               >
                 <div className="w-10 h-10 rounded-full border-2 border-slate-400 bg-slate-100 flex items-center justify-center">
@@ -798,13 +926,24 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 </div>
               </button>
 
-              {/* Real MP3 Sound sample of the bird */}
+              {/* Bird song: one button to play and to pause it */}
               <button
-                onClick={playActiveBirdAudio}
-                className="flex items-center gap-1 text-[10px] text-teal-300 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-teal-800/60 cursor-pointer hover:border-teal-400"
+                type="button"
+                onClick={toggleBirdSong}
+                disabled={!detectedBird}
+                className={`flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-xl border cursor-pointer disabled:opacity-40 disabled:cursor-default ${
+                  isSongPlaying
+                    ? 'bg-amber-400 text-slate-950 border-slate-900 font-black'
+                    : 'bg-slate-900 text-teal-300 border-teal-800/60 hover:border-teal-400'
+                }`}
+                title={isSongPlaying ? 'Pausar el canto' : 'Escuchar el canto del ave detectada'}
               >
-                <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-                <span>Canto MP3</span>
+                {isSongPlaying ? (
+                  <Pause className="w-3.5 h-3.5" />
+                ) : (
+                  <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                )}
+                <span>{isSongPlaying ? 'Pausar' : 'Canto'}</span>
               </button>
             </div>
 

@@ -367,11 +367,11 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                             selectedStudyAngle === 'frontal' ? 'flight' : 'frontal'
                           );
                         }}
-                        className="flex flex-col items-center p-1 rounded-xl bg-teal-700 hover:bg-teal-600 text-white border border-amber-300 shadow"
+                        className="flex flex-col items-center px-0.5 py-1 min-w-0 rounded-xl bg-teal-700 hover:bg-teal-600 text-white border border-amber-300 shadow"
                         title={tx('Historial de Aves', 'Bird History')}
                       >
                         <BookOpen className="w-3.5 h-3.5 text-amber-300" />
-                        <span className="text-[7px] font-black uppercase leading-tight mt-0.5 text-center">
+                        <span className="text-[6px] min-[400px]:text-[7px] tracking-tighter min-[400px]:tracking-normal font-black uppercase leading-tight mt-0.5 text-center">
                           {tx('HISTORIAL', 'BIRDS')}
                         </span>
                       </button>
@@ -382,11 +382,11 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                           onClose();
                           onOpenBirds();
                         }}
-                        className="flex flex-col items-center p-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-700 shadow"
+                        className="flex flex-col items-center px-0.5 py-1 min-w-0 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-700 shadow"
                         title={tx('Diario de Aventuras', 'Adventure Diary')}
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span className="text-[7px] font-black uppercase leading-tight mt-0.5 text-center">
+                        <span className="text-[6px] min-[400px]:text-[7px] tracking-tighter min-[400px]:tracking-normal font-black uppercase leading-tight mt-0.5 text-center">
                           {tx('DIARIO', 'DIARY')}
                         </span>
                       </button>
@@ -397,11 +397,11 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                           onClose();
                           onOpenShop();
                         }}
-                        className="flex flex-col items-center p-1 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-amber-200 border border-amber-400 shadow"
+                        className="flex flex-col items-center px-0.5 py-1 min-w-0 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-amber-200 border border-amber-400 shadow"
                         title={tx('Tienda de Ropa y Accesorios', 'Clothing & Accessories Shop')}
                       >
                         <ShoppingBag className="w-3.5 h-3.5" />
-                        <span className="text-[7px] font-black uppercase leading-tight mt-0.5 text-center">
+                        <span className="text-[6px] min-[400px]:text-[7px] tracking-tighter min-[400px]:tracking-normal font-black uppercase leading-tight mt-0.5 text-center">
                           {tx('ACCESORIOS', 'GEAR')}
                         </span>
                       </button>

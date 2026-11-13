@@ -127,6 +127,7 @@ export interface CatalogBird {
   legend?: string;
   soundType: string;
   image: string;
+  imageFocus?: string; // CSS object-position so the bird stays in frame when the photo fills a card
   audioUrl: string;
   silhouetteIcon: string;
 }

@@ -473,8 +473,8 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
               <>
                 {/* Squad Banner & Cooperative Goal */}
                 <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-950 via-slate-950 to-emerald-950 border border-teal-500/70 space-y-2 text-white">
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
                       <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider">
                         {currentSquad.schoolOrGroup || 'Reto Cooperativo para Escuelas'}
                       </span>
@@ -482,7 +482,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                         {currentSquad.name}
                       </h4>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full bg-teal-900 border border-teal-400 text-[10px] font-black text-teal-200">
+                    <span className="px-2 py-0.5 rounded-full bg-teal-900 border border-teal-400 text-[10px] font-black text-teal-200 whitespace-nowrap shrink-0">
                       {currentSquad.members.length}/5 Jugadores
                     </span>
                   </div>
