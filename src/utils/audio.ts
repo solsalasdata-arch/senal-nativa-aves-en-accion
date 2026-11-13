@@ -106,18 +106,22 @@ class SoundManager {
         if (onEnd) onEnd();
       };
 
-      audio.onended = finish;
-      audio.onerror = () => {
+      // A clip that cannot load fires both `error` and the play() rejection: fall back once.
+      let failureHandled = false;
+      const handleFailure = (err?: unknown) => {
+        // pause() before playback starts rejects play() with AbortError: a stop, not a failed load
+        if (failureHandled || (err as { name?: string } | undefined)?.name === 'AbortError') return;
+        failureHandled = true;
         if (fallbackFn) fallbackFn();
         setTimeout(finish, 1400);
       };
 
+      audio.onended = finish;
+      audio.onerror = () => handleFailure();
+
       const playPromise = audio.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          if (fallbackFn) fallbackFn();
-          setTimeout(finish, 1400);
-        });
+        playPromise.catch(handleFailure);
       }
       return audio;
     } catch {
