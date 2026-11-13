@@ -102,3 +102,46 @@ export async function requestMobileCameraStream(
     }
   }
 }
+
+export async function countVideoInputs(): Promise<number> {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return 0;
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter((d) => d.kind === 'videoinput').length;
+  } catch {
+    return 0;
+  }
+}
+
+// When flipping, some phones hand back the same lens: open a different one by deviceId.
+export async function switchToOtherCamera(
+  stream: MediaStream,
+  avoidDeviceId: string,
+  mode: 'user' | 'environment'
+): Promise<MediaStream> {
+  const gotDeviceId = stream.getVideoTracks()[0]?.getSettings?.().deviceId;
+  if (!gotDeviceId || gotDeviceId !== avoidDeviceId) return stream;
+
+  let target: MediaDeviceInfo | undefined;
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const others = devices.filter((d) => d.kind === 'videoinput' && d.deviceId && d.deviceId !== avoidDeviceId);
+    const wanted =
+      mode === 'environment' ? /back|trasera|rear|environment|posterior/i : /front|frontal|user|delantera|selfie/i;
+    target = others.find((d) => wanted.test(d.label || '')) || others[0];
+  } catch {
+    // keep the stream we already have
+  }
+  if (!target) return stream;
+
+  stream.getTracks().forEach((t) => t.stop());
+  await new Promise((r) => setTimeout(r, 60));
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: target.deviceId } },
+      audio: false
+    });
+  } catch {
+    return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+  }
+}

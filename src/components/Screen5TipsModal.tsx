@@ -56,7 +56,7 @@ export const Screen5TipsModal: React.FC<Screen5TipsModalProps> = ({
         {/* Body */}
         <div className="p-3.5 space-y-3 flex-1 overflow-y-auto">
           {/* Official Prototype Artwork from /assets/aistudio/Complete_sightings_to_level_up_9c0d6661.jpg */}
-          <div className="relative w-full h-56 rounded-2xl overflow-hidden border-2 border-teal-500/60 shadow-xl bg-teal-950">
+          <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border-2 border-teal-500/60 shadow-xl bg-teal-950">
             <img
               src="/assets/aistudio/Complete_sightings_to_level_up_9c0d6661.jpg"
               alt="Para subir de nivel debes completar 1 avistamiento y responder 5 preguntas"

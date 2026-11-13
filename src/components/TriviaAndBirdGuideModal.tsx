@@ -583,13 +583,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
       >
         {/* TOP HEADER */}
         <div className="bg-slate-950/90 px-3.5 pt-3 pb-2 border-b border-teal-800/60 shrink-0">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 rounded-full bg-teal-500/20 border border-teal-400 flex items-center justify-center text-teal-300 shrink-0 shadow">
                 <Bird className="w-4 h-4" />
               </div>
               <div className="truncate">
-                <h3 className="font-black text-xs text-white uppercase tracking-wider">
+                <h3 className="font-black text-xs text-white uppercase tracking-wider truncate">
                   {tx('COLECCIÓN DE AVES · YUNGAS', 'BIRD COLLECTION · YUNGAS')}
                 </h3>
                 <p className="text-[10px] text-teal-300 font-semibold truncate">
@@ -701,7 +701,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             >
               {/* Circular Seal of "PARQUE BOTÁNICO MUNICIPAL BARÓN CARLOS MARÍA SCHUEL" + Full Uncropped Bird Showcase */}
               <div className="relative flex flex-col items-center justify-center py-1">
-                <div className="relative w-full min-h-[250px] rounded-2xl bg-[#E8FAF6] border-3 border-amber-300 shadow-2xl flex flex-col items-center justify-center p-2.5 overflow-hidden">
+                <div className="relative w-full aspect-square max-h-[340px] rounded-2xl bg-[#E8FAF6] border-3 border-amber-300 shadow-2xl flex flex-col items-center justify-center overflow-hidden">
                   {/* Decorative Seal Watermark Ring */}
                   <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full opacity-25 pointer-events-none">
                     <defs>
@@ -722,11 +722,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     </text>
                   </svg>
 
-                  {/* Full Uncropped Chinchero Chico Illustration (object-contain, min-h 240px) */}
+                  {/* Chinchero Chico illustration filling the whole showcase card */}
                   <img
                     src={featuredChinchero.image}
                     alt="Chinchero Chico"
-                    className="relative z-10 w-full h-[240px] object-contain object-top rounded-xl group-hover:scale-102 transition-transform duration-300"
+                    className="absolute inset-0 z-10 w-full h-full object-cover object-center group-hover:scale-102 transition-transform duration-300"
                   />
 
                   {/* Sound Quick Button */}
@@ -897,17 +897,18 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
                       {/* Vector Black SVG Silhouette when locked; Full Uncropped Photo (object-contain, min-h 240px) when unlocked */}
                       <div
-                        className={`relative min-h-[240px] rounded-xl overflow-hidden flex items-center justify-center border border-teal-500/40 mb-2 p-2 ${
+                        className={`relative min-h-[240px] rounded-xl overflow-hidden flex items-center justify-center border border-teal-500/40 mb-2 ${
                           isUnlocked
                             ? 'bg-[#E8FAF6]'
-                            : 'bg-gradient-to-b from-[#9CF0E0] via-[#6BD9C6] to-[#38B8A4]'
+                            : 'p-2 bg-gradient-to-b from-[#9CF0E0] via-[#6BD9C6] to-[#38B8A4]'
                         }`}
                       >
                         {isUnlocked ? (
                           <img
                             src={encodeURI(bird.image)}
+                            style={{ objectPosition: bird.imageFocus || 'center' }}
                             alt={bird.commonName}
-                            className="w-full h-[225px] object-contain object-top rounded-lg transition-all duration-300 hover:scale-105"
+                            className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-300 hover:scale-105"
                           />
                         ) : (
                           <BirdSilhouetteSvg bird={bird} size="card" />
@@ -1104,11 +1105,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     <Sparkles className="w-4 h-4" />
                     ¡RECONOCIMIENTO EXITOSO! (+50 XP)
                   </div>
-                  <div className="w-full min-h-[240px] rounded-xl bg-[#E8FAF6] border-2 border-amber-400 p-2 flex items-center justify-center shadow-lg">
+                  <div className="relative w-full min-h-[240px] rounded-xl overflow-hidden bg-[#E8FAF6] border-2 border-amber-400 flex items-center justify-center shadow-lg">
                     <img
                       src={encodeURI(audioTargetBird.image)}
+                      style={{ objectPosition: audioTargetBird.imageFocus || 'center' }}
                       alt={audioTargetBird.commonName}
-                      className="w-full h-[225px] object-contain object-top rounded-lg"
+                      className="absolute inset-0 w-full h-full object-cover object-center"
                     />
                   </div>
                   <p className="text-[11px]">
@@ -1465,11 +1467,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               <div className="relative min-h-[260px] rounded-2xl bg-gradient-to-b from-[#9CF0E0] via-[#5CD2BF] to-[#2BB5A0] border-2 border-teal-300 flex flex-col items-center justify-center p-3 text-center shadow-inner">
                 {silhouetteResult === 'correct' ? (
                   <div className="w-full flex flex-col items-center animate-scaleIn">
-                    <div className="w-full min-h-[240px] rounded-2xl bg-[#E8FAF6] border-3 border-amber-400 shadow-xl flex items-center justify-center p-2">
+                    <div className="relative w-full min-h-[240px] rounded-2xl overflow-hidden bg-[#E8FAF6] border-3 border-amber-400 shadow-xl flex items-center justify-center">
                       <img
                         src={encodeURI(localizedSilBird.image)}
+                        style={{ objectPosition: localizedSilBird.imageFocus || 'center' }}
                         alt={localizedSilBird.commonName}
-                        className="w-full h-[230px] object-contain object-top rounded-xl transition-all duration-500"
+                        className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-500"
                       />
                     </div>
                     <span className="text-xs font-black text-slate-950 bg-amber-300 px-3 py-1 rounded-full mt-2 uppercase shadow">
@@ -1686,11 +1689,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 </div>
 
                 {/* Full Uncropped Bird Photo Container (min-h 250px, object-contain, clean background) */}
-                <div className="relative w-full min-h-[250px] sm:min-h-[270px] rounded-2xl overflow-hidden border-3 border-amber-300 shadow-2xl bg-[#E8FAF6] flex items-center justify-center p-2.5 my-2">
+                <div className="relative w-full min-h-[250px] sm:min-h-[270px] rounded-2xl overflow-hidden border-3 border-amber-300 shadow-2xl bg-[#E8FAF6] flex items-center justify-center my-2">
                   <img
                     src={encodeURI(localizedInspBird.image)}
+                    style={{ objectPosition: localizedInspBird.imageFocus || 'center' }}
                     alt={localizedInspBird.commonName}
-                    className="w-full h-[240px] sm:h-[260px] object-contain object-top rounded-xl"
+                    className="absolute inset-0 w-full h-full object-cover object-center"
                   />
                 </div>
 

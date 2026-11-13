@@ -6,7 +6,7 @@ import './index.css';
 if ('caches' in window) {
   caches.keys().then((keys) => {
     keys.forEach((key) => {
-      if (key !== 'senal-nativa-pwa-v6') {
+      if (key !== 'senal-nativa-pwa-v7') {
         caches.delete(key);
       }
     });

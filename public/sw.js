@@ -1,11 +1,11 @@
-const CACHE_NAME = 'senal-nativa-pwa-v6';
+const CACHE_NAME = 'senal-nativa-pwa-v7';
 
 // Core static assets and 21 species photos + 21 real .mp3 calls to pre-cache for offline trail usage
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon.svg',
+  '/favicon-64.png',
   '/pwa-192x192.png',
   '/pwa-512x512.png',
   '/pwa-maskable-512x512.png',
@@ -16,6 +16,16 @@ const PRECACHE_ASSETS = [
   '/assets/aistudio/Remove_text_from_screen_248c7528_824b6a34.jpg',
   '/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg',
   '/assets/aistudio/c3da3f37-f246-40f4-8d25-1958fb93d2f1_0d2a7f41.jpeg',
+  '/assets/aistudio/chinchero_chico_portrait.jpg',
+  '/assets/aistudio/picaflor_comun.jpg',
+  '/assets/aistudio/picaflor_cometa.jpg',
+  '/assets/aistudio/urutau.jpg',
+  '/assets/aistudio/jote_real.jpg',
+  // Toucan guide voice lines (/assets/voz/)
+  '/assets/voz/tucan-saludo-menu-es.mp3',
+  '/assets/voz/tucan-saludo-menu-en.mp3',
+  '/assets/voz/tucan-bienvenida-es.mp3',
+  '/assets/voz/tucan-bienvenida-en.mp3',
   // 21 Bird Images (/assets/aves/)
   encodeURI('/assets/aves/1-Chingolo.jpg'),
   encodeURI('/assets/aves/2-Tangara sacaya.jpg'),
