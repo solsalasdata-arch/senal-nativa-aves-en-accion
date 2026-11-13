@@ -17,13 +17,15 @@ export const ToucanMindARViewer: React.FC<Props> = ({ onClose }) => {
 <html lang="es"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020617}
-a-scene{position:absolute!important;inset:0;width:100%;height:100%}
-video{object-fit:cover} .a-enter-vr,.a-enter-ar{display:none!important}</style>
+body{position:relative}
+video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:0!important;display:block!important;visibility:visible!important}
+a-scene{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:1!important;background:transparent!important}
+a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-ar{display:none!important}</style>
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"><\/script>
 </head><body>
 <a-scene mindar-image="imageTargetSrc: /ar/targets.mind; autoStart: true; uiLoading: no; uiScanning: no; uiError: no;"
- color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true" background="color: transparent"
+ color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true" background="color: #000000; transparent: true"
  vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
 <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
