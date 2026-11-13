@@ -332,8 +332,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     if (isOpen) {
       setArMode('checking');
       // Only MindAR or the legacy Gemini camera can own getUserMedia, never both.
-      // HEAD checks avoid starting a broken AR viewer before its binary assets are uploaded.
-      Promise.all(['/ar/targets.mind', '/models/tucan.glb'].map(async (path) => {
+      // HEAD check avoids starting MindAR until the image target file is available.
+      Promise.all(['/ar/targets.mind'].map(async (path) => {
         try {
           const response = await fetch(path, { method: 'HEAD', cache: 'no-store' });
           return response.ok && !response.headers.get('content-type')?.includes('text/html');
