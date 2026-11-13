@@ -29,6 +29,12 @@ const CATALOG_SPECIES = [
 ];
 
 const MAX_IMAGE_BASE64_LENGTH = 1_500_000;
+// Gemini rejects deadlines under 10 s. Two attempts must fit in the function's maxDuration
+// and in the time the viewer waits for an answer.
+const GEMINI_TIMEOUT_MS = 10_000;
+export const config = { maxDuration: 30 };
+const DEFAULT_MODEL = 'gemini-3.5-flash';
+const FALLBACK_MODEL = 'gemini-flash-latest';
 
 // Abuse limits on calls that reach Gemini. A whole school group can share one IP, so the per-IP
 // limit is generous. They live in this instance's memory and reset on a cold start: the hard
@@ -132,29 +138,40 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return send(res, 429, { error: 'rate_limited' });
   }
 
+  // Gemini often answers 503 "high demand" on one model while another is available
+  const primaryModel = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+  const models = [primaryModel, primaryModel === DEFAULT_MODEL ? FALLBACK_MODEL : DEFAULT_MODEL];
+
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || 'gemini-flash-latest',
-      contents: [
-        {
-          role: 'user',
-          parts: [{ inlineData: { mimeType: `image/${match[1]}`, data: match[2] } }, { text: PROMPT }]
+    const ask = (model: string) =>
+      ai.models.generateContent({
+        model,
+        contents: [
+          {
+            role: 'user',
+            parts: [{ inlineData: { mimeType: `image/${match[1]}`, data: match[2] } }, { text: PROMPT }]
+          }
+        ],
+        config: {
+          // Without a limit a stalled Gemini call keeps the viewer waiting
+          httpOptions: { timeout: GEMINI_TIMEOUT_MS },
+          temperature: 0,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              kind: { type: Type.STRING, enum: ['catalog', 'other_bird', 'no_bird'] },
+              catalogNumber: { type: Type.STRING },
+              name: { type: Type.STRING }
+            },
+            required: ['kind']
+          }
         }
-      ],
-      config: {
-        temperature: 0,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            kind: { type: Type.STRING, enum: ['catalog', 'other_bird', 'no_bird'] },
-            catalogNumber: { type: Type.STRING },
-            name: { type: Type.STRING }
-          },
-          required: ['kind']
-        }
-      }
+      });
+    const response = await ask(models[0]).catch((err) => {
+      console.error(`identify-bird: ${models[0]} failed, trying ${models[1]}`, err);
+      return ask(models[1]);
     });
 
     const answer = JSON.parse(response.text || '{}') as { kind?: string; catalogNumber?: string; name?: string };

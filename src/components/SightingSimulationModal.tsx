@@ -48,7 +48,7 @@ const SCAN_HINTS: Record<ScanState, string> = {
   detected: '',
   other_bird: 'Esta ave todavía no está en el catálogo',
   no_bird: 'No veo un ave. Apunta a una y busca de nuevo',
-  error: 'Sin conexión para identificar. Busca de nuevo',
+  error: 'No se pudo identificar ahora. Busca de nuevo',
   no_camera: 'Activa la cámara para identificar aves'
 };
 
@@ -191,7 +191,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
       let result: IdentifyBirdResult | null = null;
       const controller = new AbortController();
       scanAbortRef.current = controller;
-      const timeout = window.setTimeout(() => controller.abort(), 20000);
+      const timeout = window.setTimeout(() => controller.abort(), 25000);
       try {
         const res = await fetch('/api/identify-bird', {
           method: 'POST',
