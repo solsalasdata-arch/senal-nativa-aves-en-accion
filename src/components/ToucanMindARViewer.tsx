@@ -25,14 +25,9 @@ video{object-fit:cover} .a-enter-vr,.a-enter-ar{display:none!important}</style>
 <a-scene mindar-image="imageTargetSrc: /ar/targets.mind; autoStart: true; uiLoading: no; uiScanning: no; uiError: no;"
  color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
  vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
-<a-assets timeout="90000"><a-asset-item id="tucan" src="/models/tucan.glb"></a-asset-item></a-assets>
+
 <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-<a-entity mindar-image-target="targetIndex: 0" id="target">
-<a-entity gltf-model="#tucan" position="0 0 0.12" rotation="0 0 0" scale="0.25 0.25 0.25"
- animation="property: rotation; to: 0 360 0; loop: true; dur: 14000; easing: linear"></a-entity>
-</a-entity>
-<a-entity light="type: ambient; intensity: 1.5"></a-entity>
-<a-entity light="type: directional; intensity: 1.5" position="1 2 2"></a-entity>
+<a-entity mindar-image-target="targetIndex: 0" id="target"></a-entity>
 </a-scene>
 <script>
 (function(){
@@ -43,8 +38,6 @@ video{object-fit:cover} .a-enter-vr,.a-enter-ar{display:none!important}</style>
  const scene=document.querySelector('a-scene');
  scene.addEventListener('arReady',()=>notify('ready'));
  scene.addEventListener('arError',()=>notify('error','No se pudo iniciar MindAR o la cámara.'));
- const model=scene.querySelector('[gltf-model]');
- model.addEventListener('model-error',()=>notify('error','No se pudo cargar el modelo 3D.'));
  window.addEventListener('error',(event)=>notify('error',event.message));
 })();
 <\/script></body></html>`, []);
@@ -70,7 +63,7 @@ video{object-fit:cover} .a-enter-vr,.a-enter-ar{display:none!important}</style>
           className="absolute inset-0 w-full h-full border-0" />
         <header className="absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-slate-950/95 to-transparent p-4 pt-5 flex justify-between items-start">
           <div><p className="text-[10px] tracking-[.2em] font-black text-teal-300">SEÑAL NATIVA · VISOR XR</p>
-            <h2 className="text-white text-lg font-black">Explorá el tucán en 3D</h2></div>
+            <h2 className="text-white text-lg font-black">Descubrí al tucán</h2></div>
           <button type="button" onClick={onClose} aria-label="Cerrar visor XR"
             className="rounded-full bg-slate-900/90 text-white w-10 h-10 text-xl border border-white/30">×</button>
         </header>
@@ -81,10 +74,11 @@ video{object-fit:cover} .a-enter-vr,.a-enter-ar{display:none!important}</style>
         </div>
         {tracking === 'found' && tucan && (
           <section className="absolute bottom-5 inset-x-3 z-10 bg-slate-950/90 backdrop-blur-xl border border-teal-400/70 rounded-2xl p-4 text-white shadow-2xl">
-            <p className="text-[10px] font-black tracking-widest text-teal-300">AVE INSIGNIA DEL PARQUE</p>
+            <p className="text-[10px] font-black tracking-widest text-teal-300">IMAGEN RECONOCIDA · AVE INSIGNIA</p>
             <h3 className="font-black text-xl">{tucan.commonName}</h3>
             <p className="italic text-teal-200 text-sm">{tucan.scientificName}</p>
             <p className="text-xs text-slate-200 mt-2 leading-relaxed">{tucan.description}</p>
+            <p className="text-xs text-slate-200 mt-2"><strong>Hábitat:</strong> {tucan.habitat} · <strong>Alimentación:</strong> {tucan.diet}</p>
             <p className="text-xs text-teal-200 mt-2">{tucan.funFact}</p>
           </section>
         )}
