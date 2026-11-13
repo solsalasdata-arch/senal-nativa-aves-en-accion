@@ -23,7 +23,7 @@ video{object-fit:cover} .a-enter-vr,.a-enter-ar{display:none!important}</style>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"><\/script>
 </head><body>
 <a-scene mindar-image="imageTargetSrc: /ar/targets.mind; autoStart: true; uiLoading: no; uiScanning: no; uiError: no;"
- color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
+ color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true" background="color: transparent"
  vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
 <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -36,7 +36,7 @@ video{object-fit:cover} .a-enter-vr,.a-enter-ar{display:none!important}</style>
  target.addEventListener('targetFound',()=>notify('found'));
  target.addEventListener('targetLost',()=>notify('lost'));
  const scene=document.querySelector('a-scene');
- scene.addEventListener('arReady',()=>notify('ready'));
+ scene.addEventListener('arReady',()=>{\n  const renderer=scene.renderer;\n  if(renderer){renderer.setClearColor(0x000000,0);renderer.setClearAlpha(0);}\n  notify('ready');\n });
  scene.addEventListener('arError',()=>notify('error','No se pudo iniciar MindAR o la cámara.'));
  window.addEventListener('error',(event)=>notify('error',event.message));
 })();
