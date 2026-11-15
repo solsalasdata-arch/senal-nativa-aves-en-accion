@@ -48,7 +48,10 @@ export const ShopModal: React.FC<ShopModalProps> = ({
     birds: CatalogBird[];
   } | null>(null);
 
-  useModalEscape(isOpen, onClose);
+  useModalEscape(isOpen, () => {
+    if (activeSection === 'packs' && packRevealResult) setPackRevealResult(null);
+    else onClose();
+  });
 
   if (!isOpen) return null;
 

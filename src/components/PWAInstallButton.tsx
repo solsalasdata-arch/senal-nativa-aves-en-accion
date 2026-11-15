@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, Smartphone, WifiOff, X, Share } from 'lucide-react';
 import { useLanguage } from '../utils/i18n';
 import { soundManager } from '../utils/audio';
+import { useModalEscape } from './ui/useModalEscape';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -49,6 +50,7 @@ export const PWAInstallButton: React.FC<{ compact?: boolean }> = ({ compact = fa
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showHelperModal, setShowHelperModal] = useState(false);
+  useModalEscape(showHelperModal, () => setShowHelperModal(false));
 
   useEffect(() => {
     const checkStandalone =

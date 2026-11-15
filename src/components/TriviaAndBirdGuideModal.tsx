@@ -310,7 +310,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     return () => window.clearInterval(interval);
   }, [audioIsPlaying]);
 
-  useModalEscape(isOpen, onClose);
+  useModalEscape(isOpen, () => {
+    if (journalModalBird) setJournalModalBird(null);
+    else if (inspectingBird) setInspectingBird(null);
+    else if (silhouetteGameBird) setSilhouetteGameBird(null);
+    else onClose();
+  });
 
   if (!isOpen) return null;
 

@@ -441,7 +441,12 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     reader.readAsDataURL(file);
   };
 
-  useModalEscape(isOpen && arMode === 'legacy', onClose);
+  useModalEscape(isOpen && arMode === 'legacy', () => {
+    if (photoResult) setPhotoResult(null);
+    else if (showTutorial) closeTutorial();
+    else if (showBirdInfoSheet && !cleanViewMode && detectedBird) setShowBirdInfoSheet(false);
+    else onClose();
+  });
 
   if (!isOpen) return null;
   if (arMode === 'checking') return (

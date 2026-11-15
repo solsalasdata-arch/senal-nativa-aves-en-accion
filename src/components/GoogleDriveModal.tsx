@@ -120,7 +120,10 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
     }
   }, [isOpen, needsAuth, fetchFiles, searchQuery]);
 
-  useModalEscape(isOpen, onClose);
+  useModalEscape(isOpen, () => {
+    if (pendingConfirmation) setPendingConfirmation(null);
+    else onClose();
+  });
 
   if (!isOpen) return null;
 

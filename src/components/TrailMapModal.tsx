@@ -112,7 +112,13 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
     };
   }, [isOpen, showChallengeModal]);
 
-  useModalEscape(isOpen, onClose);
+  useModalEscape(isOpen, () => {
+    if (showRareBirdsModal) setShowRareBirdsModal(false);
+    else if (showChallengeModal) {
+      stopQrCamera();
+      setShowChallengeModal(false);
+    } else onClose();
+  });
 
   if (!isOpen) return null;
 

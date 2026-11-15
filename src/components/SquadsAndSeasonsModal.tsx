@@ -67,7 +67,11 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
   // Inspecting Special Event Exclusive Card
   const [inspectingEventCard, setInspectingEventCard] = useState<(typeof SPECIAL_EVENT_CARDS)[0] | null>(null);
 
-  useModalEscape(isOpen, onClose);
+  useModalEscape(isOpen, () => {
+    if (inspectingEventCard) setInspectingEventCard(null);
+    else if (activeTab === 'squads' && showCreateSquadForm) setShowCreateSquadForm(false);
+    else onClose();
+  });
 
   if (!isOpen) return null;
 
