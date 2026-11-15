@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { ModalHeader } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 import {
   X,
   Users,
@@ -62,16 +64,20 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
   onOpenQuiz
 }) => {
   const { tx } = useLanguage();
-  const [topSection, setTopSection] = useState<'yo_jugadores' | 'miro_flow' | 'character_study'>(initialMode);
+  const isAdmin = typeof location !== 'undefined' && new URLSearchParams(location.search).has('admin');
+  const allowedInitialMode = initialMode === 'miro_flow' && !isAdmin ? 'yo_jugadores' : initialMode;
+  const [topSection, setTopSection] = useState<'yo_jugadores' | 'miro_flow' | 'character_study'>(allowedInitialMode);
   const [profileSubTab, setProfileSubTab] = useState<'yo' | 'jugadores'>('yo');
   const [selectedStudyAngle, setSelectedStudyAngle] = useState<'flight' | 'frontal' | 'side' | 'back'>('flight');
   const [zoomBoard, setZoomBoard] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setTopSection(initialMode);
+      setTopSection(allowedInitialMode);
     }
-  }, [isOpen, initialMode]);
+  }, [isOpen, allowedInitialMode]);
+
+  useModalEscape(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -132,17 +138,21 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
   const activeAngleInfo = studyAngles.find(a => a.id === selectedStudyAngle) || studyAngles[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-black/90 backdrop-blur-md animate-fadeIn select-none">
-      <div className="relative w-full max-w-sm h-[94vh] max-h-[860px] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-teal-400 shadow-2xl">
+    <div role="dialog" aria-modal="true" aria-label={tx('Perfil y avatar', 'Profile and avatar')} className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
         {/* TOP NAVIGATION SWITCHER */}
-        <div className="px-3 py-2.5 bg-slate-950 border-b border-teal-900/80 flex items-center justify-between gap-1.5 shrink-0">
-          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-teal-800/60 flex-1">
+        <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title={tx('Perfil y avatar', 'Profile and avatar')} subtitle={tx('Tu explorador y tus compañeros', 'Your explorer and companions')} icon={<User aria-hidden="true" className="h-5 w-5" />} onClose={() => {
+              soundManager.playClick();
+              onClose();
+            }} /></div>
+        <div className="px-3 py-2.5 bg-surface-950 border-b border-teal-900/80 flex items-center justify-between gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 bg-surface-900 p-1 rounded-xl border border-teal-800/60 flex-1">
             <button
               onClick={() => {
                 soundManager.playClick();
                 setTopSection('yo_jugadores');
               }}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all flex items-center justify-center gap-1 ${
+              className={`min-h-11 min-w-11 flex-1 py-1.5 px-2 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all flex items-center justify-center gap-1 ${
                 topSection === 'yo_jugadores'
                   ? 'bg-amber-400 text-slate-950 shadow'
                   : 'text-teal-200 hover:text-white'
@@ -157,7 +167,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                 soundManager.playClick();
                 setTopSection('character_study');
               }}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all flex items-center justify-center gap-1 ${
+              className={`min-h-11 min-w-11 flex-1 py-1.5 px-2 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all flex items-center justify-center gap-1 ${
                 topSection === 'character_study'
                   ? 'bg-teal-400 text-slate-950 shadow'
                   : 'text-teal-200 hover:text-white'
@@ -167,12 +177,12 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
               <span>{tx('ESTUDIO 3D', '3D STUDY')}</span>
             </button>
 
-            <button
+            {isAdmin && <button
               onClick={() => {
                 soundManager.playClick();
                 setTopSection('miro_flow');
               }}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all flex items-center justify-center gap-1 ${
+              className={`min-h-11 min-w-11 flex-1 py-1.5 px-2 rounded-lg text-[11px] font-black uppercase tracking-wide transition-all flex items-center justify-center gap-1 ${
                 topSection === 'miro_flow'
                   ? 'bg-sky-400 text-slate-950 shadow'
                   : 'text-teal-200 hover:text-white'
@@ -180,36 +190,27 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
             >
               <Layers className="w-3 h-3" />
               <span>{tx('FLUJO MIRO', 'MIRO FLOW')}</span>
-            </button>
+            </button>}
           </div>
 
-          <LanguageSelector />
+          <div className="[&_button]:min-h-11 [&_button]:text-[11px]"><LanguageSelector /></div>
 
-          <button
-            onClick={() => {
-              soundManager.playClick();
-              onClose();
-            }}
-            className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700 shrink-0"
-            title={tx('Cerrar', 'Close')}
-          >
-            <X className="w-4 h-4" />
-          </button>
+
         </div>
 
         {/* =================================================================== */}
         {/* VISTA 1: PANTALLA "YO / JUGADORES" (DISEÑO EXACTO TABLERO DE MIRO) */}
         {/* =================================================================== */}
         {topSection === 'yo_jugadores' && (
-          <div className="relative flex-1 flex flex-col justify-between overflow-y-auto bg-gradient-to-b from-[#FDF6E2] via-[#F7E8C4] to-[#EED59A] text-slate-900 p-3.5">
+          <div className="pb-safe min-h-0 relative flex-1 flex flex-col justify-between overflow-y-auto bg-gradient-to-b from-[#FDF6E2] via-[#F7E8C4] to-[#EED59A] text-slate-900 p-3.5">
             {/* Sello de Agua del Parque Botánico en el Fondo */}
             <div className="pointer-events-none absolute -top-8 -left-8 w-56 h-56 rounded-full border-8 border-emerald-800/10 flex items-center justify-center opacity-25">
               <div className="w-44 h-44 rounded-full border-4 border-emerald-800/15 flex flex-col items-center justify-center text-center p-4">
-                <span className="text-[9px] font-black text-emerald-950 tracking-widest uppercase">
+                <span className="text-[11px] font-black text-emerald-950 tracking-widest uppercase">
                   PARQUE BOTÁNICO MUNICIPAL
                 </span>
                 <span className="text-3xl my-1">🌿</span>
-                <span className="text-[8px] font-black text-emerald-950 tracking-widest uppercase">
+                <span className="text-[11px] font-black text-emerald-950 tracking-widest uppercase">
                   BARÓN CARLOS MARÍA SCHUEL
                 </span>
               </div>
@@ -223,7 +224,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                     soundManager.playClick();
                     setProfileSubTab('yo');
                   }}
-                  className={`text-xs font-black uppercase tracking-wider pb-1 border-b-3 transition-all cursor-pointer ${
+                  className={`min-h-11 min-w-11 text-xs font-black uppercase tracking-wider pb-1 border-b-3 transition-all cursor-pointer ${
                     profileSubTab === 'yo'
                       ? 'text-emerald-950 border-amber-500 scale-105'
                       : 'text-slate-500 border-transparent hover:text-slate-800'
@@ -236,25 +237,25 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                     soundManager.playClick();
                     setProfileSubTab('jugadores');
                   }}
-                  className={`text-xs font-black uppercase tracking-wider pb-1 border-b-3 transition-all cursor-pointer flex items-center gap-1 ${
+                  className={`min-h-11 min-w-11 text-xs font-black uppercase tracking-wider pb-1 border-b-3 transition-all cursor-pointer flex items-center gap-1 ${
                     profileSubTab === 'jugadores'
                       ? 'text-emerald-950 border-amber-500 scale-105'
                       : 'text-slate-500 border-transparent hover:text-slate-800'
                   }`}
                 >
                   <span>{tx('JUGADORES', 'PLAYERS')}</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-900 text-[9px] font-black">
+                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-900 text-[11px] font-black">
                     {profiles.length}
                   </span>
                 </button>
               </div>
 
               {/* Logo "AVES EN ACCIÓN" esquina superior derecha */}
-              <div className="px-2.5 py-1 rounded-xl bg-gradient-to-b from-sky-500 to-teal-700 border-2 border-amber-300 shadow-md text-center">
+              <div className="px-2.5 py-1 rounded-xl bg-gradient-to-b from-sky-500 to-teal-700 border border-amber-300 shadow-md text-center">
                 <div className="text-[11px] font-black text-amber-300 leading-none tracking-wider drop-shadow">
                   {tx('AVES', 'BIRDS')}
                 </div>
-                <div className="text-[8px] font-black text-white leading-none tracking-widest">
+                <div className="text-[11px] font-black text-white leading-none tracking-widest">
                   {tx('EN ACCIÓN', 'IN ACTION')}
                 </div>
               </div>
@@ -270,9 +271,9 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                     </div>
                     <div className="text-xs font-extrabold text-amber-700 mt-0.5 flex items-center gap-1">
                       <span>&amp; {companionShortName}</span>
-                      <button
+                      <button aria-label={tx('Escuchar canto de tu ave compañera', 'Listen to your companion bird call')}
                         onClick={() => soundManager.playBirdSound(activeProfile.favoriteBird)}
-                        className="w-5 h-5 rounded-full bg-amber-400/80 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow"
+                        className="min-h-11 min-w-11 w-5 h-5 rounded-full bg-amber-400/80 hover:bg-amber-400 text-slate-950 flex items-center justify-center shadow"
                         title={tx('Escuchar canto de tu ave compañera', 'Listen to your companion bird call')}
                       >
                         <Volume2 className="w-3 h-3" />
@@ -296,7 +297,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                 <div className="relative z-10 grid grid-cols-12 gap-2 items-center my-1">
                   {/* Columna Izquierda (7 cols): Vista Oficial de Avatar de Cuerpo Entero con Ave en el Hombro */}
                   <div className="col-span-7 flex flex-col items-center">
-                    <div className="relative w-full h-56 rounded-3xl bg-slate-950 border-2 border-amber-500/70 flex flex-col items-center justify-center overflow-hidden shadow-xl">
+                    <div className="relative w-full h-56 rounded-3xl bg-surface-950 border border-amber-500/70 flex flex-col items-center justify-center overflow-hidden shadow-xl">
                       {(() => {
                         const avatarIsImage = !!(activeProfile.avatarIcon && activeProfile.avatarIcon.startsWith('/'));
                         const showCharacter = avatarIsImage && selectedStudyAngle === 'frontal';
@@ -324,7 +325,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                               selectedStudyAngle === 'frontal' ? 'flight' : 'frontal'
                             );
                           }}
-                          className="px-2 py-0.5 rounded-full bg-slate-950/90 text-amber-300 border border-amber-400/70 text-[8px] font-black uppercase shadow"
+                          className="min-h-11 min-w-11 px-2 py-0.5 rounded-full bg-surface-950 text-amber-300 border border-amber-400/70 text-[11px] font-black uppercase shadow"
                         >
                           {selectedStudyAngle === 'frontal'
                             ? tx('Ver Avatar YO', 'View ME Avatar')
@@ -332,7 +333,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                         </button>
                       </div>
                       {/* Etiqueta del Ave Compañera en el hombro */}
-                      <div className="absolute bottom-1.5 inset-x-2 px-2 py-0.5 rounded-full bg-slate-900/90 text-amber-300 text-[9px] font-black text-center truncate border border-amber-400/50">
+                      <div className="absolute bottom-1.5 inset-x-2 px-2 py-0.5 rounded-full bg-surface-900 text-amber-300 text-[11px] font-black text-center truncate border border-amber-400/50">
                         🦜 {tx('Compañera:', 'Companion:')} {activeProfile.favoriteBird}
                       </div>
                     </div>
@@ -340,8 +341,8 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
 
                   {/* Columna Derecha (5 cols): Globo de Diálogo + Tucán Guía + 3 Botones Circulares del Tablero ("HISTORIAL DE AVES", "DIARIO", "ACCESORIOS") */}
                   <div className="col-span-5 flex flex-col items-center justify-between h-full space-y-2">
-                    <div className="relative bg-white text-slate-900 p-2 rounded-2xl border-2 border-slate-900 shadow-lg text-center">
-                      <p className="text-[9.5px] font-black leading-snug">
+                    <div className="relative bg-white text-slate-900 p-2 rounded-2xl border border-slate-900 shadow-lg text-center">
+                      <p className="text-[11px] font-black leading-snug">
                         {tx(
                           '"Puedes hacer tu propio avatar teniendo como compañera a una de las aves"',
                           '"You can create your own avatar having one of the birds as your companion"'
@@ -350,7 +351,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                       <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
                     </div>
 
-                    <div className="relative w-20 h-20 rounded-full border-3 border-amber-500 overflow-hidden shadow-xl bg-teal-950">
+                    <div className="relative w-20 h-20 rounded-full border border-amber-500 overflow-hidden shadow-xl bg-teal-950">
                       <img
                         src="/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg"
                         alt="Tucán Guía"
@@ -359,7 +360,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                     </div>
 
                     {/* 3 Botones Circulares Oficiales del Prototipo: HISTORIAL DE AVES | DIARIO | ACCESORIOS */}
-                    <div className="grid grid-cols-3 gap-1 w-full pt-0.5">
+                    <div className="grid grid-cols-1 min-[440px]:grid-cols-3 gap-1 w-full pt-0.5">
                       <button
                         onClick={() => {
                           soundManager.playClick();
@@ -367,11 +368,11 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                             selectedStudyAngle === 'frontal' ? 'flight' : 'frontal'
                           );
                         }}
-                        className="flex flex-col items-center px-0.5 py-1 min-w-0 rounded-xl bg-teal-700 hover:bg-teal-600 text-white border border-amber-300 shadow"
+                        className="min-h-11 min-w-11 flex flex-col items-center px-0.5 py-1 min-w-0 rounded-xl bg-teal-700 hover:bg-teal-600 text-white border border-amber-300 shadow"
                         title={tx('Historial de Aves', 'Bird History')}
                       >
                         <BookOpen className="w-3.5 h-3.5 text-amber-300" />
-                        <span className="text-[6px] min-[400px]:text-[7px] tracking-tighter min-[400px]:tracking-normal font-black uppercase leading-tight mt-0.5 text-center">
+                        <span className="text-[11px] min-[400px]:text-[11px] tracking-tighter min-[400px]:tracking-normal font-black uppercase leading-tight mt-0.5 text-center">
                           {tx('HISTORIAL', 'BIRDS')}
                         </span>
                       </button>
@@ -382,11 +383,11 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                           onClose();
                           onOpenBirds();
                         }}
-                        className="flex flex-col items-center px-0.5 py-1 min-w-0 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-700 shadow"
+                        className="min-h-11 min-w-11 flex flex-col items-center px-0.5 py-1 min-w-0 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-700 shadow"
                         title={tx('Diario de Aventuras', 'Adventure Diary')}
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span className="text-[6px] min-[400px]:text-[7px] tracking-tighter min-[400px]:tracking-normal font-black uppercase leading-tight mt-0.5 text-center">
+                        <span className="text-[11px] min-[400px]:text-[11px] tracking-tighter min-[400px]:tracking-normal font-black uppercase leading-tight mt-0.5 text-center">
                           {tx('DIARIO', 'DIARY')}
                         </span>
                       </button>
@@ -397,11 +398,11 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                           onClose();
                           onOpenShop();
                         }}
-                        className="flex flex-col items-center px-0.5 py-1 min-w-0 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-amber-200 border border-amber-400 shadow"
+                        className="min-h-11 min-w-11 flex flex-col items-center px-0.5 py-1 min-w-0 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-amber-200 border border-amber-400 shadow"
                         title={tx('Tienda de Ropa y Accesorios', 'Clothing & Accessories Shop')}
                       >
                         <ShoppingBag className="w-3.5 h-3.5" />
-                        <span className="text-[6px] min-[400px]:text-[7px] tracking-tighter min-[400px]:tracking-normal font-black uppercase leading-tight mt-0.5 text-center">
+                        <span className="text-[11px] min-[400px]:text-[11px] tracking-tighter min-[400px]:tracking-normal font-black uppercase leading-tight mt-0.5 text-center">
                           {tx('ACCESORIOS', 'GEAR')}
                         </span>
                       </button>
@@ -412,10 +413,10 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                 {/* Selector Rápido de Ave Compañera y Personaje */}
                 <div className="relative z-10 bg-white/80 backdrop-blur-sm rounded-2xl p-2.5 border border-amber-700/25 space-y-2 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-emerald-950 uppercase">
+                    <span className="text-[11px] font-black text-emerald-950 uppercase">
                       {tx('Cambiar Ave Compañera en tu Hombro:', 'Change Shoulder Companion Bird:')}
                     </span>
-                    <span className="text-[9px] font-bold text-amber-800">
+                    <span className="text-[11px] font-bold text-amber-800">
                       {tx('Toca para elegir y escuchar', 'Tap to select & listen')}
                     </span>
                   </div>
@@ -429,7 +430,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                             soundManager.playBirdSound(bird.name);
                             onSelectCompanionBird(bird.name);
                           }}
-                          className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black shrink-0 border transition-all flex items-center gap-1 ${
+                          className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl text-[11px] font-black shrink-0 border transition-all flex items-center gap-1 ${
                             isSelected
                               ? 'bg-emerald-900 text-amber-300 border-amber-500 shadow'
                               : 'bg-amber-50 text-slate-800 border-amber-300 hover:bg-amber-100'
@@ -445,10 +446,10 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                   {/* Selector Rápido de Personaje */}
                   {onUpdateAvatar && (
                     <div className="pt-1 border-t border-amber-700/15 flex items-center justify-between gap-1.5">
-                      <span className="text-[9px] font-black text-slate-700 uppercase shrink-0">
+                      <span className="text-[11px] font-black text-slate-700 uppercase shrink-0">
                         {tx('Avatar:', 'Avatar:')}
                       </span>
-                      <div className="flex gap-1 overflow-x-auto">
+                      <div className="min-w-0 flex-1 flex gap-1 overflow-x-auto">
                         {EXPLORER_AVATARS.map((av) => {
                           const isCurrent = activeProfile.avatarId === av.id;
                           return (
@@ -458,7 +459,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                                 soundManager.playClick();
                                 onUpdateAvatar(av.id, av.icon, av.favoriteBird);
                               }}
-                              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 ${
+                              className={`min-h-11 min-w-11 shrink-0 whitespace-nowrap px-2 py-0.5 rounded-lg text-[11px] font-bold border flex items-center gap-1 ${
                                 isCurrent
                                   ? 'bg-amber-400 text-slate-950 border-amber-600 font-black'
                                   : 'bg-white text-slate-700 border-slate-300'
@@ -480,7 +481,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                     <span className="text-3xl font-black text-amber-500 drop-shadow-[0_2px_1px_rgba(0,0,0,0.35)]">
                       {activeProfile.level}
                     </span>
-                    <span className="text-[10px] font-black text-amber-900 uppercase">
+                    <span className="text-[11px] font-black text-amber-900 uppercase">
                       {tx('NIVEL', 'LEVEL')}
                     </span>
                   </div>
@@ -492,7 +493,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                         style={{ width: `${Math.min(100, Math.max(25, (activeProfile.xp % 200) / 2))}%` }}
                       />
                     </div>
-                    <div className="flex items-center justify-between text-[9px] font-black text-amber-900 mt-0.5">
+                    <div className="flex items-center justify-between text-[11px] font-black text-amber-900 mt-0.5">
                       <span>{activeProfile.xp.toLocaleString()} XP</span>
                       <span>
                         {tx('Avistamientos:', 'Sightings:')} {activeProfile.sightingsCompleted} ·{' '}
@@ -501,13 +502,13 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                     </div>
                   </div>
 
-                  <button
+                  <button aria-label={tx('Ir a Avistamiento XR con Prismáticos', 'Go to XR Sighting with Binoculars')}
                     onClick={() => {
                       soundManager.playClick();
                       onClose();
                       onOpenSighting();
                     }}
-                    className="w-11 h-11 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 border-2 border-slate-900 shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+                    className="min-h-11 min-w-11 w-11 h-11 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 border border-slate-900 shadow-lg flex items-center justify-center active:scale-95 transition-transform"
                     title={tx('Ir a Avistamiento XR con Prismáticos', 'Go to XR Sighting with Binoculars')}
                   >
                     <Binoculars className="w-5 h-5 stroke-[2.5]" />
@@ -516,7 +517,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
               </>
             ) : (
               /* PESTAÑA "JUGADORES" (LISTA DE EXPLORADORES Y ACCESO A CUADRILLAS) */
-              <div className="relative z-10 flex-1 flex flex-col justify-between py-2 space-y-2.5 overflow-y-auto">
+              <div className="pb-safe min-h-0 relative z-10 flex-1 flex flex-col justify-between py-2 space-y-2.5 overflow-y-auto">
                 <div className="space-y-2">
                   <div className="text-xs font-black text-emerald-950 uppercase">
                     {tx('Exploradores Registrados en el Parque:', 'Registered Explorers in the Park:')}
@@ -531,7 +532,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                           onSelectProfile(prof.id);
                           setProfileSubTab('yo');
                         }}
-                        className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                        className={`p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
                           isCurrent
                             ? 'bg-emerald-950 text-white border-amber-400 shadow-lg'
                             : 'bg-white/90 text-slate-900 border-amber-700/30 hover:border-emerald-700'
@@ -548,14 +549,14 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                                 &amp; {prof.favoriteBird}
                               </span>
                             </div>
-                            <div className={`text-[10px] ${isCurrent ? 'text-teal-200' : 'text-slate-600'}`}>
+                            <div className={`text-[11px] ${isCurrent ? 'text-teal-200' : 'text-slate-600'}`}>
                               {tx('Nivel', 'Level')} {prof.level} · {prof.xp} XP ·{' '}
                               {prof.completedCheckpoints?.length || 0}/8 {tx('Estaciones', 'Stations')}
                             </div>
                           </div>
                         </div>
                         {isCurrent && (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black">
+                          <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[11px] font-black">
                             {tx('ACTIVO', 'ACTIVE')}
                           </span>
                         )}
@@ -571,7 +572,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                       onClose();
                       onOpenSquads();
                     }}
-                    className="w-full py-2.5 px-3 rounded-2xl bg-emerald-900 hover:bg-emerald-800 text-amber-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
+                    className="min-h-11 min-w-11 w-full py-2.5 px-3 rounded-2xl bg-emerald-900 hover:bg-emerald-800 text-amber-300 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
                   >
                     <Users className="w-4 h-4" />
                     <span>{tx('Ver Cuadrillas Escolares y Ranking Amigable', 'View School Squads & Friendly Ranking')}</span>
@@ -583,7 +584,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
                       onClose();
                       onNavigateToScreen('screen2');
                     }}
-                    className="w-full py-2 px-3 rounded-2xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-1.5"
+                    className="min-h-11 min-w-11 w-full py-2 px-3 rounded-2xl bg-surface-900 text-white font-bold text-xs flex items-center justify-center gap-1.5"
                   >
                     <span>{tx('+ Crear Nuevo Perfil de Explorador', '+ Create New Explorer Profile')}</span>
                   </button>
@@ -680,7 +681,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
         {/* =================================================================== */}
         {/* VISTA 3: ARQUITECTURA Y DIAGRAMA DE FLUJO DEL TABLERO DE MIRO       */}
         {/* =================================================================== */}
-        {topSection === 'miro_flow' && (
+        {isAdmin && topSection === 'miro_flow' && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3 bg-slate-950 text-white">
             {/* Definición Oficial del Tablero de Miro: Sistema de Estaciones Digitales de 3 Capas */}
             <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-950 via-slate-900 to-emerald-950 border-2 border-teal-400/70 space-y-2 shadow-lg">

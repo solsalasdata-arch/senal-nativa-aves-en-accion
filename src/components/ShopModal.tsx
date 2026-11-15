@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { ModalHeader } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 import {
   ShoppingBag,
   X,
@@ -46,6 +48,11 @@ export const ShopModal: React.FC<ShopModalProps> = ({
     birds: CatalogBird[];
   } | null>(null);
 
+  useModalEscape(isOpen, () => {
+    if (activeSection === 'packs' && packRevealResult) setPackRevealResult(null);
+    else onClose();
+  });
+
   if (!isOpen) return null;
 
   const SOUVENIR_ITEMS = [
@@ -91,34 +98,14 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-3 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
-      <div className="relative w-full max-w-sm max-h-[94vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-teal-500 shadow-2xl">
+    <div role="dialog" aria-modal="true" aria-label="TIENDA BOTÁNICA SCHUEL" className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
         {/* Header */}
-        <div className="px-4 py-3 bg-slate-950 border-b border-teal-900/60 shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 shadow">
-                <ShoppingBag className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-black text-xs sm:text-sm text-white uppercase tracking-wider">
-                  TIENDA BOTÁNICA SCHUEL
-                </h3>
-                <p className="text-[10px] text-teal-300 font-semibold">
-                  Ropa de Avatar, Kiosco de Souvenirs y Sobres
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
+        <div className="px-4 py-3 bg-surface-950 border-b border-teal-900/60 shrink-0">
+          <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title="TIENDA BOTÁNICA SCHUEL" subtitle="Ropa de Avatar, Kiosco de Souvenirs y Sobres" icon={<ShoppingBag aria-hidden="true" className="h-5 w-5" />} onClose={() => {
                 soundManager.playClick();
                 onClose();
-              }}
-              className="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-teal-200 hover:text-white text-[10px] font-bold flex items-center gap-1 border border-teal-700/60 shrink-0 shadow active:scale-95 transition-all"
-            >
-              <span>← Volver al Menú</span>
-            </button>
-          </div>
+              }} /></div>
 
           {/* Player Avatar Preview + Active XP Balance */}
           <div className="mt-2 p-2 rounded-2xl bg-gradient-to-r from-teal-950 via-slate-900 to-teal-950 border border-teal-700/60 flex items-center justify-between gap-2">
@@ -134,7 +121,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                   {SHOP_ITEMS.filter(item => equippedList.includes(item.id)).map(eq => (
                     <span
                       key={eq.id}
-                      className="text-[10px] px-1.5 py-0.2 rounded bg-slate-950 border border-teal-500/50 text-teal-200 font-bold"
+                      className="text-[11px] px-1.5 py-0.2 rounded bg-surface-950 border border-teal-500/50 text-teal-200 font-bold"
                       title={eq.name}
                     >
                       {eq.icon}
@@ -145,7 +132,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
             </div>
 
             <div className="text-right shrink-0 bg-amber-500/20 border border-amber-400/70 px-3 py-1 rounded-xl">
-              <span className="text-[8px] font-black text-amber-200 block uppercase">
+              <span className="text-[11px] font-black text-amber-200 block uppercase">
                 SALDO DISPONIBLE
               </span>
               <span className="text-sm font-black text-amber-300">
@@ -155,13 +142,13 @@ export const ShopModal: React.FC<ShopModalProps> = ({
           </div>
 
           {/* Section Switcher: Tienda de Ropa | Tienda de Souvenirs | Sobres de Siluetas */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900 rounded-xl border border-teal-900/80 mt-2 text-[9.5px] font-black">
+          <div className="grid grid-cols-3 gap-1 p-1 bg-surface-900 rounded-xl border border-teal-900/80 mt-2 text-[11px] font-black">
             <button
               onClick={() => {
                 soundManager.playClick();
                 setActiveSection('gear');
               }}
-              className={`py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
                 activeSection === 'gear'
                   ? 'bg-teal-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
@@ -174,7 +161,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 soundManager.playClick();
                 setActiveSection('souvenirs');
               }}
-              className={`py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
                 activeSection === 'souvenirs'
                   ? 'bg-emerald-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
@@ -187,7 +174,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 soundManager.playClick();
                 setActiveSection('packs');
               }}
-              className={`py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${
                 activeSection === 'packs'
                   ? 'bg-amber-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
@@ -203,15 +190,15 @@ export const ShopModal: React.FC<ShopModalProps> = ({
         {/* SECCIÓN A: TIENDA DE ROPA Y EQUIPO PARA EL AVATAR */}
         {/* ============================================================== */}
         {activeSection === 'gear' && (
-          <div className="p-3.5 space-y-2.5 flex-1 overflow-y-auto">
+          <div className="pb-safe min-h-0 p-3.5 space-y-2.5 flex-1 overflow-y-auto">
             {/* Lámina Oficial "TIENDA DE ROPA" de public/assets/aistudio/ */}
-            <div className="relative rounded-2xl overflow-hidden border-2 border-amber-400/70 bg-slate-950 shadow-lg">
+            <div className="ui-card relative rounded-2xl overflow-hidden border border-amber-400/70 bg-surface-950 shadow-lg">
               <img
                 src="/assets/aistudio/Clothing_store_fc9dbebd.jpg"
                 alt="Tienda de Ropa Oficial"
                 className="w-full h-44 object-cover object-top"
               />
-              <div className="p-2 bg-slate-950/90 border-t border-teal-800/70 flex items-center justify-between text-[10px]">
+              <div className="p-2 bg-surface-950 border-t border-teal-800/70 flex items-center justify-between text-[11px]">
                 <span className="font-black text-amber-300 uppercase">
                   "¡Aquí puedes comprar ropa y accesorios para tu aventura!"
                 </span>
@@ -229,13 +216,13 @@ export const ShopModal: React.FC<ShopModalProps> = ({
               return (
                 <div
                   key={item.id}
-                  className={`border rounded-2xl p-3 flex items-center justify-between gap-3 transition-all ${
+                  className={`ui-card border rounded-2xl p-3 flex items-center justify-between gap-3 transition-all ${
                     isEquipped
                       ? 'bg-teal-950/70 border-teal-400 shadow-lg'
-                      : 'bg-slate-950/90 border-teal-900/60'
+                      : 'bg-surface-950 border-teal-900/60'
                   }`}
                 >
-                  <div className="text-2xl w-12 h-12 rounded-2xl bg-slate-900 border border-teal-700/50 flex items-center justify-center shrink-0 shadow-inner">
+                  <div className="text-2xl w-12 h-12 rounded-2xl bg-surface-900 border border-teal-700/50 flex items-center justify-center shrink-0 shadow-inner">
                     {item.icon}
                   </div>
 
@@ -245,14 +232,14 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                         {item.name}
                       </h4>
                     </div>
-                    <p className="text-[10px] text-slate-300 leading-snug mt-0.5">
+                    <p className="text-[11px] text-slate-300 leading-snug mt-0.5">
                       {item.description}
                     </p>
-                    <div className="mt-1 flex items-center gap-2 text-[10px] font-black">
+                    <div className="mt-1 flex items-center gap-2 text-[11px] font-black">
                       {item.cost === 0 ? (
-                        <span className="text-emerald-400">Equipada por defecto</span>
+                        <span className="ui-chip text-emerald-400">Equipada por defecto</span>
                       ) : isPurchased ? (
-                        <span className="text-teal-300">✓ Adquirida ({item.cost} XP)</span>
+                        <span className="ui-chip text-teal-300">✓ Adquirida ({item.cost} XP)</span>
                       ) : (
                         <span className="text-amber-400">Costo: {item.cost} XP</span>
                       )}
@@ -266,7 +253,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                           soundManager.playClick();
                           onEquipItem(item.id, 0);
                         }}
-                        className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black flex items-center gap-1 border transition-all cursor-pointer ${
+                        className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl text-[11px] font-black flex items-center gap-1 border transition-all cursor-pointer ${
                           isEquipped
                             ? 'bg-emerald-950 text-emerald-300 border-emerald-400 shadow'
                             : 'bg-slate-800 text-teal-200 border-teal-600 hover:bg-teal-900'
@@ -282,7 +269,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                           soundManager.playSuccess();
                           onEquipItem(item.id, item.cost);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${
+                        className={`min-h-11 min-w-11 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${
                           canAfford
                             ? 'game-btn-orange text-white cursor-pointer shadow-lg'
                             : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed flex items-center gap-1'
@@ -303,15 +290,15 @@ export const ShopModal: React.FC<ShopModalProps> = ({
         {/* SECCIÓN NUEVA: TIENDA DE SOUVENIRS DEL PARQUE BOTÁNICO */}
         {/* ============================================================== */}
         {activeSection === 'souvenirs' && (
-          <div className="p-3.5 space-y-2.5 flex-1 overflow-y-auto">
+          <div className="pb-safe min-h-0 p-3.5 space-y-2.5 flex-1 overflow-y-auto">
             {/* Lámina Oficial "TIENDA DE SOUVENIRS" de public/assets/aistudio/ */}
-            <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-400/80 bg-slate-950 shadow-xl">
+            <div className="ui-card relative rounded-2xl overflow-hidden border border-emerald-400/80 bg-surface-950 shadow-xl">
               <img
                 src="/assets/aistudio/Change_bird_avatar_to_store_10abc5a2.jpg"
                 alt="Tienda de Souvenirs Parque Botánico"
                 className="w-full h-48 object-cover object-top"
               />
-              <div className="p-2.5 bg-slate-950/95 border-t border-emerald-800 text-[10px] text-emerald-200 font-bold leading-snug">
+              <div className="p-2.5 bg-surface-950 border-t border-emerald-800 text-[11px] text-emerald-200 font-bold leading-snug">
                 🦜 "¡Hola {playerState.name}! Puedes reservar cualquiera de los productos de la Tienda de Souvenirs para recogerlos a la salida del Parque Botánico."
               </div>
             </div>
@@ -323,23 +310,23 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 return (
                   <div
                     key={souv.id}
-                    className={`p-2 rounded-2xl border flex flex-col items-center justify-between text-center transition-all ${
+                    className={`ui-card p-2 rounded-2xl border flex flex-col items-center justify-between text-center transition-all ${
                       isReserved
                         ? 'bg-emerald-950/90 border-amber-400 shadow-md'
-                        : 'bg-slate-950/90 border-teal-900/70'
+                        : 'bg-surface-950 border-teal-900/70'
                     }`}
                   >
                     <div className="text-2xl my-1">{souv.icon}</div>
-                    <div className="text-[9.5px] font-black text-white leading-tight line-clamp-2">
+                    <div className="text-[11px] font-black text-white leading-tight line-clamp-2">
                       {souv.name}
                     </div>
-                    <div className="text-[9px] font-black text-amber-300 my-1">
+                    <div className="text-[11px] font-black text-amber-300 my-1">
                       ⭐ {souv.cost} XP
                     </div>
                     <button
                       disabled={isReserved || !canAfford}
                       onClick={() => handleReserveSouvenir(souv.id, souv.cost)}
-                      className={`w-full py-1 rounded-lg text-[9px] font-black uppercase ${
+                      className={`min-h-11 min-w-11 w-full py-1 rounded-lg text-[11px] font-black uppercase ${
                         isReserved
                           ? 'bg-emerald-700 text-white'
                           : canAfford
@@ -360,24 +347,24 @@ export const ShopModal: React.FC<ShopModalProps> = ({
         {/* SECCIÓN B: SOBRES DE SILUETAS (SOBRE SELVA MONTANA - 100 XP) */}
         {/* ============================================================== */}
         {activeSection === 'packs' && (
-          <div className="p-3.5 space-y-3 flex-1 overflow-y-auto">
+          <div className="pb-safe min-h-0 p-3.5 space-y-3 flex-1 overflow-y-auto">
             <div className="flex items-center justify-between px-1">
               <span className="text-[11px] font-black text-amber-300 uppercase tracking-wider">
                 b) Sobres de Siluetas de la Guía
               </span>
-              <span className="text-[10px] text-teal-300 font-bold">
+              <span className="text-[11px] text-teal-300 font-bold">
                 Pistas gratis: {freeHintsCount}
               </span>
             </div>
 
             {/* Featured Card: Sobre Selva Montana (100 XP) */}
-            <div className="relative rounded-3xl overflow-hidden border-2 border-amber-400 bg-gradient-to-b from-emerald-950 via-slate-950 to-slate-950 p-4 shadow-xl space-y-3">
+            <div className="relative rounded-3xl overflow-hidden border border-amber-400 bg-gradient-to-b from-emerald-950 via-slate-950 to-slate-950 p-4 shadow-xl space-y-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center text-3xl shadow-lg shrink-0 border-2 border-amber-200">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center text-3xl shadow-lg shrink-0 border border-amber-200">
                   🃏
                 </div>
                 <div className="flex-1">
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/60 text-[9px] font-black text-amber-300 uppercase">
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/60 text-[11px] font-black text-amber-300 uppercase">
                     COLECCIÓN YUNGAS · 100 XP
                   </span>
                   <h4 className="text-sm font-black text-white uppercase mt-1">
@@ -390,14 +377,14 @@ export const ShopModal: React.FC<ShopModalProps> = ({
               </div>
 
               {/* Preview of the 6 Selva Montana Pack Species */}
-              <div className="p-2.5 rounded-2xl bg-slate-900/90 border border-teal-800/70 space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-black text-teal-300">
+              <div className="p-2.5 rounded-2xl bg-surface-900 border border-teal-800/70 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-black text-teal-300">
                   <span>Especies del Sobre Selva Montana:</span>
                   <span className="text-amber-300">
                     {addedPackIds.length}/{PACK_EXTRA_BIRDS_DATA.length} en catálogo
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <div className="grid grid-cols-2 gap-1 text-[11px]">
                   {PACK_EXTRA_BIRDS_DATA.map(b => {
                     const isAdded = addedPackIds.includes(b.id);
                     return (
@@ -406,7 +393,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                         className={`px-2 py-1 rounded-lg border flex items-center gap-1.5 truncate ${
                           isAdded
                             ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-200 font-bold'
-                            : 'bg-slate-950 border-slate-800 text-slate-400'
+                            : 'bg-surface-950 border-slate-800 text-slate-400'
                         }`}
                       >
                         <span>{b.silhouetteIcon}</span>
@@ -424,7 +411,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 <button
                   disabled={!canAffordPack || remainingPackBirds.length === 0}
                   onClick={() => handleOpenPack('silhouettes')}
-                  className={`w-full py-3 px-3 rounded-2xl text-xs font-black uppercase tracking-wide flex items-center justify-between transition-all ${
+                  className={`min-h-11 min-w-11 w-full py-3 px-3 rounded-2xl text-xs font-black uppercase tracking-wide flex items-center justify-between transition-all ${
                     canAffordPack && remainingPackBirds.length > 0
                       ? 'game-btn-orange text-white cursor-pointer shadow-lg'
                       : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
@@ -438,7 +425,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                         : '¡6/6 Siluetas del Sobre ya agregadas!'}
                     </span>
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-black/30 text-amber-200 text-[10px] shrink-0">
+                  <span className="px-2 py-0.5 rounded bg-black/30 text-amber-200 text-[11px] shrink-0">
                     100 XP
                   </span>
                 </button>
@@ -447,7 +434,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 <button
                   disabled={!canAffordPack}
                   onClick={() => handleOpenPack('hints')}
-                  className={`w-full py-2.5 px-3 rounded-2xl text-xs font-black uppercase tracking-wide flex items-center justify-between transition-all border ${
+                  className={`min-h-11 min-w-11 w-full py-2.5 px-3 rounded-2xl text-xs font-black uppercase tracking-wide flex items-center justify-between transition-all border ${
                     canAffordPack
                       ? ' game-btn-mint text-emerald-950 border-teal-300 cursor-pointer shadow'
                       : 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed'
@@ -457,14 +444,14 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                     <Sparkles className="w-4 h-4 shrink-0" />
                     <span>Canjear Sobre: Revelar +2 Pistas Gratis</span>
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-950 text-[10px] shrink-0 font-black">
+                  <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-950 text-[11px] shrink-0 font-black">
                     100 XP
                   </span>
                 </button>
               </div>
 
               {!canAffordPack && (
-                <p className="text-[10px] text-amber-300/90 text-center">
+                <p className="text-[11px] text-amber-300/90 text-center">
                   Necesitas 100 XP para abrir un Sobre Selva Montana (tienes {playerState.xp} XP). ¡Suma XP en Avistamientos, Mapa o Diario!
                 </p>
               )}
@@ -472,7 +459,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
 
             {/* Pack Opening Reveal Banner */}
             {packRevealResult && (
-              <div className="p-3.5 rounded-2xl bg-emerald-950 border-2 border-amber-400 text-white space-y-2 animate-fadeIn shadow-xl">
+              <div className="p-3.5 rounded-2xl bg-emerald-950 border border-amber-400 text-white space-y-2 animate-fadeIn shadow-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-amber-300 uppercase flex items-center gap-1.5">
                     <Award className="w-4 h-4" />
@@ -480,7 +467,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                   </span>
                   <button
                     onClick={() => setPackRevealResult(null)}
-                    className="text-slate-400 hover:text-white text-xs"
+                    className="min-h-11 min-w-11 text-slate-400 hover:text-white text-xs"
                   >
                     ✕
                   </button>
@@ -495,13 +482,13 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                       {packRevealResult.birds.map(b => (
                         <div
                           key={b.id}
-                          className="p-2 rounded-xl bg-slate-900 border border-teal-500/60 text-center"
+                          className="p-2 rounded-xl bg-surface-900 border border-teal-500/60 text-center"
                         >
                           <div className="text-xl">{b.silhouetteIcon}</div>
-                          <div className="text-[10px] font-black text-white leading-tight mt-1">
+                          <div className="text-[11px] font-black text-white leading-tight mt-1">
                             {b.commonName}
                           </div>
-                          <div className="text-[8px] text-teal-300">#{b.catalogNumber}</div>
+                          <div className="text-[11px] text-teal-300">#{b.catalogNumber}</div>
                         </div>
                       ))}
                     </div>
@@ -519,7 +506,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                       onClose();
                       onOpenBirdsCatalog();
                     }}
-                    className="w-full py-2 rounded-xl game-btn-orange text-white text-[11px] font-black uppercase flex items-center justify-center gap-1.5 mt-1"
+                    className="min-h-11 min-w-11 w-full py-2 rounded-xl game-btn-orange text-white text-[11px] font-black uppercase flex items-center justify-center gap-1.5 mt-1"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>Ir al Catálogo de Aves Ahora</span>

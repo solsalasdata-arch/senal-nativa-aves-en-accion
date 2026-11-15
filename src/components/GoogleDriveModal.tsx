@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ModalHeader, EmptyState } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 import {
   Cloud,
   X,
@@ -117,6 +119,11 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
       fetchFiles(searchQuery);
     }
   }, [isOpen, needsAuth, fetchFiles, searchQuery]);
+
+  useModalEscape(isOpen, () => {
+    if (pendingConfirmation) setPendingConfirmation(null);
+    else onClose();
+  });
 
   if (!isOpen) return null;
 
@@ -330,36 +337,16 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
-      <div className="relative w-full max-w-sm max-h-[92vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-teal-400 shadow-2xl">
+    <div role="dialog" aria-modal="true" aria-label="GOOGLE DRIVE · NUBE CIENTÍFICA" className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-950 border-b border-teal-900/60 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-teal-500/20 border border-teal-400 flex items-center justify-center text-teal-300">
-              <Cloud className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-black text-xs text-white uppercase tracking-wider">
-                GOOGLE DRIVE · NUBE CIENTÍFICA
-              </h3>
-              <p className="text-[10px] text-teal-300">
-                Sincronización de Diario de Campo y Archivos
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => {
+        <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title="GOOGLE DRIVE · NUBE CIENTÍFICA" subtitle="Sincronización de Diario de Campo y Archivos" icon={<Cloud aria-hidden="true" className="h-5 w-5" />} onClose={() => {
               soundManager.playClick();
               onClose();
-            }}
-            className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+            }} /></div>
 
         {/* Body */}
-        <div className="p-3.5 space-y-3 flex-1 overflow-y-auto text-xs text-slate-200">
+        <div className="pb-safe min-h-0 p-3.5 space-y-3 flex-1 overflow-y-auto text-xs text-slate-200">
           {/* Status Alert */}
           {statusMessage && (
             <div
@@ -378,7 +365,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
 
           {needsAuth ? (
             /* UNAUTHENTICATED VIEW WITH OFFICIAL GOOGLE SIGN-IN BUTTON */
-            <div className="p-4 rounded-2xl bg-slate-950/90 border border-teal-800/60 text-center space-y-3">
+            <div className="ui-card p-4 rounded-2xl bg-surface-950 border border-teal-800/60 text-center space-y-3">
               <div className="w-14 h-14 rounded-full bg-teal-900/50 border border-teal-400/50 mx-auto flex items-center justify-center text-teal-300">
                 <Cloud className="w-7 h-7" />
               </div>
@@ -395,7 +382,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                 <button
                   onClick={handleLogin}
                   disabled={isLoggingIn}
-                  className="gsi-material-button"
+                  className="min-h-11 min-w-11 gsi-material-button"
                 >
                   <div className="gsi-material-button-state"></div>
                   <div className="gsi-material-button-content-wrapper">
@@ -438,7 +425,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
             /* AUTHENTICATED GOOGLE DRIVE DASHBOARD */
             <>
               {/* Connected User Strip */}
-              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950 border border-teal-800/70">
+              <div className="ui-card flex items-center justify-between p-2.5 rounded-2xl bg-surface-950 border border-teal-800/70">
                 <div className="flex items-center gap-2 min-w-0">
                   {user?.photoURL ? (
                     <img
@@ -455,14 +442,14 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                     <div className="text-xs font-bold text-white truncate">
                       {user?.displayName || 'Explorador Conectado'}
                     </div>
-                    <div className="text-[10px] text-teal-300 truncate">
+                    <div className="text-[11px] text-teal-300 truncate">
                       {user?.email}
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold flex items-center gap-1 border border-slate-700 shrink-0"
+                  className="min-h-11 min-w-11 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center gap-1 border border-slate-700 shrink-0"
                   title="Cerrar sesión de Google"
                 >
                   <LogOut className="w-3 h-3 text-rose-400" />
@@ -477,7 +464,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                     <Sparkles className="w-3.5 h-3.5" />
                     Exportar Expedición ({activeProfile.name})
                   </span>
-                  <span className="text-[10px] text-teal-200 font-bold">
+                  <span className="text-[11px] text-teal-200 font-bold">
                     {(activeProfile.fieldJournal || []).length} registros
                   </span>
                 </div>
@@ -486,7 +473,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                   <button
                     onClick={() => handleExportToDrive('txt')}
                     disabled={isProcessing}
-                    className="p-2.5 rounded-xl game-btn-mint text-emerald-950 font-black text-[11px] flex flex-col items-center justify-center gap-1 shadow disabled:opacity-50"
+                    className="min-h-11 min-w-11 p-2.5 rounded-xl game-btn-mint text-emerald-950 font-black text-[11px] flex flex-col items-center justify-center gap-1 shadow disabled:opacity-50"
                   >
                     <FileText className="w-4 h-4" />
                     <span>Reporte Diario (.TXT)</span>
@@ -495,7 +482,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                   <button
                     onClick={() => handleExportToDrive('json')}
                     disabled={isProcessing}
-                    className="p-2.5 rounded-xl game-btn-orange text-white font-black text-[11px] flex flex-col items-center justify-center gap-1 shadow disabled:opacity-50"
+                    className="min-h-11 min-w-11 p-2.5 rounded-xl game-btn-orange text-white font-black text-[11px] flex flex-col items-center justify-center gap-1 shadow disabled:opacity-50"
                   >
                     <Upload className="w-4 h-4" />
                     <span>Respaldo Perfil (.JSON)</span>
@@ -509,10 +496,10 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                   <span className="text-[11px] font-black text-teal-300 uppercase">
                     Tus Archivos en Google Drive
                   </span>
-                  <button
+                  <button aria-label="Actualizar lista"
                     onClick={() => fetchFiles(searchQuery)}
                     disabled={isLoadingFiles}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700"
+                    className="min-h-11 min-w-11 p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700"
                     title="Actualizar lista"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFiles ? 'animate-spin' : ''}`} />
@@ -527,20 +514,18 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Buscar archivos en tu Drive..."
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-teal-900 text-xs text-white placeholder-slate-500 focus:border-teal-400 outline-none"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-surface-950 border border-teal-900 text-xs text-white placeholder-slate-500 focus:border-teal-400 outline-none"
                   />
                 </div>
 
                 {/* Files List */}
-                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
+                <div className="pb-safe min-h-0 space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
                   {isLoadingFiles ? (
                     <div className="p-6 text-center text-slate-400 text-xs">
                       Consultando archivos de Google Drive...
                     </div>
                   ) : files.length === 0 ? (
-                    <div className="p-5 rounded-xl bg-slate-950/70 border border-slate-800 text-center text-slate-400 text-[11px]">
-                      No se encontraron archivos que coincidan con la búsqueda.
-                    </div>
+                    <EmptyState title="Sin archivos" text="No se encontraron archivos que coincidan con la búsqueda." />
                   ) : (
                     files.map((file) => {
                       const isJson =
@@ -548,7 +533,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                       return (
                         <div
                           key={file.id}
-                          className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 hover:border-teal-700/70 flex items-center justify-between gap-2"
+                          className="p-2.5 rounded-xl bg-surface-950 border border-slate-800 hover:border-teal-700/70 flex items-center justify-between gap-2"
                         >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {isJson ? (
@@ -560,7 +545,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                               <div className="text-xs font-bold text-white truncate">
                                 {file.name}
                               </div>
-                              <div className="text-[9px] text-slate-400 truncate">
+                              <div className="text-[11px] text-slate-400 truncate">
                                 {file.modifiedTime
                                   ? new Date(file.modifiedTime).toLocaleString()
                                   : file.mimeType}
@@ -573,7 +558,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                               <button
                                 onClick={() => handleImportFromDrive(file)}
                                 disabled={isProcessing}
-                                className="px-2 py-1 rounded-lg bg-teal-900/80 hover:bg-teal-800 text-teal-200 text-[10px] font-bold border border-teal-600/50 flex items-center gap-1"
+                                className="min-h-11 min-w-11 px-2 py-1 rounded-lg bg-teal-900/80 hover:bg-teal-800 text-teal-200 text-[11px] font-bold border border-teal-600/50 flex items-center gap-1"
                                 title="Restaurar este respaldo en el perfil activo"
                               >
                                 <Download className="w-3 h-3" />
@@ -593,13 +578,13 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                               </a>
                             )}
 
-                            <button
+                            <button aria-label="Eliminar de Google Drive"
                               onClick={() => {
                                 soundManager.playClick();
                                 setPendingConfirmation({ type: 'delete', file });
                               }}
                               disabled={isProcessing}
-                              className="p-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/60"
+                              className="min-h-11 min-w-11 p-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/60"
                               title="Eliminar de Google Drive"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -617,8 +602,8 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
 
         {/* MANDATORY EXPLICIT CONFIRMATION DIALOG FOR MUTATING / DESTRUCTIVE OPERATIONS */}
         {pendingConfirmation && (
-          <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-            <div className="w-full max-w-xs rounded-2xl bg-slate-900 border-2 border-amber-400 p-4 space-y-3 text-center shadow-2xl">
+          <div className="absolute inset-0 z-50 bg-black/90  flex items-center justify-center p-4 animate-fadeIn">
+            <div className="w-full max-w-xs rounded-2xl bg-surface-900 border border-amber-400 p-4 space-y-3 text-center shadow-2xl">
               <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-400 mx-auto flex items-center justify-center text-amber-300">
                 <AlertTriangle className="w-6 h-6" />
               </div>
@@ -651,13 +636,13 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                     soundManager.playClick();
                     setPendingConfirmation(null);
                   }}
-                  className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700"
+                  className="min-h-11 min-w-11 flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleConfirmPendingAction}
-                  className={`flex-1 py-2 rounded-xl font-black text-xs text-white ${
+                  className={`min-h-11 min-w-11 flex-1 py-2 rounded-xl font-black text-xs text-white ${
                     pendingConfirmation.type === 'delete'
                       ? 'bg-rose-600 hover:bg-rose-500 border border-rose-400'
                       : 'game-btn-orange'

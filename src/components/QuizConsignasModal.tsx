@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { ModalHeader } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 import {
   HelpCircle,
   X,
@@ -41,6 +43,8 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
   const [score, setScore] = useState(0);
   const [answersStatus, setAnswersStatus] = useState<boolean[]>([]);
   const [isQuizCompleted, setIsQuizCompleted] = useState(false);
+
+  useModalEscape(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -96,34 +100,16 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-sm max-h-[94vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-teal-500 shadow-2xl">
+    <div role="dialog" aria-modal="true" aria-label={tx('5 CONSIGNAS DEL TUCÁN', '5 TOUCAN QUESTIONS')} className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-950 border-b border-teal-900/60">
-          <div className="flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-amber-400" />
-            <div>
-              <h3 className="font-extrabold text-xs sm:text-sm text-white">
-                {tx('5 CONSIGNAS DEL TUCÁN', '5 TOUCAN QUESTIONS')}
-              </h3>
-              <p className="text-[10px] text-teal-300">
-                {tx('Biodiversidad de la Reserva Barón Schuel', 'Biodiversity of Barón Schuel Reserve')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => {
+        <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title={tx('5 CONSIGNAS DEL TUCÁN', '5 TOUCAN QUESTIONS')} subtitle={tx('Biodiversidad de la Reserva Barón Schuel', 'Biodiversity of Barón Schuel Reserve')} icon={<HelpCircle aria-hidden="true" className="h-5 w-5" />} onClose={() => {
               soundManager.playClick();
               onClose();
-            }}
-            className="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+            }} /></div>
 
         {/* Content View */}
-        <div className="p-4 space-y-3.5 flex-1 overflow-y-auto text-slate-200">
+        <div className="pb-safe min-h-0 p-4 space-y-3.5 flex-1 overflow-y-auto text-slate-200">
           {!isQuizCompleted ? (
             /* ACTIVE QUIZ SCREEN */
             <div className="space-y-3">
@@ -134,7 +120,7 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
                   alt="Trivia del Circuito"
                   className="w-full h-full object-cover object-top"
                 />
-                <div className="absolute bottom-1.5 inset-x-2 px-2.5 py-1 rounded-xl bg-slate-950/85 backdrop-blur-sm border border-teal-500/50 flex items-center justify-between text-[11px] font-bold">
+                <div className="absolute bottom-1.5 inset-x-2 px-2.5 py-1 rounded-xl bg-surface-950 backdrop-blur-sm border border-teal-500/50 flex items-center justify-between text-[11px] font-bold">
                   <span className="text-teal-300">
                     {tx('Consigna', 'Question')} {currentIdx + 1} / {TUCAN_CONSIGNAS_QUESTIONS.length}
                   </span>
@@ -145,7 +131,7 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
               </div>
 
               {/* Question Text */}
-              <div className="bg-slate-950/90 rounded-2xl p-3.5 border border-teal-800/60 space-y-3">
+              <div className="ui-card bg-surface-950 rounded-2xl p-3.5 border border-teal-800/60 space-y-3">
                 <h4 className="text-xs sm:text-sm font-bold text-white leading-snug">
                   {currentQ.question}
                 </h4>
@@ -174,9 +160,9 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
                         key={idx}
                         disabled={isAnswerSubmitted}
                         onClick={() => handleSelectOption(idx)}
-                        className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-start gap-2.5 ${btnStyle}`}
+                        className={`min-h-11 min-w-11 w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-start gap-2.5 ${btnStyle}`}
                       >
-                        <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                        <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">
                           {String.fromCharCode(65 + idx)}
                         </span>
                         <span className="flex-1 leading-snug">{opt}</span>
@@ -217,7 +203,7 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
                     <button
                       disabled={selectedOption === null}
                       onClick={handleSubmitAnswer}
-                      className={`w-full py-3 rounded-xl font-bold text-xs tracking-wide transition-all ${
+                      className={`min-h-11 min-w-11 w-full py-3 rounded-xl font-bold text-xs tracking-wide transition-all ${
                         selectedOption !== null
                           ? 'game-btn-orange text-white cursor-pointer'
                           : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
@@ -228,7 +214,7 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
                   ) : (
                     <button
                       onClick={handleNext}
-                      className="w-full py-3 rounded-xl game-btn-mint text-emerald-950 font-black text-xs flex items-center justify-center gap-1.5"
+                      className="min-h-11 min-w-11 w-full py-3 rounded-xl game-btn-mint text-emerald-950 font-black text-xs flex items-center justify-center gap-1.5"
                     >
                       <span>{currentIdx < TUCAN_CONSIGNAS_QUESTIONS.length - 1 ? 'SIGUIENTE CONSIGNA' : 'VER RESULTADO FINAL'}</span>
                       <ChevronRight className="w-4 h-4" />
@@ -239,17 +225,17 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
             </div>
           ) : allCorrect && hasSighting ? (
             /* BIFURCACIÓN 1: ÉXITO TOTAL (5/5 CORRECTAS + AL MENOS 1 AVISTAMIENTO) */
-            <div className="relative bg-slate-950/95 rounded-3xl p-5 border-3 border-amber-400 text-center space-y-4 shadow-[0_0_40px_rgba(245,158,11,0.4)] animate-fadeIn">
+            <div className="relative bg-surface-950 rounded-3xl p-5 border border-amber-400 text-center space-y-4 shadow-[0_0_40px_rgba(245,158,11,0.4)] animate-fadeIn">
               {/* Confeti animado simulado */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
-                <span className="absolute top-2 left-6 text-xl animate-bounce">🎉</span>
-                <span className="absolute top-4 right-8 text-lg animate-ping">✨</span>
-                <span className="absolute top-12 left-10 text-xl animate-spin">🌟</span>
-                <span className="absolute top-10 right-4 text-xl animate-bounce">🎊</span>
+                <span className="absolute top-2 left-6 text-xl ">🎉</span>
+                <span className="absolute top-4 right-8 text-lg ">✨</span>
+                <span className="absolute top-12 left-10 text-xl ">🌟</span>
+                <span className="absolute top-10 right-4 text-xl ">🎊</span>
               </div>
 
               {/* Ilustración Oficial de Victoria e Insignia */}
-              <div className="relative w-full h-48 mx-auto rounded-2xl border-2 border-amber-400 shadow-2xl overflow-hidden">
+              <div className="relative w-full h-48 mx-auto rounded-2xl border border-amber-400 shadow-2xl overflow-hidden">
                 <img
                   src="/assets/aistudio/Toucan_image_prompt_translation_ed4d9490.jpg"
                   alt="Insignia de Observador en Ascenso"
@@ -268,7 +254,7 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
               </div>
 
               {/* Medalla Dorada Central */}
-              <div className="bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-amber-500/20 border-2 border-amber-400/80 rounded-2xl p-3 flex items-center justify-center gap-3">
+              <div className="bg-gradient-to-r from-amber-500/20 via-yellow-400/20 to-amber-500/20 border border-amber-400/80 rounded-2xl p-3 flex items-center justify-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shadow-lg shrink-0">
                   <Award className="w-8 h-8 text-slate-950 stroke-[2.5]" />
                 </div>
@@ -276,14 +262,14 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
                   <div className="text-xs font-black text-amber-300 uppercase tracking-wide">
                     INSIGNIA DE OBSERVADOR EN ASCENSO
                   </div>
-                  <div className="text-[10px] text-teal-200">
+                  <div className="text-[11px] text-teal-200">
                     Nivel {playerProfile.level} Alcanzado · +150 XP Otorgados
                   </div>
                 </div>
               </div>
 
               {/* Requisitos Cumplidos */}
-              <div className="text-[11px] text-emerald-300 font-semibold space-y-1 text-left bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+              <div className="text-[11px] text-emerald-300 font-semibold space-y-1 text-left bg-surface-900 p-2.5 rounded-xl border border-slate-800">
                 <div className="flex items-center gap-1.5">
                   <Check className="w-4 h-4 text-emerald-400" />
                   <span>1 Avistamiento con prismáticos XR completado (✓)</span>
@@ -300,16 +286,16 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
                   soundManager.playClick();
                   onClose();
                 }}
-                className="w-full py-3.5 rounded-2xl game-btn-orange text-white text-xs font-black tracking-wide uppercase shadow-xl"
+                className="min-h-11 min-w-11 w-full py-3.5 rounded-2xl game-btn-orange text-white text-xs font-black tracking-wide uppercase shadow-xl"
               >
                 CONTINUAR CON EL AVISTAJE
               </button>
             </div>
           ) : (
             /* BIFURCACIÓN 2: FEEDBACK AMABLE 8B (FALLÓ ALGUNA PREGUNTA O FALTA AVISTAMIENTO) */
-            <div className="bg-slate-950/95 rounded-3xl p-5 border-2 border-teal-600/70 text-center space-y-3.5 animate-fadeIn">
+            <div className="bg-surface-950 rounded-3xl p-5 border border-teal-600/70 text-center space-y-3.5 animate-fadeIn">
               {/* Ilustración Oficial del Tucán con Mirada Empática */}
-              <div className="relative w-full h-44 mx-auto rounded-2xl border-2 border-teal-400/70 bg-slate-900 shadow-xl overflow-hidden">
+              <div className="relative w-full h-44 mx-auto rounded-2xl border border-teal-400/70 bg-surface-900 shadow-xl overflow-hidden">
                 <img
                   src="/assets/aistudio/Modify_toucan_and_UI_buttons_e3aebd9e.jpg"
                   alt="Tucán con mirada empática"
@@ -325,14 +311,14 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
               {/* Puntaje y Aclaración: NO RESTA PUNTOS */}
               <div className="text-xs text-amber-300 font-semibold">
                 Obtuviste <span className="font-extrabold text-white text-sm">{score} de 5</span> aciertos.
-                <span className="block text-[10px] text-teal-300 font-normal mt-0.5">
+                <span className="block text-[11px] text-teal-300 font-normal mt-0.5">
                   ¡No te preocupes! No se restan puntos en el Parque Botánico.
                 </span>
               </div>
 
               {/* Pista Educativa de Repaso */}
               <div className="bg-teal-950/70 border border-teal-800/60 rounded-xl p-3 text-left text-xs text-teal-200 space-y-1">
-                <div className="text-[10px] font-bold text-amber-300 uppercase flex items-center gap-1">
+                <div className="text-[11px] font-bold text-amber-300 uppercase flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>PISTA EDUCATIVA PARA REPASAR:</span>
                 </div>
@@ -344,7 +330,7 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
               {/* Botón Naranja Grande: CONTINUAR CON LA AVENTURA */}
               <button
                 onClick={handleRestartQuiz}
-                className="w-full py-3 rounded-2xl game-btn-orange text-white text-xs font-black tracking-wide uppercase shadow-lg flex items-center justify-center gap-1.5"
+                className="min-h-11 min-w-11 w-full py-3 rounded-2xl game-btn-orange text-white text-xs font-black tracking-wide uppercase shadow-lg flex items-center justify-center gap-1.5"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>CONTINUAR CON LA AVENTURA (REINTENTAR)</span>
@@ -358,7 +344,7 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
                     onClose();
                     onOpenMap();
                   }}
-                  className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-200 text-xs font-bold border border-teal-700/60 flex items-center justify-center gap-1.5 transition-colors"
+                  className="min-h-11 min-w-11 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-200 text-xs font-bold border border-teal-700/60 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Map className="w-4 h-4 text-teal-400" />
                   <span>MAPAS</span>
@@ -370,7 +356,7 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
                     onClose();
                     onOpenBirds();
                   }}
-                  className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-200 text-xs font-bold border border-amber-700/60 flex items-center justify-center gap-1.5 transition-colors"
+                  className="min-h-11 min-w-11 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-200 text-xs font-bold border border-amber-700/60 flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Bird className="w-4 h-4 text-amber-400" />
                   <span>AVES (GUÍA)</span>

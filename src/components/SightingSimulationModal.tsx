@@ -13,7 +13,8 @@ import {
   HelpCircle,
   Eye,
   Pause,
-  ScanSearch
+  ScanSearch,
+  LoaderCircle
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { requestMobileCameraStream, switchToOtherCamera, countVideoInputs } from '../utils/camera';
@@ -22,6 +23,8 @@ import { CatalogBird, PlayerProfile } from '../types/game';
 import type { IdentifyBirdResult } from '../../api/identify-bird';
 import { ToucanMindARViewer } from './ToucanMindARViewer';
 import type { MindARActionResult } from '../utils/mindarProgress';
+import { Button, ModalHeader } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 
 interface SightingSimulationModalProps {
   onMindARRegister: () => MindARActionResult;
@@ -438,11 +441,19 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     reader.readAsDataURL(file);
   };
 
+  useModalEscape(isOpen && arMode === 'legacy', () => {
+    if (photoResult) setPhotoResult(null);
+    else if (showTutorial) closeTutorial();
+    else if (showBirdInfoSheet && !cleanViewMode && detectedBird) setShowBirdInfoSheet(false);
+    else onClose();
+  });
+
   if (!isOpen) return null;
   if (arMode === 'checking') return (
-    <div className="fixed inset-0 z-50 bg-slate-950 text-teal-100 flex flex-col gap-4 items-center justify-center text-sm font-bold">
-      Preparando visor XR…
-      <button type="button" onClick={onClose} className="min-h-11 px-6 rounded-xl border border-teal-600">Cerrar</button>
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-forest-950 p-6 text-sm text-ink">
+      <LoaderCircle aria-hidden="true" className="h-8 w-8 animate-spin text-action-turquoise" />
+      <p role="status">Preparando escáner…</p>
+      <Button variant="ghost" onClick={onClose}>Salir</Button>
     </div>
   );
   if (arMode === 'ar') return <ToucanMindARViewer onClose={onClose} profile={playerProfile} onRegister={onMindARRegister} onComplete={onMindARComplete} onRetrySave={onMindARRetrySave} onJournal={onMindARJournal} />;
@@ -597,7 +608,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-black/90 backdrop-blur-md animate-fadeIn">
+    <div role="dialog" aria-modal="true" aria-label="XR AVISTAMIENTO" className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
       {/* Hidden Canvas & Native Mobile Camera Input Fallback */}
       <canvas ref={canvasRef} className="hidden" />
       <input
@@ -609,59 +620,29 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         className="hidden"
       />
 
-      <div className="relative w-full max-w-sm h-[94vh] max-h-[860px] flex flex-col rounded-3xl overflow-hidden bg-slate-950 border-2 border-teal-500 shadow-2xl">
-        {/* HUD Top Bar: Title, Flash OFF, Battery, Close */}
-        <div className="relative z-30 px-3 py-2 bg-slate-950 border-b border-teal-900/60 flex items-center justify-between text-xs text-white">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="font-extrabold text-[11px] text-teal-300 tracking-wider uppercase truncate">
-              XR AVISTAMIENTO{detectedBird?.catalogNumber ? ` · #${detectedBird.catalogNumber}` : ''}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Environmental Care Status */}
-            <div className="flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-teal-950/80 border border-teal-500/40 text-teal-200">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
-              <span className="whitespace-nowrap">Flash: OFF</span>
-            </div>
-
-            {/* Battery Indicator */}
-            <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-300">
-              <Battery className="w-3.5 h-3.5 text-emerald-400" />
-              <span>98%</span>
-            </div>
-
-            {/* Close */}
-            <button
-              onClick={() => {
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
+        <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title={`XR AVISTAMIENTO${detectedBird?.catalogNumber ? ` · #${detectedBird.catalogNumber}` : ''}`} subtitle="Flash: OFF · Cuidá la fauna" icon={<Binoculars aria-hidden="true" className="h-5 w-5" />} onClose={() => {
                 soundManager.playClick();
                 stopCamera();
                 clearScanTimer();
                 stopSong();
                 onClose();
-              }}
-              className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+              }} /></div>
 
         {/* Dedicated Non-Overlapping Camera Controls Bar (Flex with gap-2, no conflicting absolute positions) */}
-        <div className="relative z-30 px-3 py-1.5 bg-slate-900/95 border-b border-teal-900/60 flex items-center justify-between gap-2">
+        <div className="relative z-30 px-3 py-1.5 bg-surface-900 border-b border-teal-900/60 flex items-center justify-between gap-2">
           {canFlipCamera ? (
             <button
               type="button"
               onClick={handleFlipCamera}
-              className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+              className="min-h-11 min-w-11 px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] border border-slate-900 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
               title="Cambiar entre cámara trasera y delantera"
             >
               <RefreshCw className="w-3 h-3 stroke-[2.5]" />
               <span>Girar ({facingMode === 'environment' ? 'Trasera' : 'Delantera'})</span>
             </button>
           ) : (
-            <span className="text-[10px] font-bold text-teal-300/80 truncate">
+            <span className="text-[11px] font-bold text-teal-300/80 truncate">
               {useRealCamera ? 'Cámara activa' : 'Cámara apagada'}
             </span>
           )}
@@ -672,7 +653,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               soundManager.playClick();
               setShowTutorial(true);
             }}
-            className="ml-auto px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 font-black text-[10px] border border-amber-400/60 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+            className="min-h-11 min-w-11 ml-auto px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 font-black text-[11px] border border-amber-400/60 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
             title="Ver cómo se usa el avistamiento"
           >
             <HelpCircle className="w-3 h-3" />
@@ -688,7 +669,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               }
               else fileInputRef.current?.click();
             }}
-            className="px-2.5 py-1 rounded-full bg-teal-600 hover:bg-teal-500 text-white font-black text-[10px] border border-teal-300 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+            className="min-h-11 min-w-11 px-2.5 py-1 rounded-full bg-teal-600 hover:bg-teal-500 text-white font-black text-[11px] border border-teal-300 shadow flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
           >
             <Camera className="w-3 h-3" />
             <span>{useRealCamera ? 'Cámara Nativa' : 'Activar Cámara'}</span>
@@ -762,12 +743,12 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           </svg>
 
           {cameraError && !useRealCamera && !cleanViewMode && (
-            <div className="absolute top-2.5 inset-x-3 z-30 bg-slate-950/90 border border-amber-500/60 rounded-xl p-2 flex items-center justify-between gap-2 text-[10px] text-amber-200 pointer-events-auto">
+            <div className="absolute top-2.5 inset-x-3 z-30 bg-surface-950 border border-amber-500/60 rounded-xl p-2 flex items-center justify-between gap-2 text-[11px] text-amber-200 pointer-events-auto">
               <span className="leading-tight">{cameraError}</span>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black shrink-0"
+                className="min-h-11 min-w-11 px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black shrink-0"
               >
                 📷 Usar Teléfono
               </button>
@@ -776,7 +757,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
           {/* Flash Shutter Animation */}
           {isPhotoCapturing && (
-            <div className="absolute inset-0 bg-white z-40 animate-ping opacity-90" />
+            <div className="absolute inset-0 bg-white z-40  opacity-90" />
           )}
 
           {/* HUD CORNERS (Hidden in Clean View Mode) */}
@@ -814,14 +795,14 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   />
                 </div>
               ) : scanState === 'scanning' ? (
-                <div className="absolute inset-2 rounded-full border-2 border-amber-300/80 animate-ping" />
+                <div className="absolute inset-2 rounded-full border border-amber-300/80 " />
               ) : null}
             </div>
             <span
-              className={`mt-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide border shadow ${
+              className={`mt-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wide border shadow ${
                 detectedBird
                   ? 'bg-emerald-400 text-slate-950 border-slate-900'
-                  : 'bg-slate-950/85 text-amber-300 border-amber-400/60'
+                  : 'bg-surface-950 text-amber-300 border-amber-400/60'
               }`}
             >
               {SCAN_LABELS[scanState]}
@@ -830,47 +811,47 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
           {/* COLLAPSIBLE TECHNICAL / RPG SHEET (Only visible when player taps "ℹ️ Ver Ficha") */}
           {showBirdInfoSheet && !cleanViewMode && detectedBird && (
-            <div className="absolute bottom-13 inset-x-3 z-30 bg-slate-950/92 backdrop-blur-md rounded-2xl p-3 border-2 border-sky-400 shadow-2xl text-[10px] text-slate-200 space-y-1.5 animate-fadeIn pointer-events-auto">
+            <div className="absolute bottom-13 inset-x-3 z-30 bg-surface-950  rounded-2xl p-3 border border-sky-400 shadow-2xl text-[11px] text-slate-200 space-y-1.5 animate-fadeIn pointer-events-auto">
               <div className="flex items-center justify-between border-b border-sky-800 pb-1 gap-2">
                 <div className="min-w-0">
                   <span className="font-black text-xs text-white block truncate">
                     {birdLabel(detectedBird)}
                   </span>
-                  <span className="text-[9px] italic text-teal-300 block truncate">
+                  <span className="text-[11px] italic text-teal-300 block truncate">
                     {detectedBird.scientificName}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/50 font-extrabold text-amber-300 text-[10px]">
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/50 font-extrabold text-amber-300 text-[11px]">
                     PC {detectedBird.cp} · {detectedBird.hp}
                   </span>
-                  <button
+                  <button aria-label="Cerrar"
                     type="button"
                     onClick={() => setShowBirdInfoSheet(false)}
-                    className="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-600 cursor-pointer"
+                    className="min-h-11 min-w-11 w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-600 cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 text-[9px]">
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                 <span className="px-2 py-0.5 rounded-md bg-teal-950 border border-teal-600/50 text-teal-200 font-bold">
                   Estrato: {detectedBird.stratum}
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-emerald-300 font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-surface-900 border border-slate-700 text-emerald-300 font-bold">
                   Peso: {detectedBird.weight} · Tamaño: {detectedBird.size}
                 </span>
-                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-amber-300 font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-surface-900 border border-slate-700 text-amber-300 font-bold">
                   Familia: {detectedBird.family}
                 </span>
               </div>
 
-              <div className="text-[9px] text-teal-200">
+              <div className="text-[11px] text-teal-200">
                 <span className="text-slate-400 font-semibold">Hábitat:</span> {detectedBird.habitat}
               </div>
 
-              <div className="text-[9px] text-slate-300 pt-1 border-t border-slate-800 leading-snug space-y-0.5">
+              <div className="text-[11px] text-slate-300 pt-1 border-t border-slate-800 leading-snug space-y-0.5">
                 <div>• {detectedBird.beakDescription}</div>
                 <div>• {detectedBird.songDescription}</div>
                 <div>• {detectedBird.plumageDescription}</div>
@@ -881,14 +862,14 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           {/* BOTTOM EDGE OF VIEWPORT: Compact Pill with Focused Bird Name + "ℹ️ Ver Ficha" + "👁️ Limpiar Pantalla" */}
           <div className="absolute bottom-2 inset-x-2.5 z-30 flex items-center justify-between gap-1.5 pointer-events-auto">
             {!cleanViewMode ? (
-              <div className="flex-1 min-w-0 px-2.5 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-teal-500/60 shadow-lg flex items-center justify-between gap-1.5">
+              <div className="flex-1 min-w-0 px-2.5 py-1.5 rounded-full bg-surface-950  border border-teal-500/60 shadow-lg flex items-center justify-between gap-1.5">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
-                      detectedBird ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
+                      detectedBird ? 'bg-emerald-400' : 'bg-amber-400 '
                     }`}
                   />
-                  <span className="text-[10px] font-black text-white truncate">
+                  <span className="text-[11px] font-black text-white truncate">
                     {detectedBird
                       ? birdLabel(detectedBird)
                       : SCAN_HINTS[scanState]}
@@ -903,7 +884,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                       soundManager.playClick();
                       setShowBirdInfoSheet((prev) => !prev);
                     }}
-                    className={`px-2 py-0.5 disabled:opacity-40 disabled:cursor-default rounded-full text-[9px] font-black border transition-all cursor-pointer ${
+                    className={`min-h-11 min-w-11 px-2 py-0.5 disabled:opacity-40 disabled:cursor-default rounded-full text-[11px] font-black border transition-all cursor-pointer ${
                       showBirdInfoSheet
                         ? 'bg-sky-400 text-slate-950 border-white'
                         : 'bg-sky-950/90 text-sky-200 border-sky-400/60 hover:bg-sky-900'
@@ -919,7 +900,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                       setCleanViewMode(true);
                       setShowBirdInfoSheet(false);
                     }}
-                    className="px-2 py-0.5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-teal-200 text-[9px] font-black border border-teal-500/40 cursor-pointer"
+                    className="min-h-11 min-w-11 px-2 py-0.5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-teal-200 text-[11px] font-black border border-teal-500/40 cursor-pointer"
                     title="Limpiar Pantalla / Modo Visor Limpio"
                   >
                     👁️ Limpiar
@@ -934,7 +915,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                     soundManager.playClick();
                     setCleanViewMode(false);
                   }}
-                  className="px-3 py-1 rounded-full bg-slate-950/80 hover:bg-slate-900 text-amber-300 text-[10px] font-black border border-amber-400/60 shadow-lg cursor-pointer"
+                  className="min-h-11 min-w-11 px-3 py-1 rounded-full bg-surface-950 hover:bg-surface-900 text-amber-300 text-[11px] font-black border border-amber-400/60 shadow-lg cursor-pointer"
                 >
                   👁️ Mostrar HUD
                 </button>
@@ -944,9 +925,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
           {/* A real bird that is not one of the loaded species */}
           {scanState === 'other_bird' && !photoResult && !showTutorial && (
-            <div className="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 animate-fadeIn pointer-events-auto overflow-y-auto">
-              <div className="w-full max-w-xs bg-slate-900 border-2 border-amber-400 rounded-3xl p-4 shadow-2xl text-center text-slate-100 my-auto">
-                <div className="w-12 h-12 mx-auto rounded-full bg-amber-400 text-slate-950 flex items-center justify-center border-2 border-slate-900">
+            <div className="pb-safe min-h-0 absolute inset-0 z-40 bg-surface-950 backdrop-blur-sm flex items-center justify-center p-3 animate-fadeIn pointer-events-auto overflow-y-auto">
+              <div className="w-full max-w-xs bg-surface-900 border border-amber-400 rounded-3xl p-4 shadow-2xl text-center text-slate-100 my-auto">
+                <div className="w-12 h-12 mx-auto rounded-full bg-amber-400 text-slate-950 flex items-center justify-center border border-slate-900">
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <h4 className="mt-2 text-sm font-black text-amber-300 uppercase tracking-wide">
@@ -965,7 +946,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                     soundManager.playClick();
                     startScan();
                   }}
-                  className="w-full mt-3 py-2.5 rounded-xl game-btn-orange text-white text-xs font-black cursor-pointer"
+                  className="min-h-11 min-w-11 w-full mt-3 py-2.5 rounded-xl game-btn-orange text-white text-xs font-black cursor-pointer"
                 >
                   SEGUIR BUSCANDO
                 </button>
@@ -975,8 +956,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
           {/* TUTORIAL: 3 short steps, shown the first time and from "¿Cómo se usa?" */}
           {showTutorial && !photoResult && (
-            <div className="absolute inset-0 z-40 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-3 animate-fadeIn pointer-events-auto overflow-y-auto">
-              <div className="w-full max-w-xs bg-slate-900 border-2 border-teal-400 rounded-3xl p-3.5 shadow-2xl text-slate-100 my-auto">
+            <div className="pb-safe min-h-0 absolute inset-0 z-40 bg-surface-950 backdrop-blur-sm flex items-center justify-center p-3 animate-fadeIn pointer-events-auto overflow-y-auto">
+              <div className="w-full max-w-xs bg-surface-900 border border-teal-400 rounded-3xl p-3.5 shadow-2xl text-slate-100 my-auto">
                 <h4 className="text-sm font-black text-white text-center uppercase tracking-wide">
                   ¿Cómo avistar un ave?
                 </h4>
@@ -1002,7 +983,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                       key={step.title}
                       className="flex items-center gap-2.5 p-2 rounded-2xl bg-teal-950/60 border border-teal-800/50"
                     >
-                      <span className="w-8 h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 border-2 border-slate-900">
+                      <span className="w-8 h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 border border-slate-900">
                         {step.icon}
                       </span>
                       <div className="min-w-0">
@@ -1017,7 +998,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 <button
                   type="button"
                   onClick={closeTutorial}
-                  className="w-full mt-3 py-2.5 rounded-xl game-btn-orange text-white text-xs font-black cursor-pointer"
+                  className="min-h-11 min-w-11 w-full mt-3 py-2.5 rounded-xl game-btn-orange text-white text-xs font-black cursor-pointer"
                 >
                   ¡ENTENDIDO!
                 </button>
@@ -1027,9 +1008,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
           {/* POPUP DE RESULTADO DE "FOTO PERFECTA" */}
           {photoResult && (
-            <div className="absolute inset-0 z-50 bg-slate-950/92 backdrop-blur-md flex flex-col items-center justify-center p-5 text-center animate-fadeIn">
+            <div className="absolute inset-0 z-50 bg-surface-950  flex flex-col items-center justify-center p-5 text-center animate-fadeIn">
               <div
-                className="w-27 h-36 rounded-2xl border-3 border-amber-400 mb-2 shadow-xl flex items-center justify-center overflow-hidden"
+                className="w-27 h-36 rounded-2xl border border-amber-400 mb-2 shadow-xl flex items-center justify-center overflow-hidden"
                 style={{ backgroundColor: 'rgba(12, 35, 30, 0.85)' }}
               >
                 <img
@@ -1059,8 +1040,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               </div>
 
               {/* 3 Evaluated Criteria */}
-              <div className="w-full max-w-xs bg-slate-900/90 border border-teal-700/60 rounded-2xl p-3 text-left text-xs space-y-1.5 mb-4">
-                <div className="text-[10px] font-bold text-teal-300 uppercase">CRITERIOS SCHUEL:</div>
+              <div className="w-full max-w-xs bg-surface-900 border border-teal-700/60 rounded-2xl p-3 text-left text-xs space-y-1.5 mb-4">
+                <div className="text-[11px] font-bold text-teal-300 uppercase">CRITERIOS SCHUEL:</div>
                 <div className="flex items-center gap-2 text-emerald-300 text-[11px]">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>Ave centrada en visor (100% encuadre)</span>
@@ -1082,7 +1063,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                     setPhotoResult(null);
                     startScan();
                   }}
-                  className="flex-1 py-3 rounded-2xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700"
+                  className="min-h-11 min-w-11 flex-1 py-3 rounded-2xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700"
                 >
                   Seguir en XR
                 </button>
@@ -1092,7 +1073,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                     setPhotoResult(null);
                     onOpenQuizConsignas();
                   }}
-                  className="flex-1 py-3 rounded-2xl game-btn-orange text-white text-xs font-black"
+                  className="min-h-11 min-w-11 flex-1 py-3 rounded-2xl game-btn-orange text-white text-xs font-black"
                 >
                   Ir a las 5 Consignas
                 </button>
@@ -1103,7 +1084,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
         {/* Bottom Controls Bar: search another bird, shutter, bird song play/pause and 5 Consignas Button */}
         {!photoResult && (
-          <div className="p-2.5 bg-slate-950 border-t border-teal-900/80 space-y-2">
+          <div className="pb-safe p-2.5 bg-surface-950 border-t border-teal-900/80 space-y-2">
             {/* Top row of bottom controls: search another bird and camera switch */}
             <div className="flex items-center justify-between gap-2">
               <button
@@ -1112,7 +1093,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   soundManager.playClick();
                   startScan();
                 }}
-                className="flex items-center gap-1 text-[11px] font-bold text-slate-950 px-2.5 py-1 rounded-xl bg-sky-400 hover:bg-sky-300 border border-slate-900 shadow-md cursor-pointer active:scale-95 transition-all"
+                className="min-h-11 min-w-11 flex items-center gap-1 text-[11px] font-bold text-slate-950 px-2.5 py-1 rounded-xl bg-sky-400 hover:bg-sky-300 border border-slate-900 shadow-md cursor-pointer active:scale-95 transition-all"
                 title="Volver a buscar un ave con el visor"
               >
                 <ScanSearch className="w-3.5 h-3.5" />
@@ -1129,7 +1110,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   else startCamera();
                   startScan();
                 }}
-                className="flex items-center gap-1 text-[10px] text-teal-300 px-2.5 py-1 rounded-xl bg-slate-900 border border-teal-800/60 hover:text-white cursor-pointer"
+                className="min-h-11 min-w-11 flex items-center gap-1 text-[11px] text-teal-300 px-2.5 py-1 rounded-xl bg-surface-900 border border-teal-800/60 hover:text-white cursor-pointer"
               >
                 <RefreshCw className="w-3 h-3 text-teal-400" />
                 <span>{useRealCamera ? 'Modo Selva XR' : 'Activar Cámara'}</span>
@@ -1138,7 +1119,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
             {/* Shutter Section (Botón circular blanco de obturador abajo al centro) */}
             <div className="flex items-center justify-between pt-0.5">
-              <div className="text-[10px] text-teal-300 font-semibold flex items-center gap-1">
+              <div className="text-[11px] text-teal-300 font-semibold flex items-center gap-1">
                 <Eye className="w-3.5 h-3.5 text-amber-400" />
                 <span>Enfocar:</span>
                 <input
@@ -1152,13 +1133,13 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               </div>
 
               {/* WHITE CIRCULAR SHUTTER BUTTON */}
-              <button
+              <button aria-label="Tomar Foto Perfecta"
                 onClick={handleShutterCapture}
                 disabled={!detectedBird}
-                className="w-14 h-14 rounded-full bg-white p-1 border-4 border-slate-900 shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:scale-100"
+                className="min-h-11 min-w-11 w-14 h-14 rounded-full bg-white p-1 border-4 border-slate-900 shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:scale-100"
                 title="Tomar Foto Perfecta"
               >
-                <div className="w-10 h-10 rounded-full border-2 border-slate-400 bg-slate-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full border border-slate-400 bg-slate-100 flex items-center justify-center">
                   <div className="w-7 h-7 rounded-full bg-white shadow-inner" />
                 </div>
               </button>
@@ -1168,10 +1149,10 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 type="button"
                 onClick={toggleBirdSong}
                 disabled={!detectedBird}
-                className={`flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-xl border cursor-pointer disabled:opacity-40 disabled:cursor-default ${
+                className={`min-h-11 min-w-11 flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-xl border cursor-pointer disabled:opacity-40 disabled:cursor-default ${
                   isSongPlaying
                     ? 'bg-amber-400 text-slate-950 border-slate-900 font-black'
-                    : 'bg-slate-900 text-teal-300 border-teal-800/60 hover:border-teal-400'
+                    : 'bg-surface-900 text-teal-300 border-teal-800/60 hover:border-teal-400'
                 }`}
                 title={isSongPlaying ? 'Pausar el canto' : 'Escuchar el canto del ave detectada'}
               >
@@ -1190,7 +1171,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 soundManager.playClick();
                 onOpenQuizConsignas();
               }}
-              className="w-full py-2 rounded-2xl game-btn-orange text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+              className="min-h-11 min-w-11 w-full py-2 rounded-2xl game-btn-orange text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg cursor-pointer"
             >
               <HelpCircle className="w-4 h-4 text-amber-200" />
               <span>RESPONDER LAS 5 CONSIGNAS DEL TUCÁN</span>

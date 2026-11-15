@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { ModalHeader } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 import {
   Map,
   X,
@@ -110,6 +112,14 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
     };
   }, [isOpen, showChallengeModal]);
 
+  useModalEscape(isOpen, () => {
+    if (showRareBirdsModal) setShowRareBirdsModal(false);
+    else if (showChallengeModal) {
+      stopQrCamera();
+      setShowChallengeModal(false);
+    } else onClose();
+  });
+
   if (!isOpen) return null;
 
   const localizedCp = localizeCheckpoint(selectedCheckpoint, lang);
@@ -210,38 +220,18 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
       : '/assets/aistudio/Buttons_with_padlocks_2b5ce3b6.jpg';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-3 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
-      <div className="relative w-full max-w-sm max-h-[95vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-teal-500 shadow-2xl">
+    <div role="dialog" aria-modal="true" aria-label={tx('Estaciones Digitales y Senderos', 'Digital Stations & Trail Map')} className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
         {/* Cabecera Oficial */}
-        <div className="px-3.5 py-2.5 bg-slate-950 border-b border-teal-900/60">
-          <div className="flex items-center justify-between gap-1.5 mb-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <Map className="w-5 h-5 text-teal-400 shrink-0" />
-              <div className="min-w-0">
-                <h3 className="font-extrabold text-xs sm:text-sm text-white tracking-wide truncate">
-                  {tx('Estaciones Digitales y Senderos', 'Digital Stations & Trail Map')}
-                </h3>
-                <p className="text-[10px] text-teal-300 truncate">
-                  {tx('Parque Botánico Municipal Barón Schuel', 'Barón Schuel Municipal Botanical Park')}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <LanguageSelector />
-              <button
-                onClick={() => {
+        <div className="px-3.5 py-2.5 bg-surface-950 border-b border-teal-900/60">
+          <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title={tx('Estaciones Digitales y Senderos', 'Digital Stations & Trail Map')} subtitle={tx('Parque Botánico Municipal Barón Schuel', 'Barón Schuel Municipal Botanical Park')} icon={<Map aria-hidden="true" className="h-5 w-5" />} onClose={() => {
                   soundManager.playClick();
                   onClose();
-                }}
-                className="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-teal-200 hover:text-white text-[10px] font-bold flex items-center gap-1 border border-teal-700/60 shrink-0 shadow active:scale-95 transition-all"
-              >
-                <span>{tx('← Menú', '← Menu')}</span>
-              </button>
-            </div>
-          </div>
+                }} /></div>
+          <div className="flex justify-end py-2 [&_button]:min-h-11 [&_button]:text-[11px]"><LanguageSelector /></div>
 
           {/* Subheader info strip */}
-          <div className="flex items-center justify-between text-[10px] text-teal-200/90 pt-1 border-t border-slate-800">
+          <div className="flex items-center justify-between text-[11px] text-teal-200/90 pt-1 border-t border-slate-800">
             <span className="flex items-center gap-1">
               <Mountain className="w-3 h-3 text-amber-400" />
               {tx('Altitud: 1334 - 1463 m.s.n.m.', 'Altitude: 1334 - 1463 m.a.s.l.')}
@@ -253,7 +243,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
 
           {/* Sello de Ruta Completa - Barra de Progreso */}
           <div className="mt-1.5 p-2 rounded-xl bg-teal-950/70 border border-teal-800/60">
-            <div className="flex items-center justify-between text-[10px] font-bold mb-1">
+            <div className="flex items-center justify-between text-[11px] font-bold mb-1">
               <span className="text-amber-300 flex items-center gap-1">
                 <Award className="w-3.5 h-3.5 text-amber-400" />
                 {tx('Sello de Ruta Completa (8 Estaciones)', 'Complete Route Seal (8 Stations)')}
@@ -262,7 +252,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 {completedCount}/8 {tx('estaciones', 'stations')} {isRouteComplete && '✓'}
               </span>
             </div>
-            <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-teal-900">
+            <div className="w-full bg-surface-900 h-1.5 rounded-full overflow-hidden border border-teal-900">
               <div
                 className="h-full bg-gradient-to-r from-teal-400 via-amber-400 to-emerald-400 transition-all duration-500"
                 style={{ width: `${Math.min(100, (completedCount / 8) * 100)}%` }}
@@ -275,7 +265,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                   soundManager.playSuccess();
                   setShowRareBirdsModal(true);
                 }}
-                className="mt-1.5 w-full py-1 px-2 rounded-lg bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-400/60 text-[10px] font-bold text-amber-300 flex items-center justify-center gap-1.5 animate-pulse"
+                className="min-h-11 min-w-11 mt-1.5 w-full py-1 px-2 rounded-lg bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-400/60 text-[11px] font-bold text-amber-300 flex items-center justify-center gap-1.5 "
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 <span>
@@ -324,7 +314,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
 
               {/* Cartel Rojo "DESVÍO" del Plano Oficial en el Tablero de Miro */}
               <div
-                className="absolute z-20 px-1.5 py-0.5 rounded bg-red-600 text-white font-black text-[8px] tracking-wider uppercase shadow-md border border-white transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                className="absolute z-20 px-1.5 py-0.5 rounded bg-red-600 text-white font-black text-[11px] tracking-wider uppercase shadow-md border border-white transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                 style={{ left: '54%', top: '46%' }}
               >
                 {tx('DESVÍO', 'DETOUR')}
@@ -353,12 +343,12 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 title={`${cp.id}. ${cp.name}`}
               >
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black border ${
                     isDone
                       ? 'bg-emerald-600 text-white border-white shadow-md'
                       : isSelected
                       ? 'bg-amber-400 text-slate-950 border-slate-950'
-                      : 'bg-slate-950/90 text-amber-300 border-amber-400 shadow'
+                      : 'bg-surface-950 text-amber-300 border-amber-400 shadow'
                   }`}
                 >
                   {isDone ? '✓' : `🔒${cp.id}`}
@@ -369,7 +359,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
 
           {/* Conmutador Superior entre Circuito 3D con Candados y Plano Físico */}
           <div className="absolute top-2 inset-x-2.5 z-30 flex items-center justify-between gap-1">
-            <span className="px-2 py-0.5 rounded-full bg-slate-950/90 text-[9px] text-amber-300 font-black border border-amber-400/50 shadow">
+            <span className="px-2 py-0.5 rounded-full bg-surface-950 text-[11px] text-amber-300 font-black border border-amber-400/50 shadow">
               {mapVisualMode === 'circuit_3d'
                 ? tx('🔒 Circuito 3D con Candados', '🔒 3D Padlock Circuit')
                 : tx('🧭 Plano de Senderos', '🧭 Physical Trail Plan')}
@@ -379,7 +369,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 soundManager.playClick();
                 setMapVisualMode(prev => (prev === 'circuit_3d' ? 'physical_plan' : 'circuit_3d'));
               }}
-              className="px-2.5 py-0.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[9px] font-black uppercase border border-slate-950 shadow cursor-pointer"
+              className="min-h-11 min-w-11 px-2.5 py-0.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black uppercase border border-slate-950 shadow cursor-pointer"
             >
               {mapVisualMode === 'circuit_3d'
                 ? tx('Ver Plano Sendero', 'View Trail Plan')
@@ -389,7 +379,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
         </div>
 
         {/* Panel Inferior: Las 3 Capas de Experiencia de cada Estación Digital (Según Tablero de Miro) */}
-        <div className="p-3 bg-slate-950/95 space-y-2.5 flex-1 overflow-y-auto">
+        <div className="pb-safe min-h-0 p-3 bg-surface-950 space-y-2.5 flex-1 overflow-y-auto">
           {/* Título de la Estación */}
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -401,13 +391,13 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                   {tx('Estación', 'Station')} #{localizedCp.id}: {localizedCp.name}
                 </h4>
               </div>
-              <div className="text-[10px] text-amber-400 font-semibold mt-0.5">
+              <div className="text-[11px] text-amber-400 font-semibold mt-0.5">
                 {tx('Distancia:', 'Distance:')} {localizedCp.distanceMeters} m · {tx('Tipo:', 'Type:')} {localizedCp.type}
               </div>
             </div>
 
             <span
-              className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${
+              className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${
                 isCurrentCheckpointCompleted
                   ? 'bg-emerald-950 text-emerald-300 border-emerald-500'
                   : 'bg-amber-950 text-amber-300 border-amber-500'
@@ -419,27 +409,27 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
 
           {/* CONMUTADOR DE LAS 3 CAPAS DE EXPERIENCIA DE LA ESTACIÓN (MIRO BOARD) */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[9px] font-black text-teal-300 uppercase tracking-wider">
+            <div className="flex items-center justify-between text-[11px] font-black text-teal-300 uppercase tracking-wider">
               <span className="flex items-center gap-1">
                 <Layers className="w-3 h-3 text-amber-400" />
                 {tx('3 Capas de Experiencia en esta Estación:', '3 Experience Layers at this Station:')}
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5 bg-slate-900 p-1 rounded-2xl border border-teal-800/70">
+            <div className="grid grid-cols-3 gap-1.5 bg-surface-900 p-1 rounded-2xl border border-teal-800/70">
               <button
                 onClick={() => {
                   soundManager.playClick();
                   setActiveStationLayer(1);
                 }}
-                className={`py-1.5 px-2 rounded-xl text-[10px] font-black transition-all flex flex-col items-center ${
+                className={`min-h-11 min-w-11 py-1.5 px-2 rounded-xl text-[11px] font-black transition-all flex flex-col items-center ${
                   activeStationLayer === 1
                     ? 'bg-sky-500 text-slate-950 shadow'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
                 <span>{tx('1. Descubrir', '1. Discover')}</span>
-                <span className="text-[8px] font-bold opacity-80">{tx('Especies / RA', 'Species / AR')}</span>
+                <span className="text-[11px] font-bold opacity-80">{tx('Especies / RA', 'Species / AR')}</span>
               </button>
 
               <button
@@ -447,14 +437,14 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                   soundManager.playClick();
                   setActiveStationLayer(2);
                 }}
-                className={`py-1.5 px-2 rounded-xl text-[10px] font-black transition-all flex flex-col items-center ${
+                className={`min-h-11 min-w-11 py-1.5 px-2 rounded-xl text-[11px] font-black transition-all flex flex-col items-center ${
                   activeStationLayer === 2
                     ? 'bg-amber-400 text-slate-950 shadow'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
                 <span>{tx('2. Comprender', '2. Understand')}</span>
-                <span className="text-[8px] font-bold opacity-80">{tx('Ecología y Riesgo', 'Ecology & Risk')}</span>
+                <span className="text-[11px] font-bold opacity-80">{tx('Ecología y Riesgo', 'Ecology & Risk')}</span>
               </button>
 
               <button
@@ -462,14 +452,14 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                   soundManager.playClick();
                   setActiveStationLayer(3);
                 }}
-                className={`py-1.5 px-2 rounded-xl text-[10px] font-black transition-all flex flex-col items-center ${
+                className={`min-h-11 min-w-11 py-1.5 px-2 rounded-xl text-[11px] font-black transition-all flex flex-col items-center ${
                   activeStationLayer === 3
                     ? 'bg-emerald-400 text-slate-950 shadow'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
                 <span>{tx('3. Actuar', '3. Act')}</span>
-                <span className="text-[8px] font-bold opacity-80">{tx('Desafío y Acción', 'Challenge & Act')}</span>
+                <span className="text-[11px] font-bold opacity-80">{tx('Desafío y Acción', 'Challenge & Act')}</span>
               </button>
             </div>
           </div>
@@ -477,7 +467,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
           {/* CONTENIDO DE LA CAPA 1: DESCUBRIR (Visualizar e identificar mediante Realidad Aumentada) */}
           {activeStationLayer === 1 && (
             <div className="space-y-2 animate-fadeIn">
-              <div className="text-[10px] font-bold text-sky-300 flex items-center gap-1">
+              <div className="text-[11px] font-bold text-sky-300 flex items-center gap-1">
                 <Feather className="w-3 h-3" />
                 <span>
                   {tx(
@@ -499,13 +489,13 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                       </span>
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-white truncate">{bird.common}</div>
-                        <div className="text-[9px] italic text-teal-300 font-serif truncate">{bird.scientific}</div>
-                        <p className="text-[9px] text-slate-300 line-clamp-1">{bird.description}</p>
+                        <div className="text-[11px] italic text-teal-300 font-serif truncate">{bird.scientific}</div>
+                        <p className="text-[11px] text-slate-300 line-clamp-1">{bird.description}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => soundManager.playBirdSound(bird.common)}
-                      className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-700 text-[9px] font-black flex items-center gap-1 shrink-0"
+                      className="min-h-11 min-w-11 px-2 py-1 rounded-lg bg-surface-900 hover:bg-slate-800 text-amber-300 border border-slate-700 text-[11px] font-black flex items-center gap-1 shrink-0"
                     >
                       <Volume2 className="w-3 h-3" />
                       <span>{tx('Canto', 'Call')}</span>
@@ -521,7 +511,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                     onClose();
                     onOpenXRVision();
                   }}
-                  className="w-full py-2.5 px-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg"
+                  className="min-h-11 min-w-11 w-full py-2.5 px-3 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 shadow-lg"
                 >
                   <Binoculars className="w-4 h-4" />
                   <span>{tx('Abrir Visor de Realidad Aumentada (XR)', 'Open Augmented Reality (XR) Viewer')}</span>
@@ -535,12 +525,12 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
             <div className="space-y-2 animate-fadeIn">
               <div className="p-2.5 rounded-2xl bg-teal-950/80 border border-teal-500/50 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-teal-300 uppercase">
+                  <span className="text-[11px] font-black text-teal-300 uppercase">
                     🌿 {tx('Función Ecológica en las Yungas:', 'Ecological Role in the Yungas:')}
                   </span>
                   <button
                     onClick={() => soundManager.playBirdSound(stationContext.soundKey)}
-                    className="px-2 py-0.5 rounded-lg bg-amber-400 text-slate-950 text-[9px] font-black flex items-center gap-1"
+                    className="min-h-11 min-w-11 px-2 py-0.5 rounded-lg bg-amber-400 text-slate-950 text-[11px] font-black flex items-center gap-1"
                   >
                     <Volume2 className="w-3 h-3" />
                     <span>{tx('Escuchar Bioacústica', 'Listen Bioacoustics')}</span>
@@ -552,7 +542,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
               </div>
 
               <div className="p-2.5 rounded-2xl bg-rose-950/60 border border-rose-500/50 space-y-1">
-                <span className="text-[10px] font-black text-rose-300 uppercase flex items-center gap-1">
+                <span className="text-[11px] font-black text-rose-300 uppercase flex items-center gap-1">
                   <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
                   <span>{tx('Riesgos de Conservación en el Entorno:', 'Conservation Risks in the Area:')}</span>
                 </span>
@@ -568,7 +558,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                     onClose();
                     onOpenBirdsCatalog();
                   }}
-                  className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-[11px] border border-amber-400/40 flex items-center justify-center gap-1.5"
+                  className="min-h-11 min-w-11 w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-[11px] border border-amber-400/40 flex items-center justify-center gap-1.5"
                 >
                   <span>{tx('Ver Fichas Técnicas y Siluetas de la Guía', 'View Guide Technical Sheets & Silhouettes')}</span>
                 </button>
@@ -580,7 +570,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
           {activeStationLayer === 3 && (
             <div className="space-y-2 animate-fadeIn">
               <div className="p-2.5 rounded-2xl bg-emerald-950/70 border border-emerald-500/50 space-y-1.5 text-[11px] text-emerald-100">
-                <div className="font-black text-amber-300 text-[10px] uppercase">
+                <div className="font-black text-amber-300 text-[11px] uppercase">
                   🛡️ {tx('Capa 3 (Actuar): Desafío de Conservación in situ', 'Layer 3 (Act): On-site Conservation Challenge')}
                 </div>
                 <p className="leading-snug">
@@ -593,7 +583,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
 
               <button
                 onClick={handleOpenChallenge}
-                className="w-full py-2.5 px-3 rounded-2xl game-btn-orange text-white text-xs font-black tracking-wide uppercase flex items-center justify-center gap-2 shadow-lg"
+                className="min-h-11 min-w-11 w-full py-2.5 px-3 rounded-2xl game-btn-orange text-white text-xs font-black tracking-wide uppercase flex items-center justify-center gap-2 shadow-lg"
               >
                 <QrCode className="w-4 h-4" />
                 <span>
@@ -610,7 +600,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                     onClose();
                     onOpenSquadsAndSeasons();
                   }}
-                  className="w-full py-2 px-3 rounded-2xl game-btn-mint text-emerald-950 text-[11px] font-black tracking-wide uppercase flex items-center justify-center gap-1.5 shadow"
+                  className="min-h-11 min-w-11 w-full py-2 px-3 rounded-2xl game-btn-mint text-emerald-950 text-[11px] font-black tracking-wide uppercase flex items-center justify-center gap-1.5 shadow"
                 >
                   <span>{tx('🛡️ Sumar Avance a Cuadrillas y Temporadas', '🛡️ Add Progress to Squads & Seasons')}</span>
                 </button>
@@ -622,7 +612,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
 
       {/* MODAL DEL DESAFÍO QR / GPS DE LA PARADA */}
       {showChallengeModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/90 backdrop-blur-md animate-fadeIn">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/90  animate-fadeIn">
           <input
             ref={qrFileInputRef}
             type="file"
@@ -643,7 +633,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
             }}
             className="hidden"
           />
-          <div className="relative w-full max-w-xs max-h-[92vh] overflow-y-auto rounded-3xl bg-slate-900 border-2 border-teal-400 p-4 shadow-2xl">
+          <div className="pb-safe min-h-0 relative w-full max-w-xs max-h-[92vh] overflow-y-auto rounded-3xl bg-surface-900 border border-teal-400 p-4 shadow-2xl">
             <div className="flex items-center justify-between pb-2 border-b border-teal-800">
               <div className="flex items-center gap-1.5">
                 <QrCode className="w-4 h-4 text-amber-400" />
@@ -651,13 +641,13 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                   {tx('ESCÁNER QR Y DESAFÍO DE ESTACIÓN', 'QR SCANNER & STATION CHALLENGE')}
                 </h4>
               </div>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => {
                   soundManager.playClick();
                   stopQrCamera();
                   setShowChallengeModal(false);
                 }}
-                className="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
+                className="min-h-11 min-w-11 w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -673,7 +663,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                     if (qrCameraActive) stopQrCamera();
                     else startQrCamera(qrFacingMode);
                   }}
-                  className="flex-1 py-1.5 px-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-[10px] font-black flex items-center justify-center gap-1 border border-teal-400 shadow cursor-pointer"
+                  className="min-h-11 min-w-11 flex-1 py-1.5 px-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-[11px] font-black flex items-center justify-center gap-1 border border-teal-400 shadow cursor-pointer"
                 >
                   <Camera className="w-3.5 h-3.5" />
                   <span>
@@ -692,7 +682,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                     setQrFacingMode(nextMode);
                     startQrCamera(nextMode);
                   }}
-                  className="py-1.5 px-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black flex items-center gap-1 border border-slate-900 shadow cursor-pointer"
+                  className="min-h-11 min-w-11 py-1.5 px-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black flex items-center gap-1 border border-slate-900 shadow cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
                   <span>🔄 Girar Cámara</span>
@@ -700,7 +690,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
               </div>
 
               {(qrCameraActive || qrNativePhoto || qrCameraError) && (
-                <div className="relative h-36 rounded-2xl overflow-hidden bg-black border-2 border-teal-400 flex items-center justify-center">
+                <div className="relative h-36 rounded-2xl overflow-hidden bg-black border border-teal-400 flex items-center justify-center">
                   {qrCameraActive ? (
                     <video
                       key={qrFacingMode}
@@ -730,11 +720,11 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                     />
                   ) : (
                     <div className="p-3 text-center space-y-1.5">
-                      <p className="text-[10px] text-amber-300">{qrCameraError}</p>
+                      <p className="text-[11px] text-amber-300">{qrCameraError}</p>
                       <button
                         type="button"
                         onClick={() => qrFileInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-[10px] font-black"
+                        className="min-h-11 min-w-11 px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-[11px] font-black"
                       >
                         📷 Usar Cámara del Teléfono
                       </button>
@@ -742,8 +732,8 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                   )}
 
                   {/* Marco de enfoque QR */}
-                  <div className="absolute inset-4 border-2 border-dashed border-amber-400/80 rounded-xl pointer-events-none flex items-end justify-center pb-1">
-                    <span className="px-2 py-0.5 rounded bg-black/70 text-[9px] text-amber-300 font-bold">
+                  <div className="absolute inset-4 border border-dashed border-amber-400/80 rounded-xl pointer-events-none flex items-end justify-center pb-1">
+                    <span className="px-2 py-0.5 rounded bg-black/70 text-[11px] text-amber-300 font-bold">
                       {tx('Apunta al QR del poste del sendero', 'Point at the trail post QR')}
                     </span>
                   </div>
@@ -753,14 +743,14 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
               <button
                 type="button"
                 onClick={() => qrFileInputRef.current?.click()}
-                className="w-full py-1 text-[10px] text-teal-300 underline hover:text-white text-center cursor-pointer"
+                className="min-h-11 min-w-11 w-full py-1 text-[11px] text-teal-300 underline hover:text-white text-center cursor-pointer"
               >
                 {tx('¿Cámara bloqueada? Usar Cámara Nativa del Teléfono', 'Camera blocked? Use Native Phone Camera')}
               </button>
             </div>
 
             <div className="py-3 space-y-2.5">
-              <div className="text-[10px] text-teal-300 font-semibold">
+              <div className="text-[11px] text-teal-300 font-semibold">
                 {tx('Estación', 'Station')} {localizedCp.id}: {localizedCp.name} (+25 XP)
               </div>
               <p className="text-xs font-bold text-white leading-snug">
@@ -788,9 +778,9 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                         soundManager.playClick();
                         setSelectedChallengeOption(idx);
                       }}
-                      className={`w-full p-2 rounded-xl border text-left text-[11px] transition-all flex items-start gap-2 ${optClass}`}
+                      className={`min-h-11 min-w-11 w-full p-2 rounded-xl border text-left text-[11px] transition-all flex items-start gap-2 ${optClass}`}
                     >
-                      <span className="w-4 h-4 rounded-full bg-slate-800 flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5">
+                      <span className="w-4 h-4 rounded-full bg-slate-800 flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">
                         {String.fromCharCode(65 + idx)}
                       </span>
                       <span className="flex-1 leading-snug">{option}</span>
@@ -801,7 +791,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
 
               {challengeSubmitted && (
                 <div
-                  className={`p-2.5 rounded-xl text-[10px] leading-relaxed ${
+                  className={`p-2.5 rounded-xl text-[11px] leading-relaxed ${
                     selectedChallengeOption === localizedCp.challenge.correctIndex
                       ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-200'
                       : 'bg-amber-950/80 border border-amber-500/50 text-amber-200'
@@ -822,7 +812,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 <button
                   disabled={selectedChallengeOption === null}
                   onClick={handleConfirmChallenge}
-                  className={`w-full py-2.5 rounded-xl font-bold text-xs tracking-wide transition-all ${
+                  className={`min-h-11 min-w-11 w-full py-2.5 rounded-xl font-bold text-xs tracking-wide transition-all ${
                     selectedChallengeOption !== null
                       ? 'game-btn-orange text-white cursor-pointer'
                       : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
@@ -837,7 +827,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                     stopQrCamera();
                     setShowChallengeModal(false);
                   }}
-                  className="w-full py-2.5 rounded-xl game-btn-mint text-emerald-950 font-bold text-xs"
+                  className="min-h-11 min-w-11 w-full py-2.5 rounded-xl game-btn-mint text-emerald-950 font-bold text-xs"
                 >
                   {tx('LISTO · CONTINUAR RECORRIDO', 'DONE · CONTINUE TRAIL')}
                 </button>
@@ -849,8 +839,8 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
 
       {/* MODAL DE AVES RARAS DESBLOQUEADAS: URUTAÚ Y JOTE REAL */}
       {showRareBirdsModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/90 backdrop-blur-md animate-fadeIn">
-          <div className="relative w-full max-w-xs max-h-[88vh] rounded-3xl overflow-hidden bg-slate-900 border-2 border-amber-400 p-4 shadow-2xl flex flex-col">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/90  animate-fadeIn">
+          <div className="relative w-full max-w-xs max-h-[88vh] rounded-3xl overflow-hidden bg-surface-900 border border-amber-400 p-4 shadow-2xl flex flex-col">
             <div className="flex items-center justify-between pb-2 border-b border-teal-800">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-amber-400" />
@@ -858,12 +848,12 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                   {tx('Aves Raras Desbloqueadas', 'Unlocked Rare Birds')}
                 </h4>
               </div>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => {
                   soundManager.playClick();
                   setShowRareBirdsModal(false);
                 }}
-                className="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
+                className="min-h-11 min-w-11 w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -877,10 +867,10 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                     soundManager.playBirdSound(bird.soundType || bird.id);
                     setSelectedRareBird(bird);
                   }}
-                  className={`flex-1 py-1 px-2 rounded-xl text-[10px] font-bold border transition-all ${
+                  className={`min-h-11 min-w-11 flex-1 py-1 px-2 rounded-xl text-[11px] font-bold border transition-all ${
                     selectedRareBird.id === bird.id
                       ? 'bg-amber-400 text-slate-950 border-amber-300'
-                      : 'bg-slate-950 text-slate-400 border-slate-800'
+                      : 'bg-surface-950 text-slate-400 border-slate-800'
                   }`}
                 >
                   {bird.commonName.split(' / ')[0]}
@@ -888,10 +878,10 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
               ))}
             </div>
 
-            <div className="space-y-2.5 overflow-y-auto text-xs text-slate-200 flex-1 pr-1">
+            <div className="pb-safe min-h-0 space-y-2.5 overflow-y-auto text-xs text-slate-200 flex-1 pr-1">
               <div>
                 <h5 className="font-extrabold text-sm text-amber-300">{selectedRareBird.commonName}</h5>
-                <p className="text-[10px] italic text-teal-300">{selectedRareBird.scientificName} · {selectedRareBird.size}</p>
+                <p className="text-[11px] italic text-teal-300">{selectedRareBird.scientificName} · {selectedRareBird.size}</p>
               </div>
 
               <p className="text-[11px] text-slate-300 leading-relaxed">
@@ -899,7 +889,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
               </p>
 
               {selectedRareBird.legend && (
-                <div className="p-2 rounded-xl bg-amber-950/40 border border-amber-600/40 text-[10px] text-amber-200 leading-normal">
+                <div className="p-2 rounded-xl bg-amber-950/40 border border-amber-600/40 text-[11px] text-amber-200 leading-normal">
                   <span className="font-bold text-amber-300 block mb-0.5">
                     📜 {tx('LEYENDA ANCESTRAL:', 'ANCESTRAL LEGEND:')}
                   </span>
@@ -907,7 +897,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 </div>
               )}
 
-              <div className="p-2 rounded-xl bg-teal-950/60 border border-teal-800/40 text-[10px] text-teal-200">
+              <div className="p-2 rounded-xl bg-teal-950/60 border border-teal-800/40 text-[11px] text-teal-200">
                 <span className="font-bold text-teal-300 block mb-0.5">
                   🌿 {tx('CURIOSIDAD DE LAS YUNGAS:', 'YUNGAS FUN FACT:')}
                 </span>
@@ -921,7 +911,7 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                   soundManager.playClick();
                   setShowRareBirdsModal(false);
                 }}
-                className="w-full py-2.5 rounded-xl game-btn-orange text-white text-xs font-bold"
+                className="min-h-11 min-w-11 w-full py-2.5 rounded-xl game-btn-orange text-white text-xs font-bold"
               >
                 {tx('Cerrar y Continuar Explorando', 'Close & Continue Exploring')}
               </button>
