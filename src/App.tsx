@@ -527,6 +527,8 @@ export default function App() {
           {currentScreen === 'screen1' && (
             <Screen1Splash
               onStartAdventure={() => setCurrentScreen('screen2')}
+              returningProfile={activeProfile.name !== 'Explorador Yungas' || activeProfile.xp > 0 || profiles.length > 1 ? activeProfile : null}
+              onContinue={() => setCurrentScreen('screen4')}
               soundEnabled={soundEnabled}
               onToggleSound={handleToggleSound}
             />
