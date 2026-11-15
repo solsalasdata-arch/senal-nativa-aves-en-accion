@@ -29,6 +29,7 @@ import { soundManager } from './utils/audio';
 import { PlayerProfile, CompanionBirdId, JournalEntry, CatalogBird } from './types/game';
 import { LanguageProvider } from './utils/i18n';
 import { OfflineIndicator } from './components/PWAInstallButton';
+import { capFieldJournal } from './utils/journal';
 import { registerMindARDiscovery, completeMindARChallenge, MindARActionResult } from './utils/mindarProgress';
 
 type ScreenId = 'screen1' | 'screen2' | 'screen3' | 'screen4';
@@ -285,7 +286,7 @@ export default function App() {
       stars
     };
 
-    const updatedJournal = [newJournalEntry, ...(activeProfile.fieldJournal || [])].slice(0, 10);
+    const updatedJournal = capFieldJournal([newJournalEntry, ...(activeProfile.fieldJournal || [])]);
 
     const updatedMissions = activeProfile.missions.map(m =>
       m.id === 'm-media' ? { ...m, progress: 1, completed: true } : m

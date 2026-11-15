@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { capFieldJournal } from '../src/utils/journal';
 import { registerMindARDiscovery, completeMindARChallenge, getMindARStatus } from '../src/utils/mindarProgress';
 import { createDefaultProfile, saveProfilesList, loadProfilesList, updateActiveProfileChecked } from '../src/utils/storage';
 
@@ -16,6 +17,16 @@ test('registration preserves field data and creates only one signal without inve
   for (const key of ['sightingsCompleted', 'birdPhotoStars', 'missions', 'unlockedSilhouettes'] as const) assert.deepEqual(next[key], p[key]);
   assert.deepEqual(registerMindARDiscovery(next, 101), { updates: {}, status: 'already-registered' });
   assert.equal(getMindARStatus(next), 'registered');
+});
+
+test('field journal cap keeps signals without consuming field slots', () => {
+  const field = createDefaultProfile().fieldJournal[0];
+  const fields = Array.from({ length: 11 }, (_, index) => ({ ...field, id: `field-${index}` }));
+  const signal = { ...field, id: 'signal', source: 'mindar-signal' as const };
+  const entries = capFieldJournal([fields[0], signal, ...fields.slice(1)]);
+  assert.deepEqual(entries, [fields[0], signal, ...fields.slice(1, 10)]);
+  assert.deepEqual(capFieldJournal([]), []);
+  assert.deepEqual(capFieldJournal([signal], 0), [signal]);
 });
 
 test('challenge requires registration and awards exactly once', () => {
