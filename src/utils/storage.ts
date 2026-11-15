@@ -1,5 +1,6 @@
 import { PlayerProfile, CompanionBirdId, Squad } from '../types/game';
 import { INITIAL_MISSIONS, EXPLORER_AVATARS } from '../data/birdsData';
+import { isRealObservation } from './journal';
 
 const STORAGE_KEY_PROFILES = 'senial_nativa_profiles_list_v2';
 const STORAGE_KEY_ACTIVE_ID = 'senial_nativa_active_profile_id_v2';
@@ -83,7 +84,14 @@ export function loadProfilesList(): PlayerProfile[] {
       setActiveProfileId(defaultProf.id);
       return [defaultProf];
     }
-    const parsed = JSON.parse(raw);
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) throw new Error('Invalid profiles');
+    } catch {
+      localStorage.setItem(`senial_nativa_profiles_corrupt_${Date.now()}`, raw);
+      return [createDefaultProfile()];
+    }
     if (!Array.isArray(parsed) || parsed.length === 0) {
       const defaultProf = createDefaultProfile('Santi Guardián', 'avatar-santi', 'Benteveo');
       saveProfilesList([defaultProf]);
@@ -124,11 +132,29 @@ export function loadProfilesList(): PlayerProfile[] {
 
 export function saveProfilesList(profiles: PlayerProfile[]): boolean {
   try {
+    const raw = localStorage.getItem(STORAGE_KEY_PROFILES);
+    if (raw) {
+      let corrupt = false;
+      try { corrupt = !Array.isArray(JSON.parse(raw)); } catch { corrupt = true; }
+      if (corrupt) localStorage.setItem(`senial_nativa_profiles_corrupt_${Date.now()}`, raw);
+    }
     localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(profiles));
     return true;
   } catch {
     return false;
   }
+}
+
+export function commitProfile<T extends { updates: Partial<PlayerProfile> }>(profileId: string, mutator: (latest: PlayerProfile) => T): { profile: PlayerProfile; saved: boolean; result: T } {
+  const profiles = loadProfilesList();
+  const index = profiles.findIndex(p => p.id === profileId);
+  if (index < 0) throw new Error('Perfil no encontrado');
+  const latest = profiles[index];
+  const result = mutator(structuredClone(latest));
+  const updated = { ...latest, ...result.updates, id: latest.id, lastPlayedAt: Date.now() };
+  profiles[index] = updated;
+  const saved = saveProfilesList(profiles);
+  return { profile: saved ? updated : latest, saved, result };
 }
 
 export function updateActiveProfileChecked(profile: PlayerProfile, updates: Partial<PlayerProfile>): { profile: PlayerProfile; saved: boolean } {
@@ -251,7 +277,7 @@ export function loadSquadsList(): Squad[] {
             favoriteBird: activeProf.favoriteBird,
             isDeviceProfile: true,
             contributedSpecies: ['Benteveo', 'Chinchero Chico', activeProf.favoriteBird],
-            journalCount: (activeProf.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length
+            journalCount: (activeProf.fieldJournal || []).filter(isRealObservation).length
           },
           {
             id: 'comp_1',
