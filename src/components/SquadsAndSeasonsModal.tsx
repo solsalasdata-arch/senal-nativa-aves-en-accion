@@ -75,7 +75,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
     const fromSilhouettes = (prof.unlockedSilhouettes || [])
       .map(id => allCatalog.find(b => b.id === id)?.commonName)
       .filter((n): n is string => Boolean(n));
-    const fromJournal = (prof.fieldJournal || []).map(j => j.birdName);
+    const fromJournal = (prof.fieldJournal || []).filter(j => j.source !== 'mindar-signal').map(j => j.birdName);
     const fromMigrants = (prof.registeredMigrantIds || [])
       .map(id => SEASON_MIGRANT_BIRDS.find(m => m.id === id)?.commonName)
       .filter((n): n is string => Boolean(n));
@@ -126,7 +126,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
           favoriteBird: activeProfile.favoriteBird,
           isDeviceProfile: true,
           contributedSpecies: getProfileSpeciesNames(activeProfile),
-          journalCount: (activeProfile.fieldJournal || []).length
+          journalCount: (activeProfile.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length
         }
       ],
       sharedSightings: getProfileSpeciesNames(activeProfile),
@@ -187,7 +187,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
   // Friendly Ranking Calculation (Pestaña C)
   const calculateFriendlyStats = (prof: PlayerProfile) => {
     const allCatalog = [...CATALOG_BIRDS_DATA, ...PACK_EXTRA_BIRDS_DATA];
-    const journalCount = (prof.fieldJournal || []).length;
+    const journalCount = (prof.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length;
     const completedMissions = (prof.missions || []).filter(m => m.completed).length;
     const checkpointsCount = (prof.completedCheckpoints || []).length;
 
@@ -214,7 +214,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
       }
     });
 
-    (prof.fieldJournal || []).forEach(entry => {
+    (prof.fieldJournal || []).filter(j => j.source !== 'mindar-signal').forEach(entry => {
       if (entry.stratum) {
         const normalized =
           entry.stratum.toLowerCase().includes('urban')
@@ -585,7 +585,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                                       favoriteBird: prof.favoriteBird,
                                       isDeviceProfile: true,
                                       contributedSpecies: getProfileSpeciesNames(prof),
-                                      journalCount: (prof.fieldJournal || []).length
+                                      journalCount: (prof.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length
                                     })
                                   }
                                   className="px-2 py-1 rounded-lg bg-teal-900 hover:bg-teal-800 text-teal-100 border border-teal-500 text-[10px] font-bold flex items-center gap-1"

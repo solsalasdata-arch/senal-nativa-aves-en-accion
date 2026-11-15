@@ -436,7 +436,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     if (!journalModalBird) return;
     soundManager.playSuccess();
 
-    const nextCount = Math.min(10, (playerProfile.fieldJournal || []).length + 1);
+    const nextCount = Math.min(10, (playerProfile.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length + 1);
 
     onAddJournalEntry({
       birdName: journalModalBird.commonName,
@@ -540,7 +540,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   });
 
   const journalEntries = playerProfile.fieldJournal || [];
-  const journalCount = journalEntries.length;
+  const journalCount = journalEntries.filter(entry => entry.source !== 'mindar-signal').length;
   const hasDetailBadge = playerProfile.hasDetailObserverBadge || journalCount >= 10;
 
   // Build deterministic 4 options for Silueta Misteriosa across all 21 species
@@ -1221,6 +1221,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               </div>
             </div>
 
+            <p className="text-xs text-teal-300">Señales MindAR: {playerProfile.mindarDiscoveries?.length || 0} descubierta(s) · {playerProfile.mindarDiscoveries?.some(d => d.challengeCompletedAt !== undefined) ? 'desafío completado' : 'desafío pendiente'}</p>
             {/* Entries List */}
             {journalEntries.length === 0 ? (
               <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-2 text-white">
@@ -1248,8 +1249,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       </span>
                     </div>
 
+                    <p className="text-[10px] text-teal-300">{entry.source === 'mindar-signal' ? 'Descubrimiento mediante señal MindAR' : 'Avistamiento de ave real'}</p>
+                    {entry.source === 'mindar-signal' && <p className="text-xs text-slate-300">{entry.notes}</p>}
                     {/* 4 Toque Pills */}
-                    <div className="grid grid-cols-2 gap-1 text-[9px]">
+                    {entry.source !== 'mindar-signal' && <div className="grid grid-cols-2 gap-1 text-[9px]">
                       <div className="bg-slate-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
                         <span className="text-teal-400 font-bold">1. Acción: </span>
                         {entry.behavior || 'En reposo'}
@@ -1268,6 +1271,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       </div>
                     </div>
 
+                    }
                     <div className="text-[9px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-900">
                       <span>{new Date(entry.timestamp).toLocaleDateString()} · {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       {entry.stars ? (

@@ -1,15 +1,37 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BIRDS_DATA } from '../data/birdsData';
+import { BIRDS_DATA, TRIVIA_QUESTIONS } from '../data/birdsData';
+import type { PlayerProfile } from '../types/game';
+import { getMindARStatus, MindARActionResult } from '../utils/mindarProgress';
 
-interface Props { onClose: () => void; }
+interface Props {
+  onClose: () => void;
+  profile: PlayerProfile;
+  onRegister: () => MindARActionResult;
+  onComplete: () => MindARActionResult;
+  onJournal: () => void;
+}
 type TrackingState = 'starting' | 'searching' | 'found' | 'error';
 
 const tucan = BIRDS_DATA.find((bird) => bird.id === 'tucan-grande');
 
 // MindAR owns the camera in this isolated iframe. The legacy Gemini viewer must NOT
 // start its own getUserMedia stream while this component is mounted.
-export const ToucanMindARViewer: React.FC<Props> = ({ onClose }) => {
+export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegister, onComplete, onJournal }) => {
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const recognizedRef = useRef(false);
+  const readyRef = useRef(false);
+  const [recognized, setRecognized] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [correct, setCorrect] = useState(false);
+  const [saved, setSaved] = useState<boolean | null>(null);
+  const progress = getMindARStatus(profile);
+  const question = TRIVIA_QUESTIONS.find(q => q.id === 1);
+  const runAction = (action: () => MindARActionResult) => {
+    const result = action();
+    setSaved(result.saved);
+  };
   const [tracking, setTracking] = useState<TrackingState>('starting');
   const [message, setMessage] = useState('Preparando reconocimiento de imagen…');
 
@@ -69,29 +91,39 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
   improveCameraFocus().catch(()=>{});
   notify('ready');
  });
- scene.addEventListener('arError',()=>notify('error','No se pudo iniciar MindAR o la cámara.'));
+ const cameraError=(error)=>{
+  const name=error && (error.name || (error.error && error.error.name));
+  notify('error',name==='NotAllowedError' ? 'Permiso de cámara denegado. Habilitalo en tu navegador.' : name==='NotFoundError' ? 'No se encontró una cámara en este dispositivo.' : 'No se pudo iniciar MindAR o la cámara. Revisá los permisos y la conexión.');
+ };
+ scene.addEventListener('arError',(event)=>cameraError(event.detail));
+ window.addEventListener('unhandledrejection',(event)=>cameraError(event.reason));
  window.addEventListener('error',(event)=>notify('error',event.message));
 })();
 <\/script></body></html>`, []);
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      if (!readyRef.current) { setTracking('error'); setMessage('No se pudo cargar MindAR o la imagen de referencia. Revisá tu conexión.'); }
+    }, 15000);
     const receive = (event: MessageEvent) => {
       if (event.source !== frameRef.current?.contentWindow || event.data?.source !== 'senal-nativa-mindar') return;
       switch (event.data.type) {
-        case 'ready': setTracking('searching'); setMessage('Apuntá a la imagen del tucán'); break;
-        case 'found': setTracking('found'); setMessage('¡Tucán reconocido!'); break;
-        case 'lost': setTracking('searching'); setMessage('Volvé a enfocar la imagen del tucán'); break;
+        case 'ready': readyRef.current = true; window.clearTimeout(timeout); setTracking('searching'); setMessage('Apuntá a la imagen del tucán'); break;
+        case 'found':
+          if (!recognizedRef.current) { recognizedRef.current = true; setRecognized(true); }
+          setTracking('found'); setMessage('¡Imagen reconocida!'); break;
+        case 'lost': setTracking('searching'); setMessage(recognizedRef.current ? 'Seguimiento perdido · podés seguir' : 'Volvé a enfocar la imagen del tucán'); break;
         case 'error': setTracking('error'); setMessage(event.data.detail || 'Error de cámara o seguimiento'); break;
       }
     };
     window.addEventListener('message', receive);
-    return () => window.removeEventListener('message', receive);
-  }, []);
+    return () => { window.clearTimeout(timeout); window.removeEventListener('message', receive); };
+  }, [attempt]);
 
   return (
     <div className="fixed inset-0 z-[60] bg-slate-950 flex items-center justify-center p-2 sm:p-3">
       <div className="relative w-full max-w-sm h-[94vh] max-h-[860px] rounded-3xl overflow-hidden border-2 border-teal-500 bg-black shadow-2xl">
-        <iframe ref={frameRef} title="Visor XR del tucán" srcDoc={scene} allow="camera; accelerometer; gyroscope"
+        <iframe key={attempt} ref={frameRef} title="Visor XR del tucán" srcDoc={scene} allow="camera; accelerometer; gyroscope"
           className="absolute inset-0 w-full h-full border-0" />
         <header className="absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-slate-950/95 to-transparent p-4 pt-5 flex justify-between items-start">
           <div><p className="text-[10px] tracking-[.2em] font-black text-teal-300">SEÑAL NATIVA · VISOR XR</p>
@@ -104,18 +136,46 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
             {message}
           </span>
         </div>
-        {tracking === 'found' && tucan && (
-          <section className="absolute bottom-5 inset-x-3 z-10 bg-slate-950/90 backdrop-blur-xl border border-teal-400/70 rounded-2xl p-4 text-white shadow-2xl">
-            <p className="text-[10px] font-black tracking-widest text-teal-300">IMAGEN RECONOCIDA · AVE INSIGNIA</p>
+        {(recognized || progress !== 'none') && tracking !== 'error' && tucan && (
+          <section className="absolute bottom-5 inset-x-3 z-10 max-h-[55%] overflow-y-auto bg-slate-950/90 backdrop-blur-xl border border-teal-400/70 rounded-2xl p-4 text-white shadow-2xl">
+            <p className="text-[10px] font-black tracking-widest text-teal-300">{recognized ? 'IMAGEN RECONOCIDA' : 'SEÑAL REGISTRADA'} · AVE INSIGNIA</p>
             <h3 className="font-black text-xl">{tucan.commonName}</h3>
             <p className="italic text-teal-200 text-sm">{tucan.scientificName}</p>
+            <button type="button" className="min-h-11 text-teal-300 text-sm underline" onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>{expanded ? 'Ocultar ficha' : 'Ver ficha completa'}</button>
+            {expanded && <>
             <p className="text-xs text-slate-200 mt-2 leading-relaxed">{tucan.description}</p>
             <p className="text-xs text-slate-200 mt-2"><strong>Hábitat:</strong> {tucan.habitat} · <strong>Alimentación:</strong> {tucan.diet}</p>
             <p className="text-xs text-teal-200 mt-2">{tucan.funFact}</p>
+            </>}
+            <p className="text-[10px] text-slate-300 my-2">Un descubrimiento y una recompensa por señal y por perfil. Volver a escanear permite revisar la ficha, sin XP extra. No es un avistamiento de ave real.</p>
+            {progress === 'none' && <button type="button" className="w-full min-h-12 rounded-xl bg-teal-500 text-slate-950 font-bold" onClick={() => runAction(onRegister)}>Registrar descubrimiento</button>}
+            {progress === 'registered' && question && <div className="space-y-2 text-xs">
+              <p className="font-bold">{question.question}</p>
+              <p>Podés probar todas las veces que necesites, sin penalización.</p>
+              {!correct && question.options.map((option, index) => <button type="button" key={option} className="block w-full min-h-11 text-left p-2 rounded-xl border border-teal-700 bg-slate-900" onClick={() => {
+                if (index === question.correctIndex) { setCorrect(true); setFeedback(question.explanation); }
+                else setFeedback('Todavía no. Probá de nuevo: pensá cómo el pico ayuda a regular el calor.');
+              }}>{option}</button>)}
+              <p role="status">{feedback}</p>
+              {correct && <button type="button" className="w-full min-h-12 rounded-xl bg-teal-500 text-slate-950 font-bold" onClick={() => runAction(onComplete)}>Recibir +40 XP</button>}
+            </div>}
+            {progress === 'rewarded' && <div className="text-sm space-y-2">
+              <p className="font-bold text-teal-300">{saved === null ? 'Ya registrado · desafío completado' : '+40 XP · desafío completado'}</p>
+              <p>Total: {profile.xp} XP. {saved === true ? 'Progreso guardado en este dispositivo.' : saved === false ? 'Progreso solo en esta sesión.' : 'Sin XP extra por volver a escanear.'}</p>
+              <button type="button" className="w-full min-h-11 bg-teal-500 text-slate-950 rounded-xl font-bold" onClick={onJournal}>Ver mi diario</button>
+              <button type="button" className="w-full min-h-11 border border-teal-700 rounded-xl" onClick={onClose}>Seguir explorando</button>
+            </div>}
+            {saved === false && <div role="alert" className="text-xs text-amber-200 mt-2">No se pudo guardar en este dispositivo. El progreso puede perderse al cerrar o recargar.
+              <button type="button" className="block min-h-11 underline" onClick={() => runAction(onRegister)}>Reintentar guardar</button>
+            </div>}
           </section>
         )}
         {tracking === 'error' && <div className="absolute bottom-6 inset-x-4 z-10 text-center text-xs text-white bg-slate-900/90 rounded-xl p-3">
-          Revisá el permiso de cámara y que el sitio use HTTPS. Cerrá el visor para volver al modo anterior.
+          Revisá el permiso de cámara, la conexión y que el sitio use HTTPS.
+          <button type="button" className="block w-full min-h-11 text-teal-300" onClick={() => {
+            readyRef.current = false; setTracking('starting'); setMessage('Preparando reconocimiento de imagen…'); setAttempt(value => value + 1);
+          }}>Reintentar</button>
+          <button type="button" className="min-h-11" onClick={onClose}>Cerrar</button>
         </div>}
       </div>
     </div>

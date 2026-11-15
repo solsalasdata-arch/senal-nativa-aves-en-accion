@@ -1,6 +1,8 @@
 export type CompanionBirdId = 'Tucán Grande' | 'Benteveo' | 'Chinchero Chico' | 'Picaflor Cometa';
 
 export interface JournalEntry {
+  source?: 'field' | 'mindar-signal';
+  speciesId?: string;
   id: string;
   birdName: string;
   scientificName: string;
@@ -47,7 +49,17 @@ export interface Squad {
   createdAt: number;
 }
 
+export interface MindARDiscovery {
+  targetId: string;
+  speciesId: string;
+  profileId: string;
+  discoveredAt: number;
+  challengeCompletedAt?: number;
+  xpAwarded: number;
+}
+
 export interface PlayerProfile {
+  mindarDiscoveries?: MindARDiscovery[];
   id: string;
   name: string;
   avatarId: string;

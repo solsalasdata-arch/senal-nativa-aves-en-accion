@@ -21,8 +21,12 @@ import { CATALOG_BIRDS_DATA } from '../data/birdsData';
 import { CatalogBird, PlayerProfile } from '../types/game';
 import type { IdentifyBirdResult } from '../../api/identify-bird';
 import { ToucanMindARViewer } from './ToucanMindARViewer';
+import type { MindARActionResult } from '../utils/mindarProgress';
 
 interface SightingSimulationModalProps {
+  onMindARRegister: () => MindARActionResult;
+  onMindARComplete: () => MindARActionResult;
+  onMindARJournal: () => void;
   isOpen: boolean;
   onClose: () => void;
   playerProfile: PlayerProfile;
@@ -120,6 +124,10 @@ const birdLabel = (bird: CatalogBird) =>
 
 export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = ({
   isOpen,
+  playerProfile,
+  onMindARRegister,
+  onMindARComplete,
+  onMindARJournal,
   onClose,
   onSightingSuccess,
   onOpenQuizConsignas
@@ -428,7 +436,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
       Preparando visor XR…
     </div>
   );
-  if (arMode === 'ar') return <ToucanMindARViewer onClose={onClose} />;
+  if (arMode === 'ar') return <ToucanMindARViewer onClose={onClose} profile={playerProfile} onRegister={onMindARRegister} onComplete={onMindARComplete} onJournal={onMindARJournal} />;
 
   const toggleBirdSong = () => {
     if (!detectedBird) return;
