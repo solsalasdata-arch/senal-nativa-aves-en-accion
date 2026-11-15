@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BIRDS_DATA, TRIVIA_QUESTIONS } from '../data/birdsData';
 import type { PlayerProfile } from '../types/game';
 import { getMindARStatus, MindARActionResult } from '../utils/mindarProgress';
+import { ArrowLeft, HelpCircle, LoaderCircle, ScanLine, Check, CheckCircle2, BookOpen, AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
+import { useLanguage } from '../utils/i18n';
+import { Button, IconButton } from './ui';
 
 interface Props {
   onClose: () => void;
@@ -18,6 +21,7 @@ const tucan = BIRDS_DATA.find((bird) => bird.id === 'tucan-grande');
 // MindAR owns the camera in this isolated iframe. The legacy Gemini viewer must NOT
 // start its own getUserMedia stream while this component is mounted.
 export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegister, onComplete, onRetrySave, onJournal }) => {
+  const { tx } = useLanguage();
   const frameRef = useRef<HTMLIFrameElement>(null);
   const recognizedRef = useRef(false);
   const readyRef = useRef(false);
@@ -28,6 +32,8 @@ export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegist
   const [feedback, setFeedback] = useState('');
   const [correct, setCorrect] = useState(false);
   const [saved, setSaved] = useState<boolean | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const progress = getMindARStatus(profile);
   const question = TRIVIA_QUESTIONS.find(q => q.id === 1);
   const runAction = (action: () => MindARActionResult) => {
@@ -36,6 +42,9 @@ export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegist
   };
   const [tracking, setTracking] = useState<TrackingState>('starting');
   const [message, setMessage] = useState('Preparando reconocimiento de imagen…');
+  const retry = () => {
+    readyRef.current = false; errorReceivedRef.current = false; setTracking('starting'); setMessage('Preparando reconocimiento de imagen…'); setAttempt(value => value + 1);
+  };
 
   const scene = useMemo(() => `<!doctype html>
 <html lang="es"><head><meta charset="utf-8"/>
@@ -140,63 +149,99 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
     };
   }, [attempt]);
 
+  const status = tracking === 'error'
+    ? { text: message, icon: AlertTriangle }
+    : tracking === 'starting'
+    ? { text: tx('Preparando cámara…', 'Preparing camera…'), icon: LoaderCircle }
+    : progress === 'rewarded'
+    ? { text: tx('Completado', 'Completed'), icon: CheckCircle2 }
+    : progress === 'registered'
+    ? { text: tx('Registrado · desafío pendiente', 'Registered · challenge pending'), icon: BookOpen }
+    : recognized || tracking === 'found'
+    ? { text: tx('Reconocido', 'Recognized'), icon: CheckCircle2 }
+    : { text: tx('Buscando la imagen del tucán', 'Searching for the toucan image'), icon: ScanLine };
+  const StatusIcon = status.icon;
+  const steps = [
+    { label: tx('Registrar', 'Register'), done: progress !== 'none' },
+    { label: tx('Desafío', 'Challenge'), done: correct || progress === 'rewarded' },
+    { label: tx('Recompensa', 'Reward'), done: progress === 'rewarded' },
+  ];
+
   return (
-    <div className="fixed inset-0 z-[60] bg-slate-950 flex items-center justify-center p-2 sm:p-3">
-      <div className="relative w-full max-w-sm h-[94vh] max-h-[860px] rounded-3xl overflow-hidden border-2 border-teal-500 bg-black shadow-2xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-forest-950 sm:p-3">
+      <div className="relative h-full w-full overflow-hidden bg-black sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-forest-800">
         <iframe key={attempt} ref={frameRef} title="Visor XR del tucán" srcDoc={scene} allow="camera; accelerometer; gyroscope"
           className="absolute inset-0 w-full h-full border-0" />
-        <header className="absolute top-0 inset-x-0 z-10 bg-gradient-to-b from-slate-950/95 to-transparent p-4 pt-5 flex justify-between items-start">
-          <div><p className="text-[10px] tracking-[.2em] font-black text-teal-300">SEÑAL NATIVA · VISOR XR</p>
-            <h2 className="text-white text-lg font-black">Descubrí al tucán</h2></div>
-          <button type="button" onClick={onClose} aria-label="Cerrar visor XR"
-            className="rounded-full bg-slate-900/90 text-white w-10 h-10 text-xl border border-white/30">×</button>
-        </header>
-        <div className="absolute top-24 inset-x-4 z-10 pointer-events-none text-center">
-          <span className={`inline-block rounded-full px-4 py-2 text-xs font-bold border backdrop-blur-md ${tracking === 'found' ? 'bg-teal-800/85 text-white border-teal-300' : tracking === 'error' ? 'bg-red-900/90 text-white border-red-400' : 'bg-slate-950/80 text-teal-100 border-teal-600'}`}>
-            {message}
-          </span>
+        <div className="pt-safe absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-forest-950/95 via-forest-950/75 to-transparent px-4 pb-6">
+          <header className="flex items-center gap-3">
+            <IconButton label={tx('Salir del escáner', 'Exit scanner')} onClick={onClose}><ArrowLeft aria-hidden="true" className="h-5 w-5" /></IconButton>
+            <div className="min-w-0 flex-1 text-ink"><h2 className="text-xs font-semibold text-emerald-200">{tx('Escáner de señales', 'Sign scanner')}</h2><p className="text-base font-semibold">{tx('Descubrí al tucán', 'Discover the toucan')}</p></div>
+            <IconButton label={tx('Ayuda', 'Help')} aria-expanded={showHelp} aria-controls="scanner-help" onClick={() => setShowHelp(!showHelp)}><HelpCircle aria-hidden="true" className="h-5 w-5" /></IconButton>
+          </header>
+          <div role="status" aria-live="polite" className={`mt-3 flex items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold ${tracking === 'error' ? 'border-rose-300 bg-rose-950 text-rose-100' : 'border-white/25 bg-forest-950 text-ink'}`}>
+            <StatusIcon aria-hidden="true" className={`h-5 w-5 shrink-0 ${tracking === 'starting' ? 'animate-spin' : ''}`} /><span>{status.text}</span>
+          </div>
+          {tracking === 'searching' && message !== 'Apuntá a la imagen del tucán' && <p className="mt-2 rounded-xl bg-forest-950 px-3 py-2 text-center text-xs text-ink-muted">{message}</p>}
+          {showHelp && <aside id="scanner-help" className="ui-card mt-3 max-h-[45dvh] space-y-3 overflow-y-auto text-sm">
+            <h3 className="font-semibold">{tx('Cómo escanear una señal', 'How to scan a sign')}</h3>
+            <ul className="list-disc space-y-2 pl-5 text-xs leading-relaxed text-ink-muted">
+              <li>{tx('Apuntá a la imagen del tucán en la señal del parque.', 'Point at the toucan image on the park sign.')}</li>
+              <li>{tx('Buscá buena luz y mantené una distancia de 20–40 cm.', 'Find good light and keep a distance of 20–40 cm.')}</li>
+              <li>{tx('Sostené el teléfono firme hasta reconocer la imagen.', 'Hold your phone steady until the image is recognized.')}</li>
+              <li>{tx('Necesitás permitir el acceso a la cámara en tu navegador.', 'You need to allow camera access in your browser.')}</li>
+            </ul>
+            <Button variant="secondary" fullWidth onClick={retry}>{tx('Reintentar', 'Retry')}</Button>
+          </aside>}
         </div>
         {(recognized || progress !== 'none') && tracking !== 'error' && tucan && (
-          <section className="absolute bottom-5 inset-x-3 z-10 max-h-[55%] overflow-y-auto bg-slate-950/90 backdrop-blur-xl border border-teal-400/70 rounded-2xl p-4 text-white shadow-2xl">
-            <p className="text-[10px] font-black tracking-widest text-teal-300">{recognized ? 'IMAGEN RECONOCIDA' : 'SEÑAL REGISTRADA'} · AVE INSIGNIA</p>
-            <h3 className="font-black text-xl">{tucan.commonName}</h3>
-            <p className="italic text-teal-200 text-sm">{tucan.scientificName}</p>
-            <button type="button" className="min-h-11 text-teal-300 text-sm underline" onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>{expanded ? 'Ocultar ficha' : 'Ver ficha completa'}</button>
-            {expanded && <>
-            <p className="text-xs text-slate-200 mt-2 leading-relaxed">{tucan.description}</p>
-            <p className="text-xs text-slate-200 mt-2"><strong>Hábitat:</strong> {tucan.habitat} · <strong>Alimentación:</strong> {tucan.diet}</p>
-            <p className="text-xs text-teal-200 mt-2">{tucan.funFact}</p>
-            </>}
-            <p className="text-[10px] text-slate-300 my-2">Un descubrimiento y una recompensa por señal y por perfil. Volver a escanear permite revisar la ficha, sin XP extra. No es un avistamiento de ave real.</p>
-            {progress === 'none' && <button type="button" className="w-full min-h-12 rounded-xl bg-teal-500 text-slate-950 font-bold" onClick={() => runAction(onRegister)}>Registrar descubrimiento</button>}
-            {progress === 'registered' && question && <div className="space-y-2 text-xs">
-              <p className="font-bold">{question.question}</p>
-              <p>Podés probar todas las veces que necesites, sin penalización.</p>
-              {!correct && question.options.map((option, index) => <button type="button" key={option} className="block w-full min-h-11 text-left p-2 rounded-xl border border-teal-700 bg-slate-900" onClick={() => {
-                if (index === question.correctIndex) { setCorrect(true); setFeedback(question.explanation); }
-                else setFeedback('Todavía no. Probá de nuevo: pensá cómo el pico ayuda a regular el calor.');
-              }}>{option}</button>)}
-              <p role="status">{feedback}</p>
-              {correct && <button type="button" className="w-full min-h-12 rounded-xl bg-teal-500 text-slate-950 font-bold" onClick={() => runAction(onComplete)}>Recibir +40 XP</button>}
-            </div>}
-            {progress === 'rewarded' && <div className="text-sm space-y-2">
-              <p className="font-bold text-teal-300">{saved === null ? 'Ya registrado · desafío completado' : '+40 XP · desafío completado'}</p>
-              <p>Total: {profile.xp} XP. {saved === true ? 'Progreso guardado en este dispositivo.' : saved === false ? 'Progreso solo en esta sesión.' : 'Sin XP extra por volver a escanear.'}</p>
-              <button type="button" className="w-full min-h-11 bg-teal-500 text-slate-950 rounded-xl font-bold" onClick={onJournal}>Ver mi diario</button>
-              <button type="button" className="w-full min-h-11 border border-teal-700 rounded-xl" onClick={onClose}>Seguir explorando</button>
-            </div>}
-            {saved === false && <div role="alert" className="text-xs text-amber-200 mt-2">No se pudo guardar en este dispositivo. El progreso puede perderse al cerrar o recargar.
-              <button type="button" className="block min-h-11 underline" onClick={() => setSaved(onRetrySave())}>Reintentar guardar</button>
-            </div>}
+          <section aria-label={tx('Descubrimiento del tucán', 'Toucan discovery')} className={`pb-safe absolute inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden rounded-t-3xl border-t border-white/25 bg-surface-900 text-ink shadow-xl transition-[height] duration-200 ${expanded ? 'h-[70dvh]' : 'h-[35dvh]'}`}>
+            <button type="button" className="flex min-h-11 shrink-0 items-center justify-center gap-2 text-[11px] font-semibold text-ink-muted" aria-expanded={expanded} aria-controls="scanner-details" onClick={() => setExpanded(!expanded)}>
+              <span aria-hidden="true" className="h-1 w-8 rounded-full bg-ink-muted/60" />{expanded ? tx('Ocultar ficha', 'Hide details') : tx('Ver ficha completa', 'View full details')}{expanded ? <ChevronDown aria-hidden="true" className="h-4 w-4" /> : <ChevronUp aria-hidden="true" className="h-4 w-4" />}
+            </button>
+            <div id="scanner-details" className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-3">
+              <div><h3 className="text-xl font-semibold">{tucan.commonName}</h3><p className="text-xs italic text-ink-muted">{tucan.scientificName}</p></div>
+              {!expanded && <p className="text-xs leading-relaxed text-ink-muted">{tucan.funFact.match(/[^.!?]+[.!?]?/)?.[0]}</p>}
+              <ol aria-label={tx('Pasos del descubrimiento', 'Discovery steps')} className="grid grid-cols-3 gap-2">{steps.map((step, index) => <li key={step.label} className="flex items-center gap-1 text-[11px] font-semibold">{step.done ? <Check aria-hidden="true" className="h-4 w-4 shrink-0 text-action-emerald" /> : <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-ink-muted">{index + 1}</span>}{step.label}</li>)}</ol>
+              {saved === false && <div role="alert" className="rounded-xl border border-amber-300 bg-amber-950 p-3 text-xs leading-relaxed text-amber-100">No se pudo guardar en este dispositivo. El progreso puede perderse al cerrar o recargar.
+                <Button variant="ghost" className="mt-2 text-xs" onClick={() => setSaved(onRetrySave())}>{tx('Reintentar guardar', 'Retry saving')}</Button>
+              </div>}
+              {expanded && <div className="animate-fadeIn space-y-3">
+                {progress === 'registered' && question && <div className="space-y-3 rounded-2xl border border-white/20 bg-surface-950 p-3 text-xs">
+                  <h4 className="text-sm font-semibold">{question.question}</h4>
+                  <p className="text-ink-muted">{tx('Podés probar todas las veces que necesites, sin penalización.', 'You can try as often as you need, without penalty.')}</p>
+                  {!correct && question.options.map((option, index) => <button type="button" key={option} aria-pressed={selectedOption === index} onClickCapture={() => setSelectedOption(index)} className={`block min-h-11 w-full rounded-xl border p-3 text-left leading-relaxed ${selectedOption === index ? 'border-amber-300 bg-amber-950 text-amber-100' : 'border-white/25 bg-surface-800'}`} onClick={() => {
+                    if (index === question.correctIndex) { setCorrect(true); setFeedback(question.explanation); }
+                    else setFeedback('Todavía no. Probá de nuevo: pensá cómo el pico ayuda a regular el calor.');
+                  }}>{option}{selectedOption === index && <span className="mt-1 block font-semibold">{tx('Todavía no · probá otra respuesta', 'Not yet · try another answer')}</span>}</button>)}
+                  <p role="status" className="leading-relaxed text-amber-200">{feedback}</p>
+                  {correct && <Button fullWidth onClick={() => runAction(onComplete)}>{tx('Recibir +40 XP', 'Receive +40 XP')}</Button>}
+                </div>}
+                {progress === 'rewarded' && <div className="space-y-3 rounded-2xl bg-surface-950 p-3 text-sm">
+                  <p className="font-semibold text-emerald-200">{saved === null ? tx('Ya registrado · desafío completado', 'Already registered · challenge completed') : tx('+40 XP · desafío completado', '+40 XP · challenge completed')}</p>
+                  <p className="text-xs leading-relaxed text-ink-muted">Total: {profile.xp} XP. {saved === true ? tx('Progreso guardado en este dispositivo.', 'Progress saved on this device.') : saved === false ? tx('Progreso solo en esta sesión.', 'Progress only in this session.') : tx('Sin XP extra por volver a escanear.', 'No extra XP for scanning again.')}</p>
+                  <Button fullWidth onClick={onJournal}>{tx('Ver mi diario', 'View my journal')}</Button>
+                  <Button variant="ghost" fullWidth onClick={onClose}>{tx('Seguir explorando', 'Keep exploring')}</Button>
+                </div>}
+                <p className="text-xs leading-relaxed text-ink-muted">{tucan.description}</p>
+                <p className="text-xs leading-relaxed text-ink-muted"><strong>{tx('Hábitat:', 'Habitat:')}</strong> {tucan.habitat}</p>
+                <p className="text-xs leading-relaxed text-ink-muted"><strong>{tx('Alimentación:', 'Diet:')}</strong> {tucan.diet}</p>
+                <p className="text-xs leading-relaxed text-emerald-200">{tucan.funFact}</p>
+                <p className="text-xs leading-relaxed text-ink-muted">Un descubrimiento y una recompensa por señal y por perfil. Volver a escanear permite revisar la ficha, sin XP extra. No es un avistamiento de ave real.</p>
+              </div>}
+            </div>
+            {(!expanded || progress === 'none') && <footer className="shrink-0 border-t border-white/15 px-4 pt-3">
+              {progress === 'none' && <Button fullWidth onClick={() => runAction(onRegister)}>{tx('Registrar descubrimiento', 'Register discovery')}</Button>}
+              {progress === 'registered' && <Button fullWidth onClick={() => setExpanded(true)}>{tx('Responder desafío', 'Answer challenge')}</Button>}
+              {progress === 'rewarded' && <Button fullWidth onClick={onJournal}>{tx('Ver mi diario', 'View my journal')}</Button>}
+            </footer>}
           </section>
         )}
-        {tracking === 'error' && <div className="absolute bottom-6 inset-x-4 z-10 text-center text-xs text-white bg-slate-900/90 rounded-xl p-3">
-          Revisá el permiso de cámara, la conexión y que el sitio use HTTPS.
-          <button type="button" className="block w-full min-h-11 text-teal-300" onClick={() => {
-            readyRef.current = false; errorReceivedRef.current = false; setTracking('starting'); setMessage('Preparando reconocimiento de imagen…'); setAttempt(value => value + 1);
-          }}>Reintentar</button>
-          <button type="button" className="min-h-11" onClick={onClose}>Cerrar</button>
-        </div>}
+        {tracking === 'error' && <section className="ui-card pb-safe absolute inset-x-4 bottom-4 z-10 space-y-3 text-sm">
+          <h3 className="font-semibold">{tx('No pudimos abrir el escáner', 'We could not open the scanner')}</h3>
+          <p className="text-xs leading-relaxed text-ink-muted">{tx('Revisá el permiso de cámara, la conexión y que el sitio use HTTPS.', 'Check camera permission, your connection and that the site uses HTTPS.')}</p>
+          <Button fullWidth onClick={retry}>{tx('Reintentar', 'Retry')}</Button>
+          <Button variant="ghost" fullWidth onClick={onClose}>{tx('Cerrar', 'Close')}</Button>
+        </section>}
       </div>
     </div>
   );

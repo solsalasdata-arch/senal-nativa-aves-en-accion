@@ -13,7 +13,8 @@ import {
   HelpCircle,
   Eye,
   Pause,
-  ScanSearch
+  ScanSearch,
+  LoaderCircle
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { requestMobileCameraStream, switchToOtherCamera, countVideoInputs } from '../utils/camera';
@@ -22,6 +23,7 @@ import { CatalogBird, PlayerProfile } from '../types/game';
 import type { IdentifyBirdResult } from '../../api/identify-bird';
 import { ToucanMindARViewer } from './ToucanMindARViewer';
 import type { MindARActionResult } from '../utils/mindarProgress';
+import { Button } from './ui';
 
 interface SightingSimulationModalProps {
   onMindARRegister: () => MindARActionResult;
@@ -440,9 +442,10 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
   if (!isOpen) return null;
   if (arMode === 'checking') return (
-    <div className="fixed inset-0 z-50 bg-slate-950 text-teal-100 flex flex-col gap-4 items-center justify-center text-sm font-bold">
-      Preparando visor XR…
-      <button type="button" onClick={onClose} className="min-h-11 px-6 rounded-xl border border-teal-600">Cerrar</button>
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-forest-950 p-6 text-sm text-ink">
+      <LoaderCircle aria-hidden="true" className="h-8 w-8 animate-spin text-action-turquoise" />
+      <p role="status">Preparando escáner…</p>
+      <Button variant="ghost" onClick={onClose}>Salir</Button>
     </div>
   );
   if (arMode === 'ar') return <ToucanMindARViewer onClose={onClose} profile={playerProfile} onRegister={onMindARRegister} onComplete={onMindARComplete} onRetrySave={onMindARRetrySave} onJournal={onMindARJournal} />;
