@@ -6,9 +6,25 @@ import { Screen1Splash } from '../src/components/Screen1Splash';
 import { Screen2PlayerSelector } from '../src/components/Screen2PlayerSelector';
 import { Screen3HostPresentation } from '../src/components/Screen3HostPresentation';
 import { createDefaultProfile } from '../src/utils/storage';
+import { getReturningProfile } from '../src/utils/welcome';
 
 const noop = () => {};
 const profile = createDefaultProfile('Ana');
+
+test('returning profile ignores untouched seeds but recognizes user progress', () => {
+  for (const name of ['Santi Guardián', 'Explorador Yungas']) {
+    const seed = createDefaultProfile(name);
+    assert.equal(getReturningProfile(seed, [seed]), null);
+    assert.equal(getReturningProfile({ ...seed, fieldJournal: [] }, [seed]), null);
+    for (const progressed of [
+      { ...seed, name: 'Ana' },
+      { ...seed, xp: 1 },
+      { ...seed, fieldJournal: [{ ...seed.fieldJournal[0], id: 'observation' }] },
+      { ...seed, mindarDiscoveries: [{ targetId: 't', speciesId: 'b', profileId: seed.id, discoveredAt: 1, xpAwarded: 0 }] },
+    ]) assert.equal(getReturningProfile(progressed, [progressed]), progressed);
+    assert.equal(getReturningProfile(seed, [seed, profile]), seed);
+  }
+});
 
 test('splash offers a real start CTA or returning-profile actions', () => {
   const props = { onStartAdventure: noop, onContinue: noop, onToggleSound: noop, soundEnabled: true };

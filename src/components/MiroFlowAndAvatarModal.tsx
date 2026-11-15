@@ -62,16 +62,18 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
   onOpenQuiz
 }) => {
   const { tx } = useLanguage();
-  const [topSection, setTopSection] = useState<'yo_jugadores' | 'miro_flow' | 'character_study'>(initialMode);
+  const isAdmin = typeof location !== 'undefined' && new URLSearchParams(location.search).has('admin');
+  const allowedInitialMode = initialMode === 'miro_flow' && !isAdmin ? 'yo_jugadores' : initialMode;
+  const [topSection, setTopSection] = useState<'yo_jugadores' | 'miro_flow' | 'character_study'>(allowedInitialMode);
   const [profileSubTab, setProfileSubTab] = useState<'yo' | 'jugadores'>('yo');
   const [selectedStudyAngle, setSelectedStudyAngle] = useState<'flight' | 'frontal' | 'side' | 'back'>('flight');
   const [zoomBoard, setZoomBoard] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setTopSection(initialMode);
+      setTopSection(allowedInitialMode);
     }
-  }, [isOpen, initialMode]);
+  }, [isOpen, allowedInitialMode]);
 
   if (!isOpen) return null;
 
@@ -167,7 +169,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
               <span>{tx('ESTUDIO 3D', '3D STUDY')}</span>
             </button>
 
-            <button
+            {isAdmin && <button
               onClick={() => {
                 soundManager.playClick();
                 setTopSection('miro_flow');
@@ -180,7 +182,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
             >
               <Layers className="w-3 h-3" />
               <span>{tx('FLUJO MIRO', 'MIRO FLOW')}</span>
-            </button>
+            </button>}
           </div>
 
           <LanguageSelector />
@@ -680,7 +682,7 @@ export const MiroFlowAndAvatarModal: React.FC<MiroFlowAndAvatarModalProps> = ({
         {/* =================================================================== */}
         {/* VISTA 3: ARQUITECTURA Y DIAGRAMA DE FLUJO DEL TABLERO DE MIRO       */}
         {/* =================================================================== */}
-        {topSection === 'miro_flow' && (
+        {isAdmin && topSection === 'miro_flow' && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3 bg-slate-950 text-white">
             {/* Definición Oficial del Tablero de Miro: Sistema de Estaciones Digitales de 3 Capas */}
             <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-950 via-slate-900 to-emerald-950 border-2 border-teal-400/70 space-y-2 shadow-lg">

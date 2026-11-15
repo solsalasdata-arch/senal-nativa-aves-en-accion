@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Screen1Splash } from './components/Screen1Splash';
 import { Screen2PlayerSelector } from './components/Screen2PlayerSelector';
 import { Screen3HostPresentation } from './components/Screen3HostPresentation';
-import { Screen4MainHub } from './components/Screen4MainHub';
+import { Screen4MainHub, HubSheet } from './components/Screen4MainHub';
 import { Screen5TipsModal } from './components/Screen5TipsModal';
 import { PhotoCompanionModal } from './components/PhotoCompanionModal';
 import { SightingSimulationModal } from './components/SightingSimulationModal';
@@ -31,6 +31,7 @@ import { LanguageProvider } from './utils/i18n';
 import { OfflineIndicator } from './components/PWAInstallButton';
 import { capFieldJournal } from './utils/journal';
 import { registerMindARDiscovery, completeMindARChallenge, MindARActionResult } from './utils/mindarProgress';
+import { getReturningProfile } from './utils/welcome';
 
 type ScreenId = 'screen1' | 'screen2' | 'screen3' | 'screen4';
 
@@ -76,6 +77,7 @@ export default function App() {
   const [showDriveModal, setShowDriveModal] = useState(false);
   const [showSquadsModal, setShowSquadsModal] = useState(false);
   const [showMiroModal, setShowMiroModal] = useState(false);
+  const [hubSheet, setHubSheet] = useState<HubSheet>(null);
   const [miroModalInitialMode, setMiroModalInitialMode] = useState<'yo_jugadores' | 'miro_flow' | 'character_study'>('yo_jugadores');
 
   // Compute current active modal identifier for History API
@@ -106,7 +108,7 @@ export default function App() {
       ? 'squads'
       : showMiroModal
       ? 'miro'
-      : null;
+      : hubSheet;
 
   const closeAllModals = useCallback(() => {
     setShowTipsModal(false);
@@ -122,6 +124,7 @@ export default function App() {
     setShowDriveModal(false);
     setShowSquadsModal(false);
     setShowMiroModal(false);
+    setHubSheet(null);
   }, []);
 
   const navStateRef = useRef<{ screen: ScreenId; modal: string | null }>({
@@ -527,7 +530,7 @@ export default function App() {
           {currentScreen === 'screen1' && (
             <Screen1Splash
               onStartAdventure={() => setCurrentScreen('screen2')}
-              returningProfile={activeProfile.name !== 'Explorador Yungas' || activeProfile.xp > 0 || profiles.length > 1 ? activeProfile : null}
+              returningProfile={getReturningProfile(activeProfile, profiles)}
               onContinue={() => setCurrentScreen('screen4')}
               soundEnabled={soundEnabled}
               onToggleSound={handleToggleSound}
@@ -572,6 +575,8 @@ export default function App() {
             <Screen4MainHub
               playerProfile={activeProfile}
               missions={activeProfile.missions}
+              hubSheet={hubSheet}
+              onHubSheetChange={setHubSheet}
               onOpenOptions={() => setShowOptionsModal(true)}
               onOpenTips={() => setShowTipsModal(true)}
               onOpenMap={() => setShowMapModal(true)}
@@ -581,16 +586,16 @@ export default function App() {
                 setShowBirdsModal(true);
               }}
               onOpenSighting={() => setShowSightingModal(true)}
-              onOpenCamera={() => setShowSightingModal(true)}
+              onOpenCompanionPhoto={() => setShowPhotoModal(true)}
+              onOpenJournal={() => {
+                setBirdsInitialTab('journal');
+                setShowBirdsModal(true);
+              }}
               onOpenBadge={() => setShowLevelUpModal(true)}
               onOpenDrive={() => setShowDriveModal(true)}
               onOpenSquadsAndSeasons={() => setShowSquadsModal(true)}
               onOpenMiroAvatar={() => {
                 setMiroModalInitialMode('yo_jugadores');
-                setShowMiroModal(true);
-              }}
-              onOpenMiroFlow={() => {
-                setMiroModalInitialMode('miro_flow');
                 setShowMiroModal(true);
               }}
               onChangePlayer={() => setCurrentScreen('screen2')}
