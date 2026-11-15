@@ -181,10 +181,11 @@ export default function App() {
   // Sync profile update helper
   const handleUpdateProfile = (updates: Partial<PlayerProfile>) => {
     const updated = updateActiveProfile({
-      mindarDiscoveries: activeProfile.mindarDiscoveries,
-      fieldJournal: activeProfile.fieldJournal,
+      mindarDiscoveries: mindarProfileRef.current.mindarDiscoveries,
+      fieldJournal: mindarProfileRef.current.fieldJournal,
       ...updates
     });
+    mindarProfileRef.current = updated;
     setActiveProfile(updated);
     setProfiles(loadProfilesList());
     return updated;
