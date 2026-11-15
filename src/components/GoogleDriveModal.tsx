@@ -186,10 +186,11 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
           `#${idx + 1} - ${e.birdName} (${e.scientificName})`,
           `   Fecha/Hora: ${d}`,
           `   Punto del Sendero: ${e.trailName}`,
+          ...(e.source === 'mindar-signal' ? ['   Descubrimiento mediante señal MindAR · No es un avistamiento de ave real.'] : [
           `   1. Comportamiento: ${e.behavior || 'En reposo'}`,
           `   2. Cantidad: ${e.count || '1 individuo'}`,
           `   3. Estrato: ${e.stratum || 'Subdosel'}`,
-          `   4. Clima: ${e.weather || 'Soleado'}`,
+          `   4. Clima: ${e.weather || 'Soleado'}`]),
           `   Notas: ${e.notes}`,
           ''
         ].join('\n');
@@ -309,6 +310,8 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
         unlockedSilhouettes: profileToRestore.unlockedSilhouettes,
         unlockedAcoustics: profileToRestore.unlockedAcoustics,
         fieldJournal: profileToRestore.fieldJournal,
+        mindarDiscoveries: ((profileToRestore.mindarDiscoveries || []) as NonNullable<PlayerProfile['mindarDiscoveries']>)
+          .map(discovery => ({ ...discovery, profileId: activeProfile.id })),
         birdPhotoStars: profileToRestore.birdPhotoStars
       });
 

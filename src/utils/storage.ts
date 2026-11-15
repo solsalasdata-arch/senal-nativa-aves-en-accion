@@ -29,6 +29,7 @@ export function createDefaultProfile(
     favoriteBird: resolvedBird,
     level: 1,
     xp: 0,
+    mindarDiscoveries: [],
     sightingsCompleted: 0,
     questionsAnswered: 0,
     hasRisingObserverBadge: false,
@@ -111,7 +112,8 @@ export function loadProfilesList(): PlayerProfile[] {
         registeredMigrantIds: p.registeredMigrantIds || ['mig-loro-alisero'],
         birdPhotoStars: p.birdPhotoStars || {},
         unlockedRareBirds: p.unlockedRareBirds || [],
-        fieldJournal: p.fieldJournal || []
+        fieldJournal: p.fieldJournal || [],
+        mindarDiscoveries: p.mindarDiscoveries || []
       };
     });
   } catch {
@@ -120,12 +122,23 @@ export function loadProfilesList(): PlayerProfile[] {
   }
 }
 
-export function saveProfilesList(profiles: PlayerProfile[]): void {
+export function saveProfilesList(profiles: PlayerProfile[]): boolean {
   try {
     localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(profiles));
+    return true;
   } catch {
-    // ignore
+    return false;
   }
+}
+
+export function updateActiveProfileChecked(profile: PlayerProfile, updates: Partial<PlayerProfile>): { profile: PlayerProfile; saved: boolean } {
+  const profiles = loadProfilesList();
+  const updated = { ...profile, ...updates, lastPlayedAt: Date.now() };
+  const index = profiles.findIndex(p => p.id === profile.id);
+  if (index === -1) profiles.push(updated);
+  else profiles[index] = updated;
+  const saved = saveProfilesList(profiles);
+  return { profile: updated, saved };
 }
 
 export function getActiveProfileId(): string {
@@ -238,7 +251,7 @@ export function loadSquadsList(): Squad[] {
             favoriteBird: activeProf.favoriteBird,
             isDeviceProfile: true,
             contributedSpecies: ['Benteveo', 'Chinchero Chico', activeProf.favoriteBird],
-            journalCount: (activeProf.fieldJournal || []).length
+            journalCount: (activeProf.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length
           },
           {
             id: 'comp_1',

@@ -22,12 +22,15 @@ import {
   createNewProfile,
   switchActiveProfile,
   deleteProfile,
-  updateActiveProfile
+  updateActiveProfile,
+  updateActiveProfileChecked
 } from './utils/storage';
 import { soundManager } from './utils/audio';
 import { PlayerProfile, CompanionBirdId, JournalEntry, CatalogBird } from './types/game';
 import { LanguageProvider } from './utils/i18n';
 import { OfflineIndicator } from './components/PWAInstallButton';
+import { capFieldJournal } from './utils/journal';
+import { registerMindARDiscovery, completeMindARChallenge, MindARActionResult } from './utils/mindarProgress';
 
 type ScreenId = 'screen1' | 'screen2' | 'screen3' | 'screen4';
 
@@ -35,6 +38,24 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('screen1');
   const [profiles, setProfiles] = useState<PlayerProfile[]>(() => loadProfilesList());
   const [activeProfile, setActiveProfile] = useState<PlayerProfile>(() => getActiveProfile());
+  const mindarProfileRef = useRef(activeProfile);
+  mindarProfileRef.current = activeProfile;
+  const handleMindARRetrySave = (): boolean => {
+    const checked = updateActiveProfileChecked(mindarProfileRef.current, {});
+    mindarProfileRef.current = checked.profile;
+    setActiveProfile(checked.profile);
+    setProfiles(previous => previous.map(p => p.id === checked.profile.id ? checked.profile : p));
+    return checked.saved;
+  };
+  const handleMindARAction = (action: 'register' | 'complete'): MindARActionResult => {
+    const current = mindarProfileRef.current;
+    const result = (action === 'register' ? registerMindARDiscovery : completeMindARChallenge)(current, Date.now());
+    const checked = updateActiveProfileChecked(current, result.updates);
+    mindarProfileRef.current = checked.profile;
+    setActiveProfile(checked.profile);
+    setProfiles(previous => previous.map(p => p.id === checked.profile.id ? checked.profile : p));
+    return { status: result.status, saved: checked.saved };
+  };
 
   // Global Audio Toggles
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -159,7 +180,12 @@ export default function App() {
 
   // Sync profile update helper
   const handleUpdateProfile = (updates: Partial<PlayerProfile>) => {
-    const updated = updateActiveProfile(updates);
+    const updated = updateActiveProfile({
+      mindarDiscoveries: mindarProfileRef.current.mindarDiscoveries,
+      fieldJournal: mindarProfileRef.current.fieldJournal,
+      ...updates
+    });
+    mindarProfileRef.current = updated;
     setActiveProfile(updated);
     setProfiles(loadProfilesList());
     return updated;
@@ -265,7 +291,7 @@ export default function App() {
       stars
     };
 
-    const updatedJournal = [newJournalEntry, ...(activeProfile.fieldJournal || [])].slice(0, 10);
+    const updatedJournal = capFieldJournal([newJournalEntry, ...(activeProfile.fieldJournal || [])]);
 
     const updatedMissions = activeProfile.missions.map(m =>
       m.id === 'm-media' ? { ...m, progress: 1, completed: true } : m
@@ -357,7 +383,7 @@ export default function App() {
 
     const currentJournal = activeProfile.fieldJournal || [];
     const updatedJournal = [newEntry, ...currentJournal];
-    const newCount = updatedJournal.length;
+    const newCount = updatedJournal.filter(entry => entry.source !== 'mindar-signal').length;
     const shouldAwardDetailBadge = newCount >= 10 && !activeProfile.hasDetailObserverBadge;
 
     handleUpdateProfile({
@@ -471,7 +497,8 @@ export default function App() {
       hasRouteCompleteSeal: false,
       completedCheckpoints: [],
       birdPhotoStars: {},
-      fieldJournal: []
+      fieldJournal: [],
+      mindarDiscoveries: []
     });
   };
 
@@ -601,6 +628,10 @@ export default function App() {
 
         {/* MODAL DE AVISTAMIENTO XR Y FOTO PERFECTA (PASO 12) */}
         <SightingSimulationModal
+          onMindARRegister={() => handleMindARAction('register')}
+          onMindARComplete={() => handleMindARAction('complete')}
+          onMindARRetrySave={handleMindARRetrySave}
+          onMindARJournal={() => { setShowSightingModal(false); setBirdsInitialTab('journal'); setShowBirdsModal(true); }}
           isOpen={showSightingModal}
           onClose={() => setShowSightingModal(false)}
           playerProfile={activeProfile}
