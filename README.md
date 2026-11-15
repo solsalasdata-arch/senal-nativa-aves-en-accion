@@ -59,7 +59,7 @@ La aplicación articula el recorrido educativo y lúdico a través de **4 módul
 | **7** | **2º Puente "El Ceibo"** | `2000 m` | Puente | Fueguero Común (*Piranga flava*), Pepitero de Collar (*Saltator aurantiirostris*), Juan Chiviro (*Cyclarhis gujanensis*) |
 | **8** | **3º Mirador "Horco Molle"** | `2345 m` | Mirador | Frutero Yungueño (*Chlorospingus flavopectus*), Rey del Bosque (*Pheucticus aureoventris*), Arañero Coronado Grande (*Myiothlypis bivittata*) |
 
-- **Sello de Ruta Completa**: Al validar los 8 puntos mediante el desafío QR/GPS de cada parada, el explorador obtiene el **Sello de Ruta Completa** y desbloquea las fichas especiales de aves raras de las Yungas (**Urutaú** y **Jote Real**).
+- **Sello de Ruta Completa**: Al validar los 8 puntos con un QR válido de cada estación y su desafío correcto (sin GPS), el explorador obtiene el **Sello de Ruta Completa** y desbloquea las fichas especiales de aves raras de las Yungas (**Urutaú** y **Jote Real**).
 - **Visor XR de Avistamiento y Mecánica "Foto Perfecta" (Paso 12)**:
   - Retícula de enfoque sobre cámara real o simulación de sendero con detección en vivo del **Benteveo** (*Pitangus sulphuratus*) y del **Chinchero Chico** (*Lepidocolaptes angustirostris*).
   - **Calificación de 1 a 3 estrellas (⭐)** evaluando 3 criterios: **1) Ave centrada**, **2) Nitidez del enfoque** y **3) Distancia respetuosa sin flash**.
@@ -111,6 +111,13 @@ La aplicación articula el recorrido educativo y lúdico a través de **4 módul
   - Clasificación pedagógica que premia la **CONSTANCIA** (registros en el Diario de Campo y misiones cumplidas) y la **VARIEDAD BIOLÓGICA** (cantidad de **Familias** diferentes observadas sobre las 33 de la Guía y **Estratos** cubiertos) con medallas específicas por encima del puntaje bruto.
 
 ---
+
+## QR de las estaciones
+
+Las ocho estaciones admiten escaneo real y modo práctica sin recompensa.
+Consultá la [guía de QR de estaciones](docs/qr-estaciones.md) para regenerar
+e imprimir los carteles, configurar las URLs y conocer las reglas de XP,
+el flujo de enlaces, los límites de seguridad y el alcance offline.
 
 ## 3. 🛠️ Tecnologías e Instalación Local
 

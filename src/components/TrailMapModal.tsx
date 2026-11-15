@@ -358,14 +358,14 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
           <div className="space-y-2">
             <p className="flex items-center gap-1.5 text-xs font-bold text-teal-200">
               {isCurrentCheckpointCompleted ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-              {isCurrentCheckpointCompleted ? 'Completada ✓' : 'Pendiente'}
+              {isCurrentCheckpointCompleted ? tx('Completada ✓', 'Completed ✓') : tx('Pendiente', 'Pending')}
             </p>
-            {isCurrentCheckpointCompleted ? <p className="text-xs text-emerald-200">Estación completada anteriormente</p> :
+            {isCurrentCheckpointCompleted ? <p className="text-xs text-emerald-200">{tx('Estación completada anteriormente', 'Station previously completed')}</p> :
               <button onClick={handleOpenChallenge} className="min-h-11 w-full py-2.5 px-3 rounded-2xl game-btn-orange text-white text-xs font-black flex items-center justify-center gap-2">
-                <QrCode className="w-4 h-4" />Escanear QR de la estación
+                <QrCode className="w-4 h-4" />{tx('Escanear QR de la estación', 'Scan the station QR')}
               </button>}
             <button onClick={openPractice} className="ui-btn ui-btn-ghost w-full text-xs">
-              {isCurrentCheckpointCompleted ? 'Repasar en modo práctica (sin recompensa)' : 'Practicar sin QR (sin recompensa)'}
+              {isCurrentCheckpointCompleted ? tx('Repasar en modo práctica (sin recompensa)', 'Review in practice mode (no reward)') : tx('Practicar sin QR (sin recompensa)', 'Practice without QR (no reward)')}
             </button>
           </div>
 

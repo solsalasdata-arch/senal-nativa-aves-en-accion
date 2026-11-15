@@ -8,6 +8,7 @@ import { createQrDecoder, decodeQrPixels, startQrScanLoop, stopMediaStream, type
 import { TrailMapModal } from '../src/components/TrailMapModal';
 import { StationChallengeModal } from '../src/components/StationChallengeModal';
 import { CHECKPOINTS_DATA } from '../src/data/birdsData';
+import { LanguageProvider } from '../src/utils/i18n';
 import { createDefaultProfile } from '../src/utils/storage';
 import { buildStationToken, parseStationQr } from '../src/utils/stationQr';
 
@@ -162,4 +163,35 @@ test('practice is explicitly unrewarded while an unverified scanner hides the an
   assert.match(scan, /Elegir foto con un QR/);
   assert.doesNotMatch(scan, /Confirmar respuesta/);
   assert.equal(rewards, 0);
+});
+
+test('station scanner and map expose English labels when the saved language is English', () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+    getItem: (key: string) => key === 'senial_nativa_lang' ? 'en' : null
+  } });
+  try {
+    const profile = createDefaultProfile();
+    const props = { isOpen: true, onClose() {}, playerProfile: profile, onCompleteStation: () => 'completed' as const };
+    const render = (element: React.ReactElement) => renderToStaticMarkup(React.createElement(LanguageProvider, null, element));
+    const pending = render(React.createElement(TrailMapModal, props));
+    for (const label of ['Pending', 'Scan the station QR', 'Practice without QR (no reward)']) assert.ok(pending.includes(label), label);
+    assert.doesNotMatch(pending, /Escanear QR de la estación|Practicar sin QR/);
+    const recognized = render(React.createElement(TrailMapModal, { ...props, initialStationToken: buildStationToken(1) }));
+    assert.match(recognized, /QR recognized/);
+    assert.match(recognized, /Answer challenge/);
+    const completed = render(React.createElement(TrailMapModal, { ...props, playerProfile: { ...profile, completedCheckpoints: [1] }, initialStationToken: buildStationToken(1) }));
+    assert.match(completed, /Completed ✓/);
+    assert.match(completed, /Station previously completed/);
+    assert.match(completed, /No additional XP/);
+    const challengeProps = { station: CHECKPOINTS_DATA[0], profile, onClose() {}, onSelectStation() {}, onCompleteStation: props.onCompleteStation };
+    const practice = render(React.createElement(StationChallengeModal, { ...challengeProps, practice: true }));
+    assert.match(practice, /Practice mode — no XP or station validation/);
+    assert.match(practice, /Confirm answer/);
+    const scanner = render(React.createElement(StationChallengeModal, { ...challengeProps, practice: false }));
+    for (const label of ['Looking for QR…', 'Flip camera', 'Retry camera', 'Choose a photo with a QR', 'Point at the station QR']) assert.ok(scanner.includes(label), label);
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else Reflect.deleteProperty(globalThis, 'localStorage');
+  }
 });
