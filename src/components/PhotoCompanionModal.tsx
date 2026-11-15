@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { ModalHeader } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 import { Camera, X, ShieldAlert, Sparkles, RefreshCw, CheckCircle2, Download, Upload } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { requestMobileCameraStream } from '../utils/camera';
@@ -312,10 +314,12 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
     }, 300);
   };
 
+  useModalEscape(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-3 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+    <div role="dialog" aria-modal="true" aria-label="FOTO CON TU AVE COMPAÑERA" className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
       {/* Hidden Canvas & Native Mobile Camera Input Fallback */}
       <canvas ref={canvasRef} className="hidden" />
       <input
@@ -327,48 +331,30 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
         className="hidden"
       />
 
-      <div className="relative w-full max-w-sm max-h-[94vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-emerald-500/60 shadow-2xl">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
         {/* Top Header */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-950/90 border-b border-teal-800/50">
-          <div className="flex items-center gap-2">
-            <Camera className="w-5 h-5 text-teal-400" />
-            <div>
-              <h3 className="font-black text-xs sm:text-sm tracking-wide text-white uppercase">
-                FOTO CON TU AVE COMPAÑERA
-              </h3>
-              <p className="text-[9px] text-teal-300">
-                Cámara {facingMode === 'user' ? 'Frontal (Selfie)' : 'Trasera (Sendero)'} · Sin Flash
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => {
+        <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title="FOTO CON TU AVE COMPAÑERA" subtitle={`Cámara ${facingMode === 'user' ? 'Frontal (Selfie)' : 'Trasera (Sendero)'} · Sin Flash`} icon={<Camera aria-hidden="true" className="h-5 w-5" />} onClose={() => {
               soundManager.playClick();
               stopCamera();
               onClose();
-            }}
-            className="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+            }} /></div>
 
         {/* Environmental Care Warning Banner */}
         <div className="bg-amber-950/90 border-b border-amber-600/40 px-3 py-1.5 flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
-          <div className="text-[10px] leading-tight text-amber-200">
+          <div className="text-[11px] leading-tight text-amber-200">
             <span className="font-bold text-amber-300">Flash OFF obligatorio:</span> Cuida la fauna de las Yungas.
           </div>
         </div>
 
         {/* Main Camera / Photo Viewport */}
-        <div className="relative flex-1 min-h-[290px] max-h-[350px] bg-slate-950 overflow-hidden flex items-center justify-center">
+        <div className="relative flex-1 min-h-[290px] max-h-[350px] bg-surface-950 overflow-hidden flex items-center justify-center">
           {capturedPhoto ? (
             <div className="relative w-full h-full flex flex-col items-center justify-center p-3 bg-teal-950/80">
               <img
                 src={capturedPhoto}
                 alt="Foto compañera tomada"
-                className="max-h-[250px] rounded-2xl border-2 border-amber-400 shadow-xl object-contain"
+                className="max-h-[250px] rounded-2xl border border-amber-400 shadow-xl object-contain"
               />
               <div className="mt-1.5 flex items-center gap-1.5 text-xs text-emerald-300 font-bold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -416,14 +402,14 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
 
               {/* 2) Top Controls Overlay Inside Viewport: Flip Camera ("🔄 Girar Cámara") */}
               <div className="absolute top-2.5 inset-x-2.5 z-20 flex items-center justify-between gap-1.5">
-                <div className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-[10px] text-teal-200 border border-teal-500/40 font-bold">
+                <div className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-[11px] text-teal-200 border border-teal-500/40 font-bold">
                   🌿 Parque Botánico Barón Schuel
                 </div>
 
                 <button
                   type="button"
                   onClick={handleFlipCamera}
-                  className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
+                  className="min-h-11 min-w-11 px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] border border-slate-900 shadow-lg flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
                   title="Alternar entre cámara frontal y trasera"
                 >
                   <RefreshCw className="w-3 h-3 stroke-[2.5]" />
@@ -433,12 +419,12 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
 
               {/* 3) Companion Bird Overlay: Uncropped Full-Body Floating Card (object-fit: contain, padding: 6px, rgba(12, 35, 30, 0.75)) */}
               <div className="absolute bottom-2.5 right-2.5 z-20 flex flex-col items-end pointer-events-none">
-                <div className="bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-2xl border border-teal-400/50 text-[10px] text-white max-w-[190px] mb-1.5 shadow-lg">
+                <div className="ui-card bg-surface-950 px-2.5 py-1 rounded-2xl border border-teal-400/50 text-[11px] text-white max-w-32 mb-1.5 shadow-lg">
                   {selectedCompanion.speech}
                 </div>
                 <div
                   style={{ backgroundColor: 'rgba(12, 35, 30, 0.75)', padding: '6px' }}
-                  className="relative w-32 h-32 rounded-2xl border-2 border-amber-400 shadow-2xl overflow-visible flex items-center justify-center"
+                  className="relative w-32 h-32 rounded-2xl border border-amber-400 shadow-2xl overflow-visible flex items-center justify-center"
                 >
                   <img
                     src={encodeURI(selectedCompanion.asset)}
@@ -450,7 +436,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
 
               {/* Shutter flash animation overlay */}
               {isCapturing && (
-                <div className="absolute inset-0 bg-white z-30 animate-ping opacity-90" />
+                <div className="absolute inset-0 bg-white z-30  opacity-90" />
               )}
             </>
           )}
@@ -459,7 +445,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
           {!capturedPhoto && (!useRealCamera || cameraError) && (
             <div className="absolute bottom-2.5 left-2.5 z-20 max-w-[56%] space-y-1">
               {cameraError && (
-                <div className="bg-slate-950/90 text-amber-300 text-[9px] p-1.5 rounded-lg border border-amber-500/50 leading-tight">
+                <div className="bg-surface-950 text-amber-300 text-[11px] p-1.5 rounded-lg border border-amber-500/50 leading-tight">
                   {cameraError}
                 </div>
               )}
@@ -467,7 +453,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => startCamera(facingMode)}
-                  className="px-2.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-black text-[10px] border border-teal-300 shadow-lg flex items-center gap-1 cursor-pointer"
+                  className="min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-black text-[11px] border border-teal-300 shadow-lg flex items-center gap-1 cursor-pointer"
                 >
                   <Camera className="w-3.5 h-3.5 shrink-0" />
                   <span>📷 Activar Cámara en Vivo</span>
@@ -475,7 +461,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-2.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] border border-slate-900 shadow-lg flex items-center gap-1 cursor-pointer"
+                  className="min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] border border-slate-900 shadow-lg flex items-center gap-1 cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5 shrink-0" />
                   <span>📱 Usar Cámara del Teléfono</span>
@@ -487,13 +473,13 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
 
         {/* Companion Selector Tabs */}
         {!capturedPhoto && (
-          <div className="p-2.5 bg-slate-950/95 border-t border-teal-900/60 space-y-2">
-            <div className="text-[10px] font-bold text-teal-300 flex items-center justify-between gap-1">
+          <div className="p-2.5 bg-surface-950 border-t border-teal-900/60 space-y-2">
+            <div className="text-[11px] font-bold text-teal-300 flex items-center justify-between gap-1">
               <span>ELIGE TU AVE COMPAÑERA:</span>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-[10px] text-amber-300 underline hover:text-amber-200 flex items-center gap-1 cursor-pointer"
+                className="min-h-11 min-w-11 text-[11px] text-amber-300 underline hover:text-amber-200 flex items-center gap-1 cursor-pointer"
               >
                 <Camera className="w-3 h-3" />
                 <span>Abrir Cámara Nativa del Celular</span>
@@ -513,15 +499,15 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
                         onSelectCompanionBird(bird.name);
                       }
                     }}
-                    className={`p-2 rounded-xl border text-left transition-all flex items-center justify-between ${
+                    className={`min-h-11 min-w-11 p-2 rounded-xl border text-left transition-all flex items-center justify-between ${
                       isSelected
                         ? 'border-amber-400 bg-teal-900/90 shadow-md ring-2 ring-amber-400/40'
-                        : 'border-teal-900/60 bg-slate-900/70 text-slate-300 hover:text-white'
+                        : 'border-teal-900/60 bg-surface-900 text-slate-300 hover:text-white'
                     }`}
                   >
                     <div className="min-w-0">
                       <div className="text-[11px] font-bold text-white truncate">{bird.name}</div>
-                      <div className="text-[9px] text-teal-300/90 truncate">{bird.badge}</div>
+                      <div className="text-[11px] text-teal-300/90 truncate">{bird.badge}</div>
                     </div>
                     {isSelected && <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />}
                   </button>
@@ -532,7 +518,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
         )}
 
         {/* Bottom Shutter Action Bar */}
-        <div className="p-3 bg-slate-950 border-t border-teal-900/80 flex items-center justify-between gap-2">
+        <div className="pb-safe p-3 bg-surface-950 border-t border-teal-900/80 flex items-center justify-between gap-2">
           {capturedPhoto ? (
             <>
               <button
@@ -541,14 +527,14 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
                   soundManager.playClick();
                   setCapturedPhoto(null);
                 }}
-                className="flex-1 py-2.5 px-2.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition-colors"
+                className="min-h-11 min-w-11 flex-1 py-2.5 px-2.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition-colors"
               >
                 Otra foto
               </button>
               <a
                 href={capturedPhoto}
                 download={`senal-nativa-${selectedCompanion.id}.jpg`}
-                className="py-2.5 px-3 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold flex items-center gap-1"
+                className="min-h-11 py-2.5 px-3 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold flex items-center gap-1"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Descargar</span>
@@ -560,7 +546,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
                   stopCamera();
                   onClose();
                 }}
-                className="flex-1 py-2.5 px-2.5 rounded-xl game-btn-orange text-white text-xs font-bold"
+                className="min-h-11 min-w-11 flex-1 py-2.5 px-2.5 rounded-xl game-btn-orange text-white text-xs font-bold"
               >
                 Guardar y Volver
               </button>
@@ -569,7 +555,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
             <button
               type="button"
               onClick={handleTakePhoto}
-              className="w-full py-3 rounded-2xl game-btn-orange flex items-center justify-center gap-2 text-white font-bold text-sm tracking-wide cursor-pointer"
+              className="min-h-11 min-w-11 w-full py-3 rounded-2xl game-btn-orange flex items-center justify-center gap-2 text-white font-bold text-sm tracking-wide cursor-pointer"
             >
               <Camera className="w-5 h-5 text-amber-200" />
               <span>CAPTURAR FOTO CON {selectedCompanion.name.toUpperCase()}</span>
@@ -581,5 +567,3 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
     </div>
   );
 };
-
-

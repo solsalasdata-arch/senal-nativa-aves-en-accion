@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { ModalHeader } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 import {
   Users,
   Sparkles,
@@ -64,6 +66,8 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
 
   // Inspecting Special Event Exclusive Card
   const [inspectingEventCard, setInspectingEventCard] = useState<(typeof SPECIAL_EVENT_CARDS)[0] | null>(null);
+
+  useModalEscape(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -310,46 +314,23 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
   const unlockedEvents = activeProfile.unlockedSpecialEvents || [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-3 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
-      <div className="relative w-full max-w-sm max-h-[94vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-teal-400 shadow-2xl">
+    <div role="dialog" aria-modal="true" aria-label={tx('CUADRILLAS Y TEMPORADAS', 'SQUADS & SEASONS')} className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
         {/* TOP HEADER */}
-        <div className="px-3.5 pt-3 pb-2.5 bg-slate-950 border-b border-teal-900/70 shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 shrink-0 shadow">
-                <Users className="w-4 h-4" />
-              </div>
-              <div className="truncate">
-                <h3 className="font-black text-xs text-white uppercase tracking-wider">
-                  {tx('CUADRILLAS Y TEMPORADAS', 'SQUADS & SEASONS')}
-                </h3>
-                <p className="text-[10px] text-teal-300 font-semibold truncate">
-                  {tx(
-                    'Cuadrillas Escolares, Aves Migrantes y Ranking Amigable',
-                    'School Squads, Migrant Birds & Friendly Ranking'
-                  )}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
+        <div className="px-3.5 pt-3 pb-2.5 bg-surface-950 border-b border-teal-900/70 shrink-0">
+          <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title={tx('CUADRILLAS Y TEMPORADAS', 'SQUADS & SEASONS')} subtitle={tx('Cuadrillas Escolares, Aves Migrantes y Ranking Amigable', 'School Squads, Migrant Birds & Friendly Ranking')} icon={<Users aria-hidden="true" className="h-5 w-5" />} onClose={() => {
                 soundManager.playClick();
                 onClose();
-              }}
-              className="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-teal-200 hover:text-white text-[10px] font-bold flex items-center gap-1 border border-teal-700/60 shrink-0 shadow active:scale-95 transition-all"
-            >
-              <span>{tx('← Volver', '← Back')}</span>
-            </button>
-          </div>
+              }} /></div>
 
           {/* 3 TABS: CUADRILLAS | TEMPORADAS Y EVENTOS | RANKING AMIGABLE */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900 rounded-xl border border-teal-900 text-[10px] font-black">
+          <div className="grid grid-cols-3 gap-1 p-1 bg-surface-900 rounded-xl border border-teal-900 text-[11px] font-black">
             <button
               onClick={() => {
                 soundManager.playClick();
                 setActiveTab('squads');
               }}
-              className={`py-1.5 rounded-lg transition-all flex flex-col items-center justify-center ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all flex flex-col items-center justify-center ${
                 activeTab === 'squads'
                   ? 'bg-teal-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
@@ -364,7 +345,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                 soundManager.playClick();
                 setActiveTab('seasons');
               }}
-              className={`py-1.5 rounded-lg transition-all flex flex-col items-center justify-center ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all flex flex-col items-center justify-center ${
                 activeTab === 'seasons'
                   ? 'bg-amber-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
@@ -379,7 +360,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                 soundManager.playClick();
                 setActiveTab('ranking');
               }}
-              className={`py-1.5 rounded-lg transition-all flex flex-col items-center justify-center ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all flex flex-col items-center justify-center ${
                 activeTab === 'ranking'
                   ? 'bg-emerald-600 text-white shadow'
                   : 'text-slate-400 hover:text-slate-200'
@@ -395,7 +376,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
         {/* PESTAÑA A: CUADRILLAS (HASTA 5 JUGADORES - IDEAL PARA ESCUELAS) */}
         {/* ============================================================== */}
         {activeTab === 'squads' && (
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+          <div className="pb-safe min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3">
             {/* Squad Selector + Create Squad Button */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
@@ -406,10 +387,10 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                       soundManager.playClick();
                       setSelectedSquadIdx(idx);
                     }}
-                    className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black whitespace-nowrap border transition-all ${
+                    className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl text-[11px] font-black whitespace-nowrap border transition-all ${
                       idx === selectedSquadIdx
                         ? 'bg-teal-600 text-white border-teal-300 shadow'
-                        : 'bg-slate-950 text-slate-300 border-slate-800'
+                        : 'bg-surface-950 text-slate-300 border-slate-800'
                     }`}
                   >
                     🛡️ {sq.name} ({sq.members.length}/5)
@@ -421,7 +402,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                   soundManager.playClick();
                   setShowCreateSquadForm(!showCreateSquadForm);
                 }}
-                className="px-2.5 py-1.5 rounded-xl game-btn-orange text-white text-[10px] font-black shrink-0 flex items-center gap-1 shadow"
+                className="min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl game-btn-orange text-white text-[11px] font-black shrink-0 flex items-center gap-1 shadow"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Nueva</span>
@@ -430,8 +411,8 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
 
             {/* Create Squad Form */}
             {showCreateSquadForm && (
-              <div className="p-3 rounded-2xl bg-slate-950 border-2 border-amber-400 space-y-2 animate-fadeIn">
-                <span className="text-[10px] font-black text-amber-300 uppercase block">
+              <div className="ui-card p-3 rounded-2xl bg-surface-950 border border-amber-400 space-y-2 animate-fadeIn">
+                <span className="text-[11px] font-black text-amber-300 uppercase block">
                   Crear Nueva Cuadrilla Escolar (Máx. 5 Integrantes)
                 </span>
                 <input
@@ -439,14 +420,14 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                   value={newSquadName}
                   onChange={e => setNewSquadName(e.target.value)}
                   placeholder="Ej: Exploradores Los Perales o Escuadra Yungas"
-                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-900 border border-teal-700 text-xs text-white outline-none focus:border-amber-400"
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-surface-900 border border-teal-700 text-xs text-white outline-none focus:border-amber-400"
                 />
                 <div className="flex gap-1.5 flex-wrap">
                   {['Exploradores Los Perales', 'Escuadra Yungas', 'Guardianes del Schuel'].map(preset => (
                     <button
                       key={preset}
                       onClick={() => handleCreateSquad(preset)}
-                      className="px-2 py-1 rounded-lg bg-teal-950 hover:bg-teal-900 text-teal-200 border border-teal-700 text-[9px] font-bold"
+                      className="min-h-11 min-w-11 px-2 py-1 rounded-lg bg-teal-950 hover:bg-teal-900 text-teal-200 border border-teal-700 text-[11px] font-bold"
                     >
                       + "{preset}"
                     </button>
@@ -455,13 +436,13 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => setShowCreateSquadForm(false)}
-                    className="flex-1 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-[10px] font-bold"
+                    className="min-h-11 min-w-11 flex-1 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-[11px] font-bold"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={() => handleCreateSquad()}
-                    className="flex-1 py-1.5 rounded-xl game-btn-mint text-emerald-950 text-[10px] font-black"
+                    className="min-h-11 min-w-11 flex-1 py-1.5 rounded-xl game-btn-mint text-emerald-950 text-[11px] font-black"
                   >
                     Crear Cuadrilla
                   </button>
@@ -475,27 +456,27 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                 <div className="p-3 rounded-2xl bg-gradient-to-br from-teal-950 via-slate-950 to-emerald-950 border border-teal-500/70 space-y-2 text-white">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider">
+                      <span className="text-[11px] font-black text-amber-300 uppercase tracking-wider">
                         {currentSquad.schoolOrGroup || 'Reto Cooperativo para Escuelas'}
                       </span>
                       <h4 className="text-sm font-black text-white uppercase">
                         {currentSquad.name}
                       </h4>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full bg-teal-900 border border-teal-400 text-[10px] font-black text-teal-200 whitespace-nowrap shrink-0">
+                    <span className="px-2 py-0.5 rounded-full bg-teal-900 border border-teal-400 text-[11px] font-black text-teal-200 whitespace-nowrap shrink-0">
                       {currentSquad.members.length}/5 Jugadores
                     </span>
                   </div>
 
                   {/* Cooperative Goal Progress */}
                   <div className="space-y-1 pt-1">
-                    <div className="flex items-center justify-between text-[10px] font-bold">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
                       <span className="text-teal-200">
                         Meta Grupal Cooperativa: {sharedSightingsList.length}/{currentSquad.goalTarget} Especies
                       </span>
                       <span className="text-amber-300 font-black">+150 XP Grupal</span>
                     </div>
-                    <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-teal-800">
+                    <div className="w-full bg-surface-900 h-2.5 rounded-full overflow-hidden border border-teal-800">
                       <div
                         className="h-full bg-gradient-to-r from-teal-400 to-amber-400 transition-all duration-500"
                         style={{
@@ -516,7 +497,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                         setSquads(next);
                         saveSquadsList(next);
                       }}
-                      className="w-full py-2 rounded-xl game-btn-orange text-white text-xs font-black uppercase shadow-lg"
+                      className="min-h-11 min-w-11 w-full py-2 rounded-xl game-btn-orange text-white text-xs font-black uppercase shadow-lg"
                     >
                       🎉 ¡Reclamar Recompensa Cooperativa (+150 XP)!
                     </button>
@@ -524,7 +505,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                 </div>
 
                 {/* Members List (Up to 5 Players) */}
-                <div className="p-3 rounded-2xl bg-slate-950 border border-teal-900 space-y-2">
+                <div className="ui-card p-3 rounded-2xl bg-surface-950 border border-teal-900 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-black text-teal-300 uppercase">
                       Integrantes de la Cuadrilla ({currentSquad.members.length}/5)
@@ -535,7 +516,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                     {currentSquad.members.map((member, idx) => (
                       <div
                         key={member.id}
-                        className="p-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs"
+                        className="p-2 rounded-xl bg-surface-900 border border-slate-800 flex items-center justify-between text-xs"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="w-7 h-7 rounded-lg bg-teal-950 border border-teal-600/50 flex items-center justify-center text-sm shrink-0 overflow-hidden">
@@ -545,17 +526,17 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                             <div className="font-black text-white truncate flex items-center gap-1">
                               <span>{idx + 1}. {member.name}</span>
                               {member.isDeviceProfile && (
-                                <span className="text-[8px] px-1.5 py-0.2 rounded bg-teal-900 text-teal-200">
+                                <span className="text-[11px] px-1.5 py-0.2 rounded bg-teal-900 text-teal-200">
                                   Este dispositivo
                                 </span>
                               )}
                             </div>
-                            <div className="text-[9px] text-teal-300">
+                            <div className="text-[11px] text-teal-300">
                               Ave compañera: {member.favoriteBird}
                             </div>
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold text-amber-300 shrink-0">
+                        <span className="text-[11px] font-bold text-amber-300 shrink-0">
                           {member.contributedSpecies.length} aves
                         </span>
                       </div>
@@ -568,7 +549,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                       {/* Link other device profiles if available */}
                       {allProfiles.filter(p => !currentSquad.members.some(m => m.id === p.id)).length > 0 && (
                         <div className="space-y-1">
-                          <span className="text-[9px] font-bold text-teal-300 block">
+                          <span className="text-[11px] font-bold text-teal-300 block">
                             Vincular otro perfil de este teléfono:
                           </span>
                           <div className="flex gap-1.5 flex-wrap">
@@ -588,7 +569,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                                       journalCount: (prof.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length
                                     })
                                   }
-                                  className="px-2 py-1 rounded-lg bg-teal-900 hover:bg-teal-800 text-teal-100 border border-teal-500 text-[10px] font-bold flex items-center gap-1"
+                                  className="min-h-11 min-w-11 px-2 py-1 rounded-lg bg-teal-900 hover:bg-teal-800 text-teal-100 border border-teal-500 text-[11px] font-bold flex items-center gap-1"
                                 >
                                   <UserPlus className="w-3 h-3 text-amber-300" />
                                   <span>+ {prof.name}</span>
@@ -600,7 +581,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
 
                       {/* Add classmate / companion */}
                       <div className="space-y-1.5">
-                        <span className="text-[9px] font-bold text-amber-300 block">
+                        <span className="text-[11px] font-bold text-amber-300 block">
                           Agregar compañero de escuela ({5 - currentSquad.members.length} lugares disponibles):
                         </span>
                         <div className="flex gap-1.5">
@@ -609,12 +590,12 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                             value={newMemberName}
                             onChange={e => setNewMemberName(e.target.value)}
                             placeholder="Nombre del compañero..."
-                            className="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none focus:border-teal-400"
+                            className="flex-1 px-2.5 py-1.5 rounded-xl bg-surface-900 border border-slate-700 text-xs text-white outline-none focus:border-teal-400"
                           />
                           <select
                             value={newMemberBird}
                             onChange={e => setNewMemberBird(e.target.value as CompanionBirdId)}
-                            className="px-2 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-[10px] text-teal-200 font-bold"
+                            className="px-2 py-1.5 rounded-xl bg-surface-900 border border-slate-700 text-[11px] text-teal-200 font-bold"
                           >
                             <option value="Benteveo">Benteveo</option>
                             <option value="Tucán Grande">Tucán</option>
@@ -623,7 +604,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                           </select>
                           <button
                             onClick={handleAddSchoolmateByName}
-                            className="px-3 py-1.5 rounded-xl game-btn-mint text-emerald-950 text-[10px] font-black shrink-0"
+                            className="min-h-11 min-w-11 px-3 py-1.5 rounded-xl game-btn-mint text-emerald-950 text-[11px] font-black shrink-0"
                           >
                             Sumar
                           </button>
@@ -634,27 +615,27 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                 </div>
 
                 {/* Shared Sightings List */}
-                <div className="p-3 rounded-2xl bg-slate-950 border border-teal-900 space-y-2">
+                <div className="ui-card p-3 rounded-2xl bg-surface-950 border border-teal-900 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-black text-amber-300 uppercase flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" />
                       Lista Compartida de Avistamientos ({sharedSightingsList.length})
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-300">
+                  <p className="text-[11px] text-slate-300">
                     Combina todas las especies avistadas, fotografiadas y registradas en el Diario de Campo por los miembros de la cuadrilla:
                   </p>
                   <div className="grid grid-cols-2 gap-1.5">
                     {sharedSightingsList.map((item, idx) => (
                       <div
                         key={idx}
-                        className="p-2 rounded-xl bg-slate-900 border border-teal-800/60 flex flex-col justify-between"
+                        className="p-2 rounded-xl bg-surface-900 border border-teal-800/60 flex flex-col justify-between"
                       >
                         <div className="text-[11px] font-black text-white flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
                           <span className="truncate">{item.species}</span>
                         </div>
-                        <div className="text-[9px] text-teal-300 truncate mt-0.5">
+                        <div className="text-[11px] text-teal-300 truncate mt-0.5">
                           Por: {item.contributors.join(', ')}
                         </div>
                       </div>
@@ -670,11 +651,11 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
         {/* PESTAÑA B: TEMPORADAS Y EVENTOS ESPECIALES */}
         {/* ============================================================== */}
         {activeTab === 'seasons' && (
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5">
+          <div className="pb-safe min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3.5">
             {/* Active Season Collection: "Temporada de Aves Migrantes de las Yungas" */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950 via-slate-950 to-teal-950 border-2 border-teal-400/80 space-y-2.5 text-white shadow-xl">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950 via-slate-950 to-teal-950 border border-teal-400/80 space-y-2.5 text-white shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-[9px] font-black text-amber-300 uppercase">
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-[11px] font-black text-amber-300 uppercase">
                   COLECCIÓN DE ESTACIÓN ACTIVA
                 </span>
                 <span className="text-xs font-black text-emerald-300">
@@ -686,12 +667,12 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                 <h4 className="text-sm font-black text-white uppercase tracking-wide">
                   Temporada de Aves Migrantes de las Yungas
                 </h4>
-                <p className="text-[10px] text-teal-200 leading-snug mt-0.5">
+                <p className="text-[11px] text-teal-200 leading-snug mt-0.5">
                   Registra a las 5 especies migrantes reales de la Guía del Parque Botánico que visitan la Selva Montana en época estival:
                 </p>
               </div>
 
-              <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-teal-800">
+              <div className="w-full bg-surface-900 h-2 rounded-full overflow-hidden border border-teal-800">
                 <div
                   className="h-full bg-gradient-to-r from-teal-400 to-amber-400 transition-all duration-500"
                   style={{
@@ -709,8 +690,8 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                       key={bird.id}
                       className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 ${
                         isRegistered
-                          ? 'bg-slate-900/95 border-emerald-500/70'
-                          : 'bg-slate-950/90 border-slate-800'
+                          ? 'bg-surface-900 border-emerald-500/70'
+                          : 'bg-surface-950 border-slate-800'
                       }`}
                     >
                       <div className="w-10 h-10 rounded-xl bg-teal-950 border border-teal-700/60 flex items-center justify-center text-xl shrink-0">
@@ -722,21 +703,21 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                           <span className="text-xs font-black text-white">
                             {idx + 1}) {bird.commonName}
                           </span>
-                          <span className="text-[9px] italic text-teal-300 font-serif">
+                          <span className="text-[11px] italic text-teal-300 font-serif">
                             ({bird.scientificName})
                           </span>
                         </div>
-                        <div className="text-[9px] text-amber-300 font-bold mt-0.5">
+                        <div className="text-[11px] text-amber-300 font-bold mt-0.5">
                           {bird.size} · {bird.stratum} · {bird.status}
                         </div>
-                        <p className="text-[10px] text-slate-300 leading-tight mt-0.5">
+                        <p className="text-[11px] text-slate-300 leading-tight mt-0.5">
                           {bird.description}
                         </p>
                       </div>
 
                       <div className="shrink-0">
                         {isRegistered ? (
-                          <span className="px-2 py-1 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-500/50 text-[9px] font-black flex items-center gap-1">
+                          <span className="px-2 py-1 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-500/50 text-[11px] font-black flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Registrada</span>
                           </span>
@@ -746,7 +727,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                               soundManager.playSuccess();
                               onRegisterMigrantBird(bird.id, 40);
                             }}
-                            className="px-2.5 py-1.5 rounded-xl game-btn-mint text-emerald-950 text-[10px] font-black shadow cursor-pointer"
+                            className="min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl game-btn-mint text-emerald-950 text-[11px] font-black shadow cursor-pointer"
                           >
                             Registrar (+40 XP)
                           </button>
@@ -769,10 +750,10 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                 return (
                   <div
                     key={ev.id}
-                    className={`p-3.5 rounded-2xl border-2 space-y-2 transition-all ${
+                    className={`ui-card p-3.5 rounded-2xl border space-y-2 transition-all ${
                       isUnlocked
                         ? 'bg-gradient-to-br from-amber-950/60 via-slate-950 to-teal-950 border-amber-400 shadow-lg'
-                        : 'bg-slate-950 border-teal-800/80'
+                        : 'bg-surface-950 border-teal-800/80'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2.5">
@@ -780,24 +761,24 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                         {ev.badgeIcon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-[9px] font-black text-amber-300 uppercase tracking-wider block">
+                        <span className="text-[11px] font-black text-amber-300 uppercase tracking-wider block">
                           {ev.eventSubtitle}
                         </span>
                         <h5 className="text-xs font-black text-white uppercase">
                           {ev.eventTitle}
                         </h5>
-                        <p className="text-[10px] text-teal-200 font-bold mt-0.5">
+                        <p className="text-[11px] text-teal-200 font-bold mt-0.5">
                           Especie Emblema: {ev.birdCommonName} ({ev.birdScientificName}, {ev.size})
                         </p>
                       </div>
                     </div>
 
-                    <p className="text-[10px] text-slate-300 leading-snug">
+                    <p className="text-[11px] text-slate-300 leading-snug">
                       {ev.specialNote}
                     </p>
 
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-[10px] font-black text-amber-400">
+                      <span className="text-[11px] font-black text-amber-400">
                         Recompensa: +{ev.xpReward} XP + Ficha Exclusiva
                       </span>
 
@@ -807,7 +788,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                             soundManager.playClick();
                             setInspectingEventCard(ev);
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black flex items-center gap-1 shadow cursor-pointer"
+                          className="min-h-11 min-w-11 px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black flex items-center gap-1 shadow cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>Ver Ficha Exclusiva</span>
@@ -819,7 +800,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                             onUnlockSpecialEvent(ev.id, ev.xpReward);
                             setInspectingEventCard(ev);
                           }}
-                          className="px-3 py-1.5 rounded-xl game-btn-orange text-white text-[10px] font-black shadow cursor-pointer"
+                          className="min-h-11 min-w-11 px-3 py-1.5 rounded-xl game-btn-orange text-white text-[11px] font-black shadow cursor-pointer"
                         >
                           Participar (+{ev.xpReward} XP)
                         </button>
@@ -836,26 +817,26 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
         {/* PESTAÑA C: RANKING AMIGABLE E INSTITUCIONES DE JUJUY */}
         {/* ============================================================== */}
         {activeTab === 'ranking' && (
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+          <div className="pb-safe min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3">
             {/* Láminas Oficiales "RANKING DE INSTITUCIONES - JUJUY" y "RESULTADOS ESCUELA PROFESIONAL N° 6" de public/assets/aistudio/ */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-2xl overflow-hidden border-2 border-amber-400/80 bg-slate-950 shadow-lg">
+              <div className="ui-card rounded-2xl overflow-hidden border border-amber-400/80 bg-surface-950 shadow-lg">
                 <img
                   src="/assets/aistudio/Institution_ranking_and_toucan_d…_bbc71eae.jpg"
                   alt="Ranking de Instituciones Jujuy"
                   className="w-full h-40 object-cover object-top"
                 />
-                <div className="p-1.5 text-center bg-slate-950 text-[9px] font-black text-amber-300 uppercase">
+                <div className="p-1.5 text-center bg-surface-950 text-[11px] font-black text-amber-300 uppercase">
                   🏆 Ranking Instituciones Jujuy
                 </div>
               </div>
-              <div className="rounded-2xl overflow-hidden border-2 border-teal-400/80 bg-slate-950 shadow-lg">
+              <div className="ui-card rounded-2xl overflow-hidden border border-teal-400/80 bg-surface-950 shadow-lg">
                 <img
                   src="/assets/aistudio/Institution_ranking_and_toucan_d…_d0e39451.jpg"
                   alt="Resultados por Institución"
                   className="w-full h-40 object-cover object-top"
                 />
-                <div className="p-1.5 text-center bg-slate-950 text-[9px] font-black text-teal-300 uppercase">
+                <div className="p-1.5 text-center bg-surface-950 text-[11px] font-black text-teal-300 uppercase">
                   📊 Resultados Escolares
                 </div>
               </div>
@@ -867,7 +848,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                 <Award className="w-4 h-4 text-amber-400" />
                 <span>Regla del Ranking Amigable · Barón Schuel</span>
               </div>
-              <p className="text-[10px] text-teal-100 leading-relaxed">
+              <p className="text-[11px] text-teal-100 leading-relaxed">
                 Aquí premiamos la <strong>CONSTANCIA</strong> (registros en el Diario de Campo y misiones diarias cumplidas) y la <strong>VARIEDAD BIOLÓGICA</strong> (Familias observadas de las 33 de la Guía y los 5 estratos: Sotobosque, Subdosel, Dosel, Zona Urbanizada y En Vuelo) por encima del puntaje bruto.
               </p>
             </div>
@@ -877,9 +858,9 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
               const myStats = calculateFriendlyStats(activeProfile);
               return (
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-2xl bg-slate-950 border border-amber-500/60 space-y-1">
+                  <div className="ui-card p-2.5 rounded-2xl bg-surface-950 border border-amber-500/60 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-black text-amber-300 uppercase">
+                      <span className="text-[11px] font-black text-amber-300 uppercase">
                         MEDALLA CONSTANCIA
                       </span>
                       <span className="text-base">{myStats.hasConstanciaMedal ? '🏅' : '⏳'}</span>
@@ -887,14 +868,14 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                     <div className="text-xs font-black text-white">
                       {myStats.journalCount} Diarios · {myStats.completedMissions}/3 Misiones
                     </div>
-                    <div className="text-[9px] text-teal-300 font-bold">
+                    <div className="text-[11px] text-teal-300 font-bold">
                       Índice Constancia: {myStats.constanciaScore} pts
                     </div>
                   </div>
 
-                  <div className="p-2.5 rounded-2xl bg-slate-950 border border-emerald-500/60 space-y-1">
+                  <div className="ui-card p-2.5 rounded-2xl bg-surface-950 border border-emerald-500/60 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-black text-emerald-300 uppercase">
+                      <span className="text-[11px] font-black text-emerald-300 uppercase">
                         VARIEDAD BIOLÓGICA
                       </span>
                       <span className="text-base">{myStats.hasVariedadMedal ? '🌿' : '🌱'}</span>
@@ -902,7 +883,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                     <div className="text-xs font-black text-white">
                       {myStats.familiesCount}/33 Familias · {myStats.strataCount}/5 Estratos
                     </div>
-                    <div className="text-[9px] text-teal-300 font-bold">
+                    <div className="text-[11px] text-teal-300 font-bold">
                       Índice Variedad: {myStats.variedadScore} pts
                     </div>
                   </div>
@@ -919,10 +900,10 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
               {rankingRows.map((row, idx) => (
                 <div
                   key={row.id}
-                  className={`p-3 rounded-2xl border transition-all space-y-2 ${
+                  className={`ui-card p-3 rounded-2xl border transition-all space-y-2 ${
                     row.isCurrent
                       ? 'bg-teal-950/90 border-amber-400 shadow-lg'
-                      : 'bg-slate-950 border-slate-800'
+                      : 'bg-surface-950 border-slate-800'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -945,12 +926,12 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                         <div className="text-xs font-black text-white truncate flex items-center gap-1">
                           <span>{row.name}</span>
                           {row.isCurrent && (
-                            <span className="text-[8px] px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black">
+                            <span className="text-[11px] px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black">
                               TÚ
                             </span>
                           )}
                         </div>
-                        <div className="text-[9px] text-teal-300">
+                        <div className="text-[11px] text-teal-300">
                           Compañero: {row.favoriteBird} · {row.xp} XP brutos
                         </div>
                       </div>
@@ -960,14 +941,14 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                       <div className="text-xs font-black text-amber-300">
                         {row.friendlyTotal} Reconoc.
                       </div>
-                      <div className="text-[9px] text-emerald-300 font-bold">
+                      <div className="text-[11px] text-emerald-300 font-bold">
                         Constancia + Variedad
                       </div>
                     </div>
                   </div>
 
                   {/* Badges of Constancia and Variedad Biológica above raw score */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80 text-[9px] font-bold">
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80 text-[11px] font-bold">
                     <span className="px-2 py-0.5 rounded-full bg-amber-950 text-amber-200 border border-amber-500/50">
                       🏅 Constancia: {row.journalCount} diarios / {row.completedMissions} misiones
                     </span>
@@ -983,48 +964,48 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
 
         {/* SUBMODAL: INSPECCIÓN DE FICHA EXCLUSIVA DE EVENTO ESPECIAL */}
         {inspectingEventCard && (
-          <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-4 animate-fadeIn text-white">
+          <div className="absolute inset-0 z-50 bg-black/90  flex flex-col p-4 animate-fadeIn text-white">
             <div className="flex items-center justify-between pb-2 border-b border-amber-500/50">
               <div>
-                <span className="text-[9px] font-black text-amber-300 uppercase tracking-widest block">
+                <span className="text-[11px] font-black text-amber-300 uppercase tracking-widest block">
                   FICHA EXCLUSIVA CONMEMORATIVA
                 </span>
                 <h4 className="text-xs font-black text-white uppercase">
                   {inspectingEventCard.eventTitle}
                 </h4>
               </div>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => setInspectingEventCard(null)}
-                className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center"
+                className="min-h-11 min-w-11 w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-3 space-y-3">
-              <div className="relative h-44 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-2xl">
+            <div className="pb-safe min-h-0 flex-1 overflow-y-auto py-3 space-y-3">
+              <div className="relative h-44 rounded-2xl overflow-hidden border border-amber-400 shadow-2xl">
                 <img
                   src={inspectingEventCard.image}
                   alt={inspectingEventCard.birdCommonName}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase shadow">
+                <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[11px] font-black uppercase shadow">
                   {inspectingEventCard.badgeIcon} EDICIÓN ESPECIAL JUJUY
                 </div>
-                <div className="absolute bottom-2 right-2 px-2.5 py-0.5 rounded-full bg-black/80 text-emerald-300 border border-emerald-400 text-[10px] font-black">
+                <div className="absolute bottom-2 right-2 px-2.5 py-0.5 rounded-full bg-black/80 text-emerald-300 border border-emerald-400 text-[11px] font-black">
                   Tamaño: {inspectingEventCard.size}
                 </div>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-950 border border-amber-500/50 space-y-1.5">
+              <div className="ui-card p-3 rounded-2xl bg-surface-950 border border-amber-500/50 space-y-1.5">
                 <h3 className="text-base font-black text-amber-300 uppercase">
                   {inspectingEventCard.birdCommonName}
                 </h3>
                 <p className="text-xs italic text-teal-200 font-serif">
                   {inspectingEventCard.birdScientificName} · Familia {inspectingEventCard.family}
                 </p>
-                <div className="flex flex-wrap gap-1.5 pt-1 text-[10px] font-bold">
-                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-teal-700 text-teal-200">
+                <div className="flex flex-wrap gap-1.5 pt-1 text-[11px] font-bold">
+                  <span className="px-2 py-0.5 rounded bg-surface-900 border border-teal-700 text-teal-200">
                     Estrato: {inspectingEventCard.stratum}
                   </span>
                   <span className="px-2 py-0.5 rounded bg-amber-950 border border-amber-500 text-amber-300">
@@ -1038,7 +1019,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
 
               <button
                 onClick={() => setInspectingEventCard(null)}
-                className="w-full py-3 rounded-2xl game-btn-orange text-white text-xs font-black uppercase"
+                className="min-h-11 min-w-11 w-full py-3 rounded-2xl game-btn-orange text-white text-xs font-black uppercase"
               >
                 Cerrar Ficha Conmemorativa
               </button>

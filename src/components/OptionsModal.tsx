@@ -1,4 +1,6 @@
 import React from 'react';
+import { ModalHeader } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 import {
   Settings,
   X,
@@ -46,39 +48,23 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
 }) => {
   const { lang, setLang, tx } = useLanguage();
 
+  useModalEscape(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-sm max-h-[92vh] flex flex-col rounded-3xl overflow-hidden bg-slate-900 border-2 border-teal-500 shadow-2xl">
+    <div role="dialog" aria-modal="true" aria-label={tx('OPCIONES DEL JUEGO', 'GAME OPTIONS')} className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-950 border-b border-teal-900/60">
-          <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-teal-400" />
-            <div>
-              <h3 className="font-bold text-sm text-white">
-                {tx('OPCIONES DEL JUEGO', 'GAME OPTIONS')}
-              </h3>
-              <p className="text-[10px] text-teal-300">
-                {tx('Configuración, Idioma, Jugador y Reserva', 'Settings, Language, Player & Reserve')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => {
+        <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title={tx('OPCIONES DEL JUEGO', 'GAME OPTIONS')} subtitle={tx('Configuración, Idioma, Jugador y Reserva', 'Settings, Language, Player & Reserve')} icon={<Settings aria-hidden="true" className="h-5 w-5" />} onClose={() => {
               soundManager.playClick();
               onClose();
-            }}
-            className="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+            }} /></div>
 
         {/* Content */}
-        <div className="p-4 space-y-4 flex-1 overflow-y-auto text-xs text-slate-200">
+        <div className="pb-safe min-h-0 p-4 space-y-4 flex-1 overflow-y-auto text-xs text-slate-200">
           {/* SECCIÓN 0: SELECTOR DE IDIOMA Y MODO PWA OFFLINE */}
-          <div className="bg-slate-950/90 rounded-2xl p-3 border border-amber-400/50 space-y-2.5">
+          <div className="ui-card bg-surface-950 rounded-2xl p-3 border border-amber-400/50 space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-amber-400" />
@@ -86,13 +72,13 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                   {tx('Idioma de la Interfaz', 'Interface Language')}
                 </span>
               </div>
-              <div className="flex gap-1 bg-slate-900 p-1 rounded-xl border border-teal-800">
+              <div className="flex gap-1 bg-surface-900 p-1 rounded-xl border border-teal-800">
                 <button
                   onClick={() => {
                     soundManager.playClick();
                     setLang('es');
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  className={`min-h-11 min-w-11 px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
                     lang === 'es'
                       ? 'bg-amber-400 text-slate-950 shadow'
                       : 'text-slate-400 hover:text-white'
@@ -105,7 +91,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                     soundManager.playClick();
                     setLang('en');
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  className={`min-h-11 min-w-11 px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
                     lang === 'en'
                       ? 'bg-amber-400 text-slate-950 shadow'
                       : 'text-slate-400 hover:text-white'
@@ -116,11 +102,11 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
               </div>
             </div>
 
-            <PWAInstallButton />
+            <div className="[&_button]:min-h-11 [&_button_div_div:last-child]:text-[11px]"><PWAInstallButton /></div>
           </div>
 
           {/* SECCIÓN 1: ACCIONES PRINCIPALES DE JUGADOR Y NAVEGACIÓN */}
-          <div className="bg-slate-950/90 rounded-2xl p-3 border border-teal-700/60 space-y-2">
+          <div className="ui-card bg-surface-950 rounded-2xl p-3 border border-teal-700/60 space-y-2">
             <div className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">
               {tx('ACCIONES DE EXPEDICIÓN', 'EXPEDITION ACTIONS')}
             </div>
@@ -132,12 +118,12 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 onClose();
                 onOpenDrive();
               }}
-              className="w-full p-2.5 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 text-emerald-100 text-xs font-bold border border-emerald-500/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="min-h-11 min-w-11 w-full p-2.5 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 text-emerald-100 text-xs font-bold border border-emerald-500/60 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
               <Cloud className="w-4 h-4 text-emerald-300 shrink-0" />
               <div className="text-left flex-1">
                 <div>{tx('Sincronizar con Google Drive', 'Sync with Google Drive')}</div>
-                <div className="text-[9px] text-emerald-300 font-normal">
+                <div className="text-[11px] text-emerald-300 font-normal">
                   {tx(
                     'Exporta tu Diario Científico o restaura respaldos en la nube',
                     'Export your Field Journal or restore cloud backups'
@@ -153,12 +139,12 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 onClose();
                 onChangePlayer();
               }}
-              className="w-full p-2.5 rounded-xl bg-teal-900/80 hover:bg-teal-800 text-teal-100 text-xs font-bold border border-teal-600/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="min-h-11 min-w-11 w-full p-2.5 rounded-xl bg-teal-900/80 hover:bg-teal-800 text-teal-100 text-xs font-bold border border-teal-600/60 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
               <Users className="w-4 h-4 text-amber-400 shrink-0" />
               <div className="text-left flex-1">
                 <div>{tx('Cambiar de Jugador / Personaje', 'Switch Player / Character')}</div>
-                <div className="text-[9px] text-teal-300 font-normal">
+                <div className="text-[11px] text-teal-300 font-normal">
                   {tx(
                     'Guarda tu progreso y elige o crea otro explorador',
                     'Save your progress and choose or create another explorer'
@@ -174,12 +160,12 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 onClose();
                 onChangeCompanionOrPhoto();
               }}
-              className="w-full p-2.5 rounded-xl bg-teal-900/80 hover:bg-teal-800 text-teal-100 text-xs font-bold border border-teal-600/60 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="min-h-11 min-w-11 w-full p-2.5 rounded-xl bg-teal-900/80 hover:bg-teal-800 text-teal-100 text-xs font-bold border border-teal-600/60 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
               <Camera className="w-4 h-4 text-sky-400 shrink-0" />
               <div className="text-left flex-1">
                 <div>{tx('Cambiar Ave Compañera / Tomar Foto', 'Change Companion Bird / Take Photo')}</div>
-                <div className="text-[9px] text-teal-300 font-normal">
+                <div className="text-[11px] text-teal-300 font-normal">
                   {tx(
                     'Posar con Tucán, Benteveo, Chinchero o Picaflor sin flash',
                     'Pose with Toucan, Kiskadee, Woodcreeper, or Comet without flash'
@@ -195,12 +181,12 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 onClose();
                 onBackToSplash();
               }}
-              className="w-full p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
+              className="min-h-11 min-w-11 w-full p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4 text-rose-400 shrink-0" />
               <div className="text-left flex-1">
                 <div>{tx('Volver a la Portada Principal', 'Return to Main Cover')}</div>
-                <div className="text-[9px] text-slate-400 font-normal">
+                <div className="text-[11px] text-slate-400 font-normal">
                   {tx(
                     'Regresar a la pantalla de bienvenida del juego',
                     'Return to the welcome splash screen'
@@ -211,7 +197,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
           </div>
 
           {/* SECCIÓN 2: AJUSTES DE AUDIO */}
-          <div className="bg-slate-950/80 rounded-2xl p-3 border border-teal-900/60 space-y-3">
+          <div className="ui-card bg-surface-950 rounded-2xl p-3 border border-teal-900/60 space-y-3">
             <div className="text-[11px] font-bold text-teal-300 uppercase">
               {tx('AJUSTES DE AUDIO', 'AUDIO SETTINGS')}
             </div>
@@ -230,7 +216,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                   soundManager.playClick();
                   onToggleSound();
                 }}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                className={`min-h-11 min-w-11 px-3 py-1 rounded-xl text-xs font-bold transition-all ${
                   soundEnabled
                     ? 'bg-emerald-500 text-slate-950'
                     : 'bg-slate-800 text-slate-400'
@@ -250,7 +236,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                   soundManager.playClick();
                   onToggleBgm();
                 }}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                className={`min-h-11 min-w-11 px-3 py-1 rounded-xl text-xs font-bold transition-all ${
                   bgmEnabled
                     ? 'bg-teal-500 text-slate-950'
                     : 'bg-slate-800 text-slate-400'
@@ -262,7 +248,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
           </div>
 
           {/* SECCIÓN 3: INFORMACIÓN DE LA RESERVA */}
-          <div className="bg-slate-950/80 rounded-2xl p-3 border border-teal-900/60 space-y-2">
+          <div className="ui-card bg-surface-950 rounded-2xl p-3 border border-teal-900/60 space-y-2">
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-300 uppercase">
               <Info className="w-3.5 h-3.5" />
               <span>{tx('PARQUE BOTÁNICO MUNICIPAL', 'MUNICIPAL BOTANICAL PARK')}</span>
@@ -274,7 +260,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 'is a 15.5-hectare Urban Nature Reserve in the Los Perales neighborhood, San Salvador de Jujuy.'
               )}
             </p>
-            <div className="grid grid-cols-2 gap-2 text-[10px] text-teal-200">
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-teal-200">
               <div className="bg-teal-950/50 p-2 rounded-lg border border-teal-900/40">
                 <span className="block font-bold text-amber-300">{tx('ALTITUD', 'ALTITUDE')}</span>
                 {tx('1334 a 1463 m.s.n.m.', '1334 to 1463 m.a.s.l.')}
@@ -316,7 +302,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                   onClose();
                 }
               }}
-              className="w-full py-2.5 rounded-xl bg-rose-950/60 border border-rose-800/60 text-rose-300 hover:text-white hover:bg-rose-900/80 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              className="min-h-11 min-w-11 w-full py-2.5 rounded-xl bg-rose-950/60 border border-rose-800/60 text-rose-300 hover:text-white hover:bg-rose-900/80 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>{tx('Reiniciar Progreso de este Perfil', 'Reset Progress for This Profile')}</span>

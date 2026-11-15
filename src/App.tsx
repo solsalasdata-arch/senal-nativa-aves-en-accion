@@ -32,6 +32,8 @@ import { OfflineIndicator } from './components/PWAInstallButton';
 import { capFieldJournal } from './utils/journal';
 import { registerMindARDiscovery, completeMindARChallenge, MindARActionResult } from './utils/mindarProgress';
 import { getReturningProfile } from './utils/welcome';
+import { ModalHeader } from './components/ui';
+import { useModalEscape } from './components/ui/useModalEscape';
 
 type ScreenId = 'screen1' | 'screen2' | 'screen3' | 'screen4';
 
@@ -69,6 +71,7 @@ export default function App() {
   const [showBirdsModal, setShowBirdsModal] = useState(false);
   const [birdsInitialTab, setBirdsInitialTab] = useState<'catalog' | 'audio' | 'journal' | 'trivia'>('catalog');
   const [showDetailCelebration, setShowDetailCelebration] = useState(false);
+  useModalEscape(showDetailCelebration, () => setShowDetailCelebration(false));
   const [showMapModal, setShowMapModal] = useState(false);
   const [showShopModal, setShowShopModal] = useState(false);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
@@ -682,13 +685,17 @@ export default function App() {
 
         {/* MODAL DE CELEBRACIÓN: INSIGNIA OBSERVADOR DE DETALLES (10 ENTRADAS) */}
         {showDetailCelebration && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn">
-            <div className="relative w-full max-w-xs rounded-3xl overflow-hidden bg-slate-900 border-2 border-amber-400 p-5 text-center space-y-3 shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-label="¡OBSERVADOR DE DETALLES!" className="ui-overlay z-50 flex items-center justify-center p-3 animate-fadeIn">
+            <div className="ui-card pb-safe relative w-full max-w-sm overflow-y-auto max-h-[100dvh] text-center space-y-3 shadow-xl">
+              <div className="pt-safe"><ModalHeader title="¡OBSERVADOR DE DETALLES!" subtitle="Parque Botánico Barón Schuel" onClose={() => {
+                  soundManager.playClick();
+                  setShowDetailCelebration(false);
+                }} /></div>
               <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 mx-auto flex items-center justify-center text-3xl shadow-lg ring-4 ring-amber-400/40">
                 🏅
               </div>
               <div>
-                <span className="text-[10px] font-black text-teal-300 uppercase tracking-widest block">
+                <span className="text-[11px] font-black text-teal-300 uppercase tracking-widest block">
                   PARQUE BOTÁNICO BARÓN SCHUEL
                 </span>
                 <h4 className="text-base font-black text-amber-300 mt-0.5">
@@ -706,7 +713,7 @@ export default function App() {
                   soundManager.playClick();
                   setShowDetailCelebration(false);
                 }}
-                className="w-full py-2.5 rounded-xl game-btn-orange text-white text-xs font-black"
+                className="min-h-11 w-full py-2.5 rounded-xl game-btn-orange text-white text-xs font-black"
               >
                 ¡CONTINUAR EXPLORANDO!
               </button>

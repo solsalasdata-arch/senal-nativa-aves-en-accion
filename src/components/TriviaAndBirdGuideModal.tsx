@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ModalHeader, EmptyState } from './ui';
+import { useModalEscape } from './ui/useModalEscape';
 import {
   Bird,
   HelpCircle,
@@ -308,6 +310,8 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     return () => window.clearInterval(interval);
   }, [audioIsPlaying]);
 
+  useModalEscape(isOpen, onClose);
+
   if (!isOpen) return null;
 
   // Real HTML5 <audio> Dispatcher: plays the exact .mp3 file from /assets/aves/ using encodeURI()
@@ -567,7 +571,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-3 bg-black/85 backdrop-blur-md animate-fadeIn select-none">
+    <div role="dialog" aria-modal="true" aria-label={tx('COLECCIÓN DE AVES · YUNGAS', 'BIRD COLLECTION · YUNGAS')} className="ui-overlay z-50 flex items-center justify-center sm:p-3 animate-fadeIn">
       {/* Hidden Real HTML5 Audio Element connected to /assets/aves/*.mp3 */}
       <audio
         ref={audioRef}
@@ -579,46 +583,23 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         className="hidden"
       />
       <div
-        className="relative w-full max-w-sm max-h-[94vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl border-2 border-[#1DB5A0] bg-[#2CC5B1]"
+        className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl"
       >
         {/* TOP HEADER */}
-        <div className="bg-slate-950/90 px-3.5 pt-3 pb-2 border-b border-teal-800/60 shrink-0">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-teal-500/20 border border-teal-400 flex items-center justify-center text-teal-300 shrink-0 shadow">
-                <Bird className="w-4 h-4" />
-              </div>
-              <div className="truncate">
-                <h3 className="font-black text-xs text-white uppercase tracking-wider truncate">
-                  {tx('COLECCIÓN DE AVES · YUNGAS', 'BIRD COLLECTION · YUNGAS')}
-                </h3>
-                <p className="text-[10px] text-teal-300 font-semibold truncate">
-                  {tx(
-                    'Parque Botánico Municipal "Barón Carlos María Schuel"',
-                    '"Barón Carlos María Schuel" Municipal Botanical Park'
-                  )}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
+        <div className="bg-surface-950 px-3.5 pt-3 pb-2 border-b border-teal-800/60 shrink-0">
+          <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title={tx('COLECCIÓN DE AVES · YUNGAS', 'BIRD COLLECTION · YUNGAS')} subtitle={tx('Catálogo, cantos, diario y trivia', 'Catalog, songs, journal and trivia')} icon={<Bird aria-hidden="true" className="h-5 w-5" />} onClose={() => {
                 soundManager.playClick();
                 onClose();
-              }}
-              className="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-teal-200 hover:text-white text-[10px] font-bold flex items-center gap-1 border border-teal-700/60 shrink-0 shadow active:scale-95 transition-all"
-            >
-              <span>{tx('← Volver al Menú', '← Back to Menu')}</span>
-            </button>
-          </div>
+              }} /></div>
 
           {/* 4 SEGMENTED NAVIGATION TABS */}
-          <div className="grid grid-cols-4 gap-1 p-1 bg-slate-900/90 rounded-xl border border-teal-900/60 text-[10px] font-bold">
+          <div className="grid grid-cols-4 gap-1 p-1 bg-surface-900 rounded-xl border border-teal-900/60 text-[11px] font-bold">
             <button
               onClick={() => {
                 soundManager.playClick();
                 setActiveTab('catalog');
               }}
-              className={`py-1.5 rounded-lg transition-all text-center flex flex-col items-center justify-center ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all text-center flex flex-col items-center justify-center ${
                 activeTab === 'catalog'
                   ? 'bg-teal-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
@@ -633,7 +614,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 soundManager.playClick();
                 setActiveTab('audio');
               }}
-              className={`py-1.5 rounded-lg transition-all text-center flex flex-col items-center justify-center ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all text-center flex flex-col items-center justify-center ${
                 activeTab === 'audio'
                   ? 'bg-emerald-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
@@ -648,7 +629,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 soundManager.playClick();
                 setActiveTab('journal');
               }}
-              className={`py-1.5 rounded-lg transition-all text-center flex flex-col items-center justify-center relative ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all text-center flex flex-col items-center justify-center relative ${
                 activeTab === 'journal'
                   ? 'bg-amber-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
@@ -666,7 +647,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 soundManager.playClick();
                 setActiveTab('trivia');
               }}
-              className={`py-1.5 rounded-lg transition-all text-center flex flex-col items-center justify-center ${
+              className={`min-h-11 min-w-11 py-1.5 rounded-lg transition-all text-center flex flex-col items-center justify-center ${
                 activeTab === 'trivia'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
@@ -689,7 +670,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* TAB 1: CATÁLOGO DE AVES (011 AL 018) */}
         {/* ============================================================== */}
         {activeTab === 'catalog' && (
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          <div className="pb-safe min-h-0 flex-1 overflow-y-auto p-3 space-y-3">
             
             {/* UPPER HALF: CHINCHERO CHICO ILLUSTRATED IN COLOR OVER CIRCULAR PARK SEAL */}
             <div
@@ -697,11 +678,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 soundManager.playClick();
                 setInspectingBird(featuredChinchero);
               }}
-              className="relative rounded-3xl overflow-hidden border-2 border-teal-100/70 bg-gradient-to-b from-[#1AA693] via-[#138A79] to-[#0D6B5D] p-3.5 shadow-xl cursor-pointer group"
+              className="relative rounded-3xl overflow-hidden border border-teal-100/70 bg-gradient-to-b from-[#1AA693] via-[#138A79] to-[#0D6B5D] p-3.5 shadow-xl cursor-pointer group"
             >
               {/* Circular Seal of "PARQUE BOTÁNICO MUNICIPAL BARÓN CARLOS MARÍA SCHUEL" + Full Uncropped Bird Showcase */}
               <div className="relative flex flex-col items-center justify-center py-1">
-                <div className="relative w-full aspect-square max-h-[340px] rounded-2xl bg-[#E8FAF6] border-3 border-amber-300 shadow-2xl flex flex-col items-center justify-center overflow-hidden">
+                <div className="relative w-full aspect-square max-h-[340px] rounded-2xl bg-[#E8FAF6] border border-amber-300 shadow-2xl flex flex-col items-center justify-center overflow-hidden">
                   {/* Decorative Seal Watermark Ring */}
                   <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full opacity-25 pointer-events-none">
                     <defs>
@@ -710,12 +691,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     </defs>
                     <circle cx="100" cy="100" r="90" fill="none" stroke="#0D6B5D" strokeWidth="3" />
                     <circle cx="100" cy="100" r="68" fill="none" stroke="#0D6B5D" strokeWidth="1.5" strokeDasharray="4 3" />
-                    <text fill="#064E3B" fontSize="9.5" fontWeight="800" letterSpacing="1.6">
+                    <text fill="#064E3B" fontSize="11" fontWeight="800" letterSpacing="1.6">
                       <textPath href="#sealTopArc" startOffset="50%" textAnchor="middle">
                         PARQUE BOTÁNICO MUNICIPAL
                       </textPath>
                     </text>
-                    <text fill="#064E3B" fontSize="9" fontWeight="800" letterSpacing="1.3">
+                    <text fill="#064E3B" fontSize="11" fontWeight="800" letterSpacing="1.3">
                       <textPath href="#sealBottomArc" startOffset="50%" textAnchor="middle">
                         BARÓN CARLOS MARÍA SCHUEL
                       </textPath>
@@ -730,12 +711,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   />
 
                   {/* Sound Quick Button */}
-                  <button
+                  <button aria-label="Escuchar Canto del Chinchero Chico"
                     onClick={(e) => {
                       e.stopPropagation();
                       playSoundForBird(featuredChinchero);
                     }}
-                    className="absolute bottom-2.5 right-2.5 z-20 w-9 h-9 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 border-2 border-slate-900 flex items-center justify-center shadow-lg active:scale-95"
+                    className="min-h-11 min-w-11 absolute bottom-2.5 right-2.5 z-20 w-9 h-9 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 border border-slate-900 flex items-center justify-center shadow-lg active:scale-95"
                     title="Escuchar Canto del Chinchero Chico"
                   >
                     <Volume2 className="w-4 h-4" />
@@ -744,13 +725,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
                 {/* Title Banner Below the Seal */}
                 <div className="text-center mt-2">
-                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-slate-950/60 border border-teal-300/40 text-[9px] font-black text-amber-300 uppercase tracking-widest">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-surface-950 border border-teal-300/40 text-[11px] font-black text-amber-300 uppercase tracking-widest">
                     AVE DESTACADA · PARQUE BOTÁNICO BARÓN SCHUEL
                   </span>
                   <h4 className="text-lg font-black text-white uppercase tracking-wider drop-shadow mt-0.5">
                     CHINCHERO CHICO
                   </h4>
-                  <p className="text-[10px] italic text-teal-100 font-serif">
+                  <p className="text-[11px] italic text-teal-100 font-serif">
                     {featuredChinchero.scientificName} · {featuredChinchero.size} · {featuredChinchero.weight}
                   </p>
                 </div>
@@ -762,7 +743,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       soundManager.playClick();
                       setInspectingBird(featuredChinchero);
                     }}
-                    className="flex-1 py-1.5 px-3 rounded-xl game-btn-mint text-emerald-950 text-[10px] font-black flex items-center justify-center gap-1 shadow"
+                    className="min-h-11 min-w-11 flex-1 py-1.5 px-3 rounded-xl game-btn-mint text-emerald-950 text-[11px] font-black flex items-center justify-center gap-1 shadow"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>Abrir Ficha Técnica</span>
@@ -772,7 +753,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       e.stopPropagation();
                       handleOpenJournalForm(featuredChinchero);
                     }}
-                    className="flex-1 py-1.5 px-3 rounded-xl bg-slate-950/85 text-amber-300 border border-amber-400/60 hover:bg-slate-900 text-[10px] font-black flex items-center justify-center gap-1 shadow"
+                    className="min-h-11 min-w-11 flex-1 py-1.5 px-3 rounded-xl bg-surface-950 text-amber-300 border border-amber-400/60 hover:bg-surface-900 text-[11px] font-black flex items-center justify-center gap-1 shadow"
                   >
                     <BookOpen className="w-3.5 h-3.5 text-amber-400" />
                     <span>Diario (4 Toques)</span>
@@ -782,7 +763,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             </div>
 
             {/* Vista Oficial del Catálogo de Siluetas (Completa sin recortes) */}
-            <div className="rounded-2xl overflow-hidden border-2 border-teal-200/70 bg-[#E8FAF6] p-2 shadow-lg flex items-center justify-center min-h-[240px]">
+            <div className="rounded-2xl overflow-hidden border border-teal-200/70 bg-[#E8FAF6] p-2 shadow-lg flex items-center justify-center min-h-[240px]">
               <img
                 src="/assets/aistudio/Editing_bird_images_and_silhouettes_b4122078.jpg"
                 alt="Catálogo Oficial de Siluetas Chinchero Chico"
@@ -796,7 +777,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 soundManager.playClick();
                 setActiveTab('audio');
               }}
-              className="w-full py-2.5 px-3 rounded-2xl game-btn-orange text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg tracking-wide uppercase"
+              className="min-h-11 min-w-11 w-full py-2.5 px-3 rounded-2xl game-btn-orange text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg tracking-wide uppercase"
             >
               <Music className="w-4 h-4 text-amber-300" />
               <span>Modo Escuchar el Canto (Sin Conexión)</span>
@@ -805,22 +786,22 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             {/* LOWER HALF: CATALOG GRID WITH SILHOUETTES / ILLUMINATED FILTER */}
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                <span className="text-xs font-black text-ink uppercase tracking-wider">
                   {tx('Guía Oficial de Especies (001 - 021)', 'Official Species Guide (001 - 021)')}
                 </span>
-                <span className="text-[10px] font-extrabold text-teal-950">
+                <span className="text-[11px] font-extrabold text-teal-200">
                   {allCatalogBirds.filter(b => isBirdUnlocked(b.id)).length}/{allCatalogBirds.length} {tx('Iluminadas', 'Illuminated')}
                 </span>
               </div>
 
               {/* Toggle Filter Tabs */}
-              <div className="flex gap-1 p-1 bg-slate-950/80 rounded-xl border border-teal-900 text-[10px] font-bold">
+              <div className="flex gap-1 p-1 bg-surface-950 rounded-xl border border-teal-900 text-[11px] font-bold">
                 <button
                   onClick={() => {
                     soundManager.playClick();
                     setCatalogFilter('all');
                   }}
-                  className={`flex-1 py-1 rounded-lg transition-all ${
+                  className={`min-h-11 min-w-11 flex-1 py-1 rounded-lg transition-all ${
                     catalogFilter === 'all'
                       ? 'bg-teal-600 text-white shadow'
                       : 'text-slate-400 hover:text-slate-200'
@@ -833,7 +814,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     soundManager.playClick();
                     setCatalogFilter('silhouettes');
                   }}
-                  className={`flex-1 py-1 rounded-lg transition-all ${
+                  className={`min-h-11 min-w-11 flex-1 py-1 rounded-lg transition-all ${
                     catalogFilter === 'silhouettes'
                       ? 'bg-amber-600 text-white shadow'
                       : 'text-slate-400 hover:text-slate-200'
@@ -846,7 +827,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     soundManager.playClick();
                     setCatalogFilter('illuminated');
                   }}
-                  className={`flex-1 py-1 rounded-lg transition-all ${
+                  className={`min-h-11 min-w-11 flex-1 py-1 rounded-lg transition-all ${
                     catalogFilter === 'illuminated'
                       ? 'bg-emerald-600 text-white shadow'
                       : 'text-slate-400 hover:text-slate-200'
@@ -873,23 +854,23 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                           handleOpenSilhouetteGame(bird);
                         }
                       }}
-                      className={`relative rounded-2xl overflow-hidden border p-2.5 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] shadow-md ${
+                      className={`ui-card relative rounded-2xl overflow-hidden border p-2.5 flex flex-col justify-between cursor-pointer transition-all active:scale-[0.98] shadow-md ${
                         isUnlocked
-                          ? 'bg-slate-950/90 border-teal-400 hover:border-amber-400'
-                          : 'bg-slate-950/95 border-slate-800 hover:border-teal-500'
+                          ? 'bg-surface-950 border-teal-400 hover:border-amber-400'
+                          : 'bg-surface-950 border-slate-800 hover:border-teal-500'
                       }`}
                     >
                       {/* ID Badge */}
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-900 text-teal-300 border border-teal-900">
+                        <span className="text-[11px] font-black px-1.5 py-0.5 rounded bg-surface-900 text-teal-300 border border-teal-900">
                           #{bird.catalogNumber}
                         </span>
                         {isUnlocked ? (
-                          <div className="flex items-center text-amber-400 text-[10px]">
+                          <div className="flex items-center text-amber-400 text-[11px]">
                             {'★'.repeat(Math.max(1, stars))}
                           </div>
                         ) : (
-                          <span className="text-[8px] font-black text-amber-400 bg-amber-950/80 px-1.5 py-0.2 rounded border border-amber-600/40">
+                          <span className="text-[11px] font-black text-amber-400 bg-amber-950/80 px-1.5 py-0.2 rounded border border-amber-600/40">
                             SILUETA
                           </span>
                         )}
@@ -914,12 +895,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                           <BirdSilhouetteSvg bird={bird} size="card" />
                         )}
                         {!isUnlocked && (
-                          <span className="absolute bottom-1 right-1 text-[8px] font-black text-slate-950 bg-amber-300/95 px-1.5 py-0.2 rounded-full tracking-wider uppercase shadow-xs">
+                          <span className="absolute bottom-1 right-1 text-[11px] font-black text-slate-950 bg-amber-300/95 px-1.5 py-0.2 rounded-full tracking-wider uppercase shadow-xs">
                             {tx('Pistas', 'Clues')}
                           </span>
                         )}
 
-                        <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-[8px] text-teal-200 font-bold">
+                        <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-[11px] text-teal-200 font-bold">
                           {bird.size}
                         </div>
                       </div>
@@ -931,10 +912,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                             <h5 className="text-xs font-black text-white truncate leading-tight">
                               {bird.commonName}
                             </h5>
-                            <p className="text-[9px] italic text-teal-300 font-serif truncate">
+                            <p className="text-[11px] italic text-teal-300 font-serif truncate">
                               {bird.scientificName}
                             </p>
-                            <div className="mt-1 flex items-center justify-between text-[9px] text-slate-400">
+                            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
                               <span className="truncate">{bird.family}</span>
                               <span className={`font-black ${bird.conservationStatus === 'AM' ? 'text-rose-400' : bird.conservationStatus === 'VU' ? 'text-amber-400' : 'text-emerald-400'}`}>
                                 {bird.conservationStatus}
@@ -946,10 +927,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                             <h5 className="text-xs font-bold text-slate-300 truncate leading-tight">
                               {tx('Especie', 'Species')} #{bird.catalogNumber}
                             </h5>
-                            <p className="text-[9px] text-teal-400 truncate">
+                            <p className="text-[11px] text-teal-400 truncate">
                               {bird.hints.size}
                             </p>
-                            <div className="mt-1 flex items-center justify-between text-[9px] text-amber-400 font-bold">
+                            <div className="mt-1 flex items-center justify-between text-[11px] text-amber-400 font-bold">
                               <span>{tx('Misterio', 'Mystery')}</span>
                               <span>+100 XP</span>
                             </div>
@@ -968,9 +949,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* TAB 2: BIOACÚSTICA "ESCUCHA EL CANTO" (21 ARCHIVOS .MP3 REALES) */}
         {/* ============================================================== */}
         {activeTab === 'audio' && (
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+          <div className="pb-safe min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3">
             {/* Lámina Oficial Bioacústica sin recortes (min-h 240px + object-contain) */}
-            <div className="rounded-2xl overflow-hidden border-2 border-teal-400/80 bg-[#E8FAF6] p-2 shadow-lg flex items-center justify-center min-h-[240px]">
+            <div className="rounded-2xl overflow-hidden border border-teal-400/80 bg-[#E8FAF6] p-2 shadow-lg flex items-center justify-center min-h-[240px]">
               <img
                 src="/assets/aistudio/Add_bird_song_interface_data_9b786ba3.jpg"
                 alt="Interfaz Oficial de Canto y Onda Sonora"
@@ -979,13 +960,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             </div>
 
             {/* Header & Real MP3 Bioacoustic Player Info */}
-            <div className="rounded-2xl p-3 bg-slate-950/90 border border-teal-500/60 space-y-2 text-white">
+            <div className="ui-card rounded-2xl p-3 bg-surface-950 border border-teal-500/60 space-y-2 text-white">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-teal-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Volume2 className="w-4 h-4 text-emerald-400" />
                   {tx('Bioacústica Yungas (21 Cantos MP3)', 'Yungas Bioacoustics (21 MP3 Calls)')}
                 </span>
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500">
                   100% OFFLINE
                 </span>
               </div>
@@ -997,7 +978,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               </p>
 
               {/* Animated Sound Wave Graphic */}
-              <div className="h-14 rounded-xl bg-slate-900 border border-teal-800 p-2 flex items-center justify-center gap-1.5 overflow-hidden">
+              <div className="h-14 rounded-xl bg-surface-900 border border-teal-800 p-2 flex items-center justify-center gap-1.5 overflow-hidden">
                 {['h-3', 'h-6', 'h-4', 'h-10', 'h-8', 'h-5', 'h-11', 'h-7', 'h-4', 'h-9', 'h-6', 'h-3', 'h-7', 'h-10', 'h-4', 'h-6'].map((activeClass, idx) => {
                   const isHigh = audioIsPlaying && (waveTick + idx) % 2 === 0;
                   return (
@@ -1020,15 +1001,15 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     <button
                       key={bird.id}
                       onClick={() => handleStartAudioGame(bird)}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 border transition-all flex items-center gap-1.5 ${
+                      className={`min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 border transition-all flex items-center gap-1.5 ${
                         isSelected
                           ? 'bg-emerald-600 text-white border-emerald-400 shadow ring-2 ring-emerald-400/40'
-                          : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-teal-500'
+                          : 'bg-surface-900 text-slate-300 border-slate-700 hover:border-teal-500'
                       }`}
                     >
                       <Volume2 className="w-3.5 h-3.5 text-amber-300" />
                       <span>#{bird.catalogNumber} {bird.commonName}</span>
-                      {isUnlocked && <span className="text-emerald-300 text-[10px]">✓</span>}
+                      {isUnlocked && <span className="text-emerald-300 text-[11px]">✓</span>}
                     </button>
                   );
                 })}
@@ -1036,15 +1017,15 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             </div>
 
             {/* Acoustic Recognition Challenge */}
-            <div className="bg-slate-950/95 rounded-2xl p-3.5 border border-teal-800 space-y-3">
+            <div className="ui-card bg-surface-950 rounded-2xl p-3.5 border border-teal-800 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-amber-400 uppercase tracking-wide">
                   {tx('Desafío: ¿Quién Canta en el Sendero?', 'Challenge: Who Is Singing on the Trail?')}
                 </span>
-                <span className="text-[10px] font-black text-teal-300">+50 XP</span>
+                <span className="text-[11px] font-black text-teal-300">+50 XP</span>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-900 border border-teal-900 text-center space-y-2">
+              <div className="p-3 rounded-xl bg-surface-900 border border-teal-900 text-center space-y-2">
                 <p className="text-[11px] text-slate-300">
                   {tx(
                     'Escucha el archivo de audio real (.mp3) y selecciona cuál de las 3 especies candidatas está vocalizando:',
@@ -1061,7 +1042,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 />
                 <button
                   onClick={() => playSoundForBird(audioTargetBird)}
-                  className="w-full py-2.5 rounded-xl game-btn-mint text-emerald-950 font-black text-xs flex items-center justify-center gap-2 shadow"
+                  className="min-h-11 min-w-11 w-full py-2.5 rounded-xl game-btn-mint text-emerald-950 font-black text-xs flex items-center justify-center gap-2 shadow"
                 >
                   <Volume2 className="w-4 h-4" />
                   <span>{audioIsPlaying ? tx('Reproduciendo Canto MP3...', 'Playing MP3 Call...') : tx('Reproducir Canto MP3', 'Play MP3 Call')}</span>
@@ -1087,7 +1068,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       key={idx}
                       disabled={audioResult !== null}
                       onClick={() => handleAudioGuess(optName)}
-                      className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-center justify-between ${style}`}
+                      className={`min-h-11 min-w-11 w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-center justify-between ${style}`}
                     >
                       <span className="font-bold">{optName}</span>
                       {audioResult === 'correct' && optName === audioTargetBird.commonName && (
@@ -1105,7 +1086,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     <Sparkles className="w-4 h-4" />
                     ¡RECONOCIMIENTO EXITOSO! (+50 XP)
                   </div>
-                  <div className="relative w-full min-h-[240px] rounded-xl overflow-hidden bg-[#E8FAF6] border-2 border-amber-400 flex items-center justify-center shadow-lg">
+                  <div className="relative w-full min-h-[240px] rounded-xl overflow-hidden bg-[#E8FAF6] border border-amber-400 flex items-center justify-center shadow-lg">
                     <img
                       src={encodeURI(audioTargetBird.image)}
                       style={{ objectPosition: audioTargetBird.imageFocus || 'center' }}
@@ -1134,7 +1115,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       setAudioGuess(null);
                       setAudioResult(null);
                     }}
-                    className="mt-1 px-3 py-1 rounded-lg bg-amber-800 text-amber-100 text-[10px] font-bold"
+                    className="min-h-11 min-w-11 mt-1 px-3 py-1 rounded-lg bg-amber-800 text-amber-100 text-[11px] font-bold"
                   >
                     Reintentar
                   </button>
@@ -1148,9 +1129,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* TAB 3: DIARIO DE CAMPO (PASO 13) */}
         {/* ============================================================== */}
         {activeTab === 'journal' && (
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+          <div className="pb-safe min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3">
             {/* Lámina Oficial "DIARIO DE AVENTURAS: ¡Anota tus aventuras del día!" sin recortes */}
-            <div className="rounded-2xl overflow-hidden border-2 border-amber-400/80 bg-[#E8FAF6] p-2 shadow-xl flex items-center justify-center min-h-[240px]">
+            <div className="rounded-2xl overflow-hidden border border-amber-400/80 bg-[#E8FAF6] p-2 shadow-xl flex items-center justify-center min-h-[240px]">
               <img
                 src="/assets/aistudio/Toucan_writing_adventure_diary_9f3bf558.jpg"
                 alt="Diario de Aventuras Oficial"
@@ -1159,7 +1140,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             </div>
 
             {/* Observer of Details Badge Tracker */}
-            <div className="rounded-2xl p-3 bg-slate-950/90 border border-amber-500/60 space-y-2 text-white">
+            <div className="ui-card rounded-2xl p-3 bg-surface-950 border border-amber-500/60 space-y-2 text-white">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-amber-400" />
@@ -1170,7 +1151,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 </span>
               </div>
 
-              <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-amber-900">
+              <div className="w-full bg-surface-900 h-2.5 rounded-full overflow-hidden border border-amber-900">
                 <div
                   className="h-full bg-gradient-to-r from-teal-400 to-amber-400 transition-all duration-500"
                   style={{ width: `${Math.min(100, (journalCount / 10) * 100)}%` }}
@@ -1182,13 +1163,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   <span className="text-xl">🏅</span>
                   <div>
                     <div>¡Insignia Obtenida!</div>
-                    <div className="text-[9px] font-normal text-emerald-300">
+                    <div className="text-[11px] font-normal text-emerald-300">
                       Has registrado 10 observaciones científicas con el método de 4 Toques.
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-[10px] text-amber-200/80">
+                <p className="text-[11px] text-amber-200/80">
                   Completa 10 registros científicos con los 4 Toques (Comportamiento, Cantidad, Estrato, Clima) para ganar la Insignia Dorada.
                 </p>
               )}
@@ -1196,7 +1177,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
             {/* Quick Register & Google Drive Sync Triggers */}
             <div className="flex items-center justify-between gap-2 px-1">
-              <span className="text-xs font-black text-slate-900 uppercase truncate">
+              <span className="text-xs font-black text-ink uppercase truncate">
                 Observaciones ({journalCount})
               </span>
               <div className="flex items-center gap-1.5 shrink-0">
@@ -1206,7 +1187,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       soundManager.playClick();
                       onOpenDrive();
                     }}
-                    className="px-2.5 py-1 rounded-xl bg-slate-950 text-teal-200 border border-teal-400 hover:bg-slate-900 text-[10px] font-black flex items-center gap-1 shadow"
+                    className="min-h-11 min-w-11 px-2.5 py-1 rounded-xl bg-surface-950 text-teal-200 border border-teal-400 hover:bg-surface-900 text-[11px] font-black flex items-center gap-1 shadow"
                   >
                     <Cloud className="w-3 h-3 text-teal-300" />
                     <span>Google Drive</span>
@@ -1214,7 +1195,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 )}
                 <button
                   onClick={() => handleOpenJournalForm(CATALOG_BIRDS_DATA[5])}
-                  className="px-2.5 py-1 rounded-xl game-btn-orange text-white text-[10px] font-black flex items-center gap-1 shadow"
+                  className="min-h-11 min-w-11 px-2.5 py-1 rounded-xl game-btn-orange text-white text-[11px] font-black flex items-center gap-1 shadow"
                 >
                   <span>+ Registrar</span>
                 </button>
@@ -1224,55 +1205,50 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             <p className="text-xs text-teal-300">Señales MindAR: {playerProfile.mindarDiscoveries?.length || 0} descubierta(s) · {playerProfile.mindarDiscoveries?.some(d => d.challengeCompletedAt !== undefined) ? 'desafío completado' : 'desafío pendiente'}</p>
             {/* Entries List */}
             {journalEntries.length === 0 ? (
-              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-2 text-white">
-                <p className="text-xs text-slate-400">No hay observaciones registradas todavía.</p>
-                <p className="text-[10px] text-teal-300">
-                  Abre la Ficha Técnica de cualquier ave del catálogo y pulsa "Registrar en Diario de Campo (4 Toques)".
-                </p>
-              </div>
+              <EmptyState title="No hay observaciones registradas todavía." text={'Abre la Ficha Técnica de cualquier ave del catálogo y pulsa "Registrar en Diario de Campo (4 Toques)".'} />
             ) : (
               <div className="space-y-2.5">
                 {journalEntries.map((entry) => (
                   <div
                     key={entry.id}
-                    className="p-3 rounded-2xl bg-slate-950/95 border border-teal-900 space-y-1.5 text-white"
+                    className="ui-card p-3 rounded-2xl bg-surface-950 border border-teal-900 space-y-1.5 text-white"
                   >
                     <div className="flex items-start justify-between">
                       <div>
                         <h5 className="text-xs font-black text-white">{entry.birdName}</h5>
-                        <p className="text-[10px] italic text-teal-300 font-serif">
+                        <p className="text-[11px] italic text-teal-300 font-serif">
                           {entry.scientificName}
                         </p>
                       </div>
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 text-teal-200 border border-teal-800">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface-900 text-teal-200 border border-teal-800">
                         {entry.trailName || 'Sendero Las Yungas'}
                       </span>
                     </div>
 
-                    <p className="text-[10px] text-teal-300">{entry.source === 'mindar-signal' ? 'Descubrimiento mediante señal MindAR' : 'Avistamiento de ave real'}</p>
+                    <p className="text-[11px] text-teal-300">{entry.source === 'mindar-signal' ? 'Descubrimiento mediante señal MindAR' : 'Avistamiento de ave real'}</p>
                     {entry.source === 'mindar-signal' && <p className="text-xs text-slate-300">{entry.notes}</p>}
                     {/* 4 Toque Pills */}
-                    {entry.source !== 'mindar-signal' && <div className="grid grid-cols-2 gap-1 text-[9px]">
-                      <div className="bg-slate-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
+                    {entry.source !== 'mindar-signal' && <div className="grid grid-cols-2 gap-1 text-[11px]">
+                      <div className="bg-surface-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
                         <span className="text-teal-400 font-bold">1. Acción: </span>
                         {entry.behavior || 'En reposo'}
                       </div>
-                      <div className="bg-slate-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
+                      <div className="bg-surface-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
                         <span className="text-teal-400 font-bold">2. Cantidad: </span>
                         {entry.count || '1 individuo'}
                       </div>
-                      <div className="bg-slate-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
+                      <div className="bg-surface-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
                         <span className="text-teal-400 font-bold">3. Estrato: </span>
                         {entry.stratum || 'Subdosel'}
                       </div>
-                      <div className="bg-slate-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
+                      <div className="bg-surface-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
                         <span className="text-teal-400 font-bold">4. Clima: </span>
                         {entry.weather || 'Soleado'}
                       </div>
                     </div>
 
                     }
-                    <div className="text-[9px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-900">
+                    <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-900">
                       <span>{new Date(entry.timestamp).toLocaleDateString()} · {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       {entry.stars ? (
                         <span className="text-amber-400 font-bold">Foto {'★'.repeat(entry.stars)}</span>
@@ -1289,8 +1265,8 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* TAB 4: TRIVIA DE LAS YUNGAS (5 PREGUNTAS) */}
         {/* ============================================================== */}
         {activeTab === 'trivia' && (
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
-            <div className="bg-slate-950/80 rounded-2xl p-3 border border-teal-900/50">
+          <div className="pb-safe min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3">
+            <div className="ui-card bg-surface-950 rounded-2xl p-3 border border-teal-900/50">
               <div className="flex items-center justify-between text-xs mb-1.5 font-bold">
                 <span className="text-teal-300">PREGUNTA {currentQuestionIdx + 1} DE {TRIVIA_QUESTIONS.length}</span>
                 <span className="text-amber-400">Aciertos: {questionsAnsweredCount}/5</span>
@@ -1304,7 +1280,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             </div>
 
             {triviaFinished ? (
-              <div className="bg-slate-950/90 rounded-2xl p-5 border border-teal-700 text-center space-y-3">
+              <div className="ui-card bg-surface-950 rounded-2xl p-5 border border-teal-700 text-center space-y-3">
                 <div className="w-16 h-16 rounded-full bg-amber-400 mx-auto flex items-center justify-center text-slate-950 shadow-lg">
                   <Award className="w-9 h-9" />
                 </div>
@@ -1323,7 +1299,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 <div className="pt-2 flex gap-2">
                   <button
                     onClick={handleResetTrivia}
-                    className="flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700"
+                    className="min-h-11 min-w-11 flex-1 py-2.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700"
                   >
                     Repasar Trivia
                   </button>
@@ -1332,14 +1308,14 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       soundManager.playClick();
                       onClose();
                     }}
-                    className="flex-1 py-2.5 rounded-xl game-btn-orange text-white text-xs font-bold"
+                    className="min-h-11 min-w-11 flex-1 py-2.5 rounded-xl game-btn-orange text-white text-xs font-bold"
                   >
                     Volver al Menú
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-950/90 rounded-2xl p-4 border border-teal-800/60 space-y-3">
+              <div className="ui-card bg-surface-950 rounded-2xl p-4 border border-teal-800/60 space-y-3">
                 <h4 className="text-sm font-bold text-white leading-snug">
                   {currentQ.question}
                 </h4>
@@ -1368,9 +1344,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         key={idx}
                         disabled={isAnswerSubmitted}
                         onClick={() => handleSelectOption(idx)}
-                        className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-start gap-2.5 ${btnStyle}`}
+                        className={`min-h-11 min-w-11 w-full p-2.5 rounded-xl border text-left text-xs transition-all flex items-start gap-2.5 ${btnStyle}`}
                       >
-                        <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                        <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">
                           {String.fromCharCode(65 + idx)}
                         </span>
                         <span className="flex-1 leading-snug">{opt}</span>
@@ -1409,7 +1385,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     <button
                       disabled={selectedOption === null}
                       onClick={handleSubmitTrivia}
-                      className={`w-full py-3 rounded-xl font-bold text-xs tracking-wide transition-all ${
+                      className={`min-h-11 min-w-11 w-full py-3 rounded-xl font-bold text-xs tracking-wide transition-all ${
                         selectedOption !== null
                           ? 'game-btn-orange text-white cursor-pointer'
                           : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
@@ -1420,7 +1396,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   ) : (
                     <button
                       onClick={handleNextTriviaQuestion}
-                      className="w-full py-3 rounded-xl game-btn-mint text-emerald-950 font-bold text-xs flex items-center justify-center gap-1.5"
+                      className="min-h-11 min-w-11 w-full py-3 rounded-xl game-btn-mint text-emerald-950 font-bold text-xs flex items-center justify-center gap-1.5"
                     >
                       <span>
                         {currentQuestionIdx < TRIVIA_QUESTIONS.length - 1
@@ -1442,7 +1418,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {silhouetteGameBird && (() => {
           const localizedSilBird = localizeCatalogBird(silhouetteGameBird, lang);
           return (
-          <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-3 animate-fadeIn select-none">
+          <div className="absolute inset-0 z-50 bg-black/90  flex flex-col p-3 animate-fadeIn select-none">
             <div className="flex items-center justify-between pb-2 border-b border-teal-900 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-xl">🕵️</span>
@@ -1450,28 +1426,28 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   <h4 className="text-xs font-black text-white uppercase tracking-wider">
                     {tx('SILUETA MISTERIOSA', 'MYSTERY SILHOUETTE')} #{localizedSilBird.catalogNumber}
                   </h4>
-                  <p className="text-[10px] text-teal-300">
+                  <p className="text-[11px] text-teal-300">
                     {tx('Descifra la especie a través de las 4 pistas', 'Decipher the species through the 4 clues')}
                   </p>
                 </div>
               </div>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => {
                   soundManager.playClick();
                   setSilhouetteGameBird(null);
                 }}
-                className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center"
+                className="min-h-11 min-w-11 w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-2.5 space-y-2.5">
+            <div className="pb-safe min-h-0 flex-1 overflow-y-auto py-2.5 space-y-2.5">
               {/* Silhouette Stage: Vectorial Black SVG Silhouette when unrevealed; Full Uncropped Photo (object-contain, min-h 240px) when guessed */}
-              <div className="relative min-h-[260px] rounded-2xl bg-gradient-to-b from-[#9CF0E0] via-[#5CD2BF] to-[#2BB5A0] border-2 border-teal-300 flex flex-col items-center justify-center p-3 text-center shadow-inner">
+              <div className="relative min-h-[260px] rounded-2xl bg-gradient-to-b from-[#9CF0E0] via-[#5CD2BF] to-[#2BB5A0] border border-teal-300 flex flex-col items-center justify-center p-3 text-center shadow-inner">
                 {silhouetteResult === 'correct' ? (
                   <div className="w-full flex flex-col items-center animate-scaleIn">
-                    <div className="relative w-full min-h-[240px] rounded-2xl overflow-hidden bg-[#E8FAF6] border-3 border-amber-400 shadow-xl flex items-center justify-center">
+                    <div className="relative w-full min-h-[240px] rounded-2xl overflow-hidden bg-[#E8FAF6] border border-amber-400 shadow-xl flex items-center justify-center">
                       <img
                         src={encodeURI(localizedSilBird.image)}
                         style={{ objectPosition: localizedSilBird.imageFocus || 'center' }}
@@ -1485,10 +1461,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   </div>
                 ) : (
                   <>
-                    <div className="w-full min-h-[200px] rounded-2xl border-2 border-teal-900/30 shadow-md flex items-center justify-center bg-[#A8F3E5]/60 p-2">
+                    <div className="w-full min-h-[200px] rounded-2xl border border-teal-900/30 shadow-md flex items-center justify-center bg-[#A8F3E5]/60 p-2">
                       <BirdSilhouetteSvg bird={localizedSilBird} size="stage" />
                     </div>
-                    <div className="text-[10px] font-black text-amber-300 bg-slate-950/90 px-3 py-1 rounded-full mt-2 border border-amber-400/50">
+                    <div className="text-[11px] font-black text-amber-300 bg-surface-950 px-3 py-1 rounded-full mt-2 border border-amber-400/50">
                       {tx(
                         `Recompensa activa (${hintsRevealed} ${hintsRevealed === 1 ? 'pista' : 'pistas'}): +${getSilhouetteXpReward()} XP`,
                         `Active reward (${hintsRevealed} ${hintsRevealed === 1 ? 'clue' : 'clues'}): +${getSilhouetteXpReward()} XP`
@@ -1502,7 +1478,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               <button
                 type="button"
                 onClick={() => playSoundForBird(silhouetteGameBird)}
-                className="w-full py-3 px-3.5 rounded-2xl game-btn-orange text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg border-2 border-amber-300 active:scale-98 transition-all cursor-pointer"
+                className="min-h-11 min-w-11 w-full py-3 px-3.5 rounded-2xl game-btn-orange text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg border border-amber-300 active:scale-98 transition-all cursor-pointer"
               >
                 <Volume2 className="w-4 h-4 text-amber-200 shrink-0" />
                 <span>
@@ -1522,7 +1498,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         soundManager.playClick();
                         setHintsRevealed(prev => Math.min(4, prev + 1));
                       }}
-                      className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 text-[10px] font-black border border-amber-300 shadow"
+                      className="min-h-11 min-w-11 px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 text-[11px] font-black border border-amber-300 shadow"
                     >
                       + {tx('Revelar Pista', 'Reveal Clue')} {hintsRevealed + 1}
                     </button>
@@ -1530,8 +1506,8 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 </div>
 
                 {/* Pista 1: Tamaño */}
-                <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                  <span className="font-bold text-amber-400 block text-[9px]">
+                <div className="p-2 rounded-xl bg-surface-950 border border-slate-800 text-xs">
+                  <span className="font-bold text-amber-400 block text-[11px]">
                     {tx('PISTA 1 (TAMAÑO):', 'CLUE 1 (SIZE):')}
                   </span>
                   <p className="text-white text-[11px] font-bold">{localizedSilBird.hints.size}</p>
@@ -1539,8 +1515,8 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
                 {/* Pista 2: Hábitat / Estrato */}
                 {hintsRevealed >= 2 && (
-                  <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-xs animate-fadeIn">
-                    <span className="font-bold text-emerald-400 block text-[9px]">
+                  <div className="p-2 rounded-xl bg-surface-950 border border-slate-800 text-xs animate-fadeIn">
+                    <span className="font-bold text-emerald-400 block text-[11px]">
                       {tx('PISTA 2 (HÁBITAT / ESTRATO):', 'CLUE 2 (HABITAT / STRATUM):')}
                     </span>
                     <p className="text-white text-[11px]">{localizedSilBird.hints.habitat}</p>
@@ -1549,8 +1525,8 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
                 {/* Pista 3: Color y Morfología */}
                 {hintsRevealed >= 3 && (
-                  <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-xs animate-fadeIn">
-                    <span className="font-bold text-sky-400 block text-[9px]">
+                  <div className="p-2 rounded-xl bg-surface-950 border border-slate-800 text-xs animate-fadeIn">
+                    <span className="font-bold text-sky-400 block text-[11px]">
                       {tx('PISTA 3 (COLOR Y MORFOLOGÍA):', 'CLUE 3 (COLOR & MORPHOLOGY):')}
                     </span>
                     <p className="text-white text-[11px]">{localizedSilBird.hints.morphology}</p>
@@ -1560,7 +1536,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                 {/* Pista 4: Dato Curioso / Leyenda */}
                 {hintsRevealed >= 4 && (
                   <div className="p-2 rounded-xl bg-amber-950/60 border border-amber-600 text-xs animate-fadeIn">
-                    <span className="font-bold text-amber-300 block text-[9px]">
+                    <span className="font-bold text-amber-300 block text-[11px]">
                       {tx('PISTA 4 (DATO CURIOSO / LEYENDA):', 'CLUE 4 (FUN FACT / FOLKLORE):')}
                     </span>
                     <p className="text-amber-100 text-[11px] italic">{localizedSilBird.hints.loreOrFact}</p>
@@ -1571,14 +1547,14 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               {/* 4 Species Options */}
               {silhouetteResult === null && (
                 <div className="space-y-1.5 pt-1">
-                  <span className="text-[10px] font-black text-slate-300 block">
+                  <span className="text-[11px] font-black text-slate-300 block">
                     {tx('Selecciona el nombre correcto entre las 4 opciones:', 'Select the correct species name from the 4 options:')}
                   </span>
                   {getSilhouetteOptions(silhouetteGameBird).map((optName, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleGuessSilhouette(optName)}
-                      className="w-full p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-left text-xs font-black text-white border border-slate-700 hover:border-teal-400 transition-all flex items-center justify-between"
+                      className="min-h-11 min-w-11 w-full p-2.5 rounded-xl bg-surface-900 hover:bg-slate-800 text-left text-xs font-black text-white border border-slate-700 hover:border-teal-400 transition-all flex items-center justify-between"
                     >
                       <span>{optName}</span>
                       <ChevronRight className="w-3.5 h-3.5 text-teal-400" />
@@ -1604,13 +1580,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         setSilhouetteGameBird(null);
                         setInspectingBird(silhouetteGameBird);
                       }}
-                      className="flex-1 py-2 rounded-xl game-btn-mint text-emerald-950 font-bold text-xs"
+                      className="min-h-11 min-w-11 flex-1 py-2 rounded-xl game-btn-mint text-emerald-950 font-bold text-xs"
                     >
                       {tx('Ver Ficha Técnica', 'View Technical Sheet')}
                     </button>
                     <button
                       onClick={() => setSilhouetteGameBird(null)}
-                      className="flex-1 py-2 rounded-xl game-btn-orange text-white font-bold text-xs"
+                      className="min-h-11 min-w-11 flex-1 py-2 rounded-xl game-btn-orange text-white font-bold text-xs"
                     >
                       {tx('Volver a la Guía', 'Back to Guide')}
                     </button>
@@ -1620,12 +1596,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
               {/* Failure Dialogue: Tucán Feedback Amable - NO RESTA PUNTOS */}
               {silhouetteResult === 'wrong' && (
-                <div className="p-3.5 rounded-2xl bg-slate-950 border border-teal-500 text-slate-100 space-y-2.5 animate-fadeIn">
+                <div className="ui-card p-3.5 rounded-2xl bg-surface-950 border border-teal-500 text-slate-100 space-y-2.5 animate-fadeIn">
                   <div className="flex items-start gap-2.5">
                     <img
                       src="/assets/aistudio/Toucan_perched_on_branch_8ab41bfc_230157f9.jpg"
                       alt="Tucán Guía"
-                      className="w-12 h-12 rounded-full object-cover border-2 border-amber-400 shrink-0"
+                      className="w-12 h-12 rounded-full object-cover border border-amber-400 shrink-0"
                     />
                     <div className="text-xs">
                       <span className="font-black text-amber-300 block">
@@ -1646,7 +1622,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       setSilhouetteResult(null);
                       setHintsRevealed(prev => Math.min(4, prev + 1));
                     }}
-                    className="w-full py-2.5 rounded-xl game-btn-mint text-emerald-950 font-black text-xs shadow flex items-center justify-center gap-1.5"
+                    className="min-h-11 min-w-11 w-full py-2.5 rounded-xl game-btn-mint text-emerald-950 font-black text-xs shadow flex items-center justify-center gap-1.5"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>{tx('Volver a intentar (Habilita pista extra)', 'Try again (Unlocks extra clue)')}</span>
@@ -1664,36 +1640,36 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {inspectingBird && (() => {
           const localizedInspBird = localizeCatalogBird(inspectingBird, lang);
           return (
-          <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-3 animate-fadeIn select-none text-white">
+          <div className="absolute inset-0 z-50 bg-black/90  flex flex-col p-3 animate-fadeIn select-none text-white">
             <div className="flex items-center justify-between pb-2 border-b border-teal-900 shrink-0">
               <div>
                 <h4 className="text-xs font-black text-white uppercase tracking-wider">
                   {tx('FICHA TÉCNICA', 'TECHNICAL SHEET')} · #{localizedInspBird.catalogNumber}
                 </h4>
-                <p className="text-[10px] text-teal-300 font-serif italic">
+                <p className="text-[11px] text-teal-300 font-serif italic">
                   {localizedInspBird.scientificName}
                 </p>
               </div>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => {
                   soundManager.playClick();
                   setInspectingBird(null);
                 }}
-                className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center"
+                className="min-h-11 min-w-11 w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-2.5 space-y-3">
+            <div className="pb-safe min-h-0 flex-1 overflow-y-auto py-2.5 space-y-3">
               {/* Prototype-Style Top Card with PC 2579, Full Uncropped Bird Showcase (object-contain, min-h 250px) & 125 / 125 HP Bar */}
-              <div className="relative rounded-3xl overflow-hidden border-2 border-teal-400/70 bg-gradient-to-b from-[#0E6E5C] via-[#134E48] to-slate-950 p-3 text-center shadow-xl">
+              <div className="relative rounded-3xl overflow-hidden border border-teal-400/70 bg-gradient-to-b from-[#0E6E5C] via-[#134E48] to-slate-950 p-3 text-center shadow-xl">
                 <div className="text-amber-300 font-black text-sm tracking-widest uppercase drop-shadow">
                   PC <span className="text-xl text-white">{localizedInspBird.cp || 2579}</span>
                 </div>
 
                 {/* Full Uncropped Bird Photo Container (min-h 250px, object-contain, clean background) */}
-                <div className="relative w-full min-h-[250px] sm:min-h-[270px] rounded-2xl overflow-hidden border-3 border-amber-300 shadow-2xl bg-[#E8FAF6] flex items-center justify-center my-2">
+                <div className="relative w-full min-h-[250px] sm:min-h-[270px] rounded-2xl overflow-hidden border border-amber-300 shadow-2xl bg-[#E8FAF6] flex items-center justify-center my-2">
                   <img
                     src={encodeURI(localizedInspBird.image)}
                     style={{ objectPosition: localizedInspBird.imageFocus || 'center' }}
@@ -1706,16 +1682,16 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   {localizedInspBird.commonName}
                 </h3>
                 <div className="w-40 mx-auto mt-1">
-                  <div className="h-2 rounded-full bg-slate-900 border border-emerald-500/60 overflow-hidden">
+                  <div className="h-2 rounded-full bg-surface-900 border border-emerald-500/60 overflow-hidden">
                     <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-teal-300" />
                   </div>
-                  <span className="text-[10px] font-black text-emerald-300 block mt-0.5">
+                  <span className="text-[11px] font-black text-emerald-300 block mt-0.5">
                     {localizedInspBird.hp || '125 / 125 HP'}
                   </span>
                 </div>
 
                 {/* Best Foto Perfecta Rating Badge */}
-                <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-950/85 border border-amber-400/60 text-[10px] font-bold text-amber-300">
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-surface-950 border border-amber-400/60 text-[11px] font-bold text-amber-300">
                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                   <span>
                     {tx('Mejor Foto Perfecta:', 'Best Perfect Photo:')} {'★'.repeat(playerProfile.birdPhotoStars?.[localizedInspBird.id] || 3)}
@@ -1724,22 +1700,22 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               </div>
 
               {/* Biological Metrics Grid */}
-              <div className="grid grid-cols-3 gap-1.5 text-center text-xs bg-slate-950 p-2.5 rounded-2xl border border-teal-900">
-                <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
-                  <span className="text-[8px] text-slate-400 block font-bold uppercase">{tx('PESO', 'WEIGHT')}</span>
+              <div className="ui-card grid grid-cols-3 gap-1.5 text-center text-xs bg-surface-950 p-2.5 rounded-2xl border border-teal-900">
+                <div className="p-1.5 rounded-xl bg-surface-900 border border-slate-800">
+                  <span className="text-[11px] text-slate-400 block font-bold uppercase">{tx('PESO', 'WEIGHT')}</span>
                   <span className="text-teal-300 font-black text-xs">{localizedInspBird.weight}</span>
                 </div>
-                <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
-                  <span className="text-[8px] text-slate-400 block font-bold uppercase">{tx('ALTURA', 'SIZE')}</span>
+                <div className="p-1.5 rounded-xl bg-surface-900 border border-slate-800">
+                  <span className="text-[11px] text-slate-400 block font-bold uppercase">{tx('ALTURA', 'SIZE')}</span>
                   <span className="text-amber-300 font-black text-xs">{localizedInspBird.size}</span>
                 </div>
-                <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
-                  <span className="text-[8px] text-slate-400 block font-bold uppercase">{tx('FAMILIA', 'FAMILY')}</span>
-                  <span className="text-white font-black text-[10px] truncate block">{localizedInspBird.family}</span>
+                <div className="p-1.5 rounded-xl bg-surface-900 border border-slate-800">
+                  <span className="text-[11px] text-slate-400 block font-bold uppercase">{tx('FAMILIA', 'FAMILY')}</span>
+                  <span className="text-white font-black text-[11px] truncate block">{localizedInspBird.family}</span>
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-2xl bg-slate-950 border border-teal-900/80 space-y-1.5 text-[10px]">
+              <div className="ui-card p-2.5 rounded-2xl bg-surface-950 border border-teal-900/80 space-y-1.5 text-[11px]">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400 font-bold">{tx('Hábitat / Estrato:', 'Habitat / Stratum:')}</span>
                   <span className="text-teal-200 font-bold text-right">{localizedInspBird.habitat} ({localizedInspBird.stratum})</span>
@@ -1754,26 +1730,26 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   }`}>
                     {tx('Conservación:', 'Conservation:')} {localizedInspBird.conservationStatus}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-bold">
+                  <span className="px-2 py-0.5 rounded bg-surface-900 border border-slate-700 text-slate-200 font-bold">
                     {tx('Presencia:', 'Presence:')} {localizedInspBird.presence}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-amber-300 font-bold">
+                  <span className="px-2 py-0.5 rounded bg-surface-900 border border-slate-700 text-amber-300 font-bold">
                     Obs.: {localizedInspBird.observationPossibility}
                   </span>
                 </div>
               </div>
 
               {/* Anatomical Details: Pico, Canto con Onda Sonora Desbloqueada, Plumaje */}
-              <div className="p-3 rounded-2xl bg-slate-950 border border-teal-900 space-y-2 text-xs">
+              <div className="ui-card p-3 rounded-2xl bg-surface-950 border border-teal-900 space-y-2 text-xs">
                 <div>
-                  <span className="font-black text-teal-300 block text-[10px]">{tx('TIPO DE PICO:', 'BEAK TYPE:')}</span>
+                  <span className="font-black text-teal-300 block text-[11px]">{tx('TIPO DE PICO:', 'BEAK TYPE:')}</span>
                   <p className="text-slate-200 text-[11px] leading-snug">{localizedInspBird.beakDescription}</p>
                 </div>
 
                 {/* Canto with Unlocked Sound Wave & Real HTML5 <audio> Player */}
                 <div className="pt-1.5 border-t border-slate-800 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-amber-300 text-[10px] flex items-center gap-1">
+                    <span className="font-black text-amber-300 text-[11px] flex items-center gap-1">
                       <Music className="w-3 h-3" />
                       <span>
                         {tx('CANTO REAL (.MP3) Y ONDA SONORA', 'REAL CALL (.MP3) & SOUND WAVE')}{' '}
@@ -1782,7 +1758,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     </span>
                     <button
                       onClick={() => playSoundForBird(inspectingBird)}
-                      className="px-2.5 py-0.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white text-[9px] font-black flex items-center gap-1 shadow"
+                      className="min-h-11 min-w-11 px-2.5 py-0.5 rounded-lg bg-teal-700 hover:bg-teal-600 text-white text-[11px] font-black flex items-center gap-1 shadow"
                     >
                       <Play className="w-2.5 h-2.5" />
                       <span>{audioIsPlaying ? tx('Sonando...', 'Playing...') : tx('Escuchar MP3', 'Listen MP3')}</span>
@@ -1790,7 +1766,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   </div>
 
                   {/* Wave Visualizer Graphic */}
-                  <div className="h-9 rounded-lg bg-slate-900 border border-teal-950 p-1.5 flex items-center justify-center gap-1">
+                  <div className="h-9 rounded-lg bg-surface-900 border border-teal-950 p-1.5 flex items-center justify-center gap-1">
                     {['h-2', 'h-5', 'h-3', 'h-6', 'h-5', 'h-2.5', 'h-6', 'h-4', 'h-7', 'h-3.5', 'h-5', 'h-3', 'h-4', 'h-6', 'h-2.5', 'h-4'].map((cls, i) => {
                       const isHigh = audioIsPlaying && (waveTick + i) % 2 === 0;
                       return (
@@ -1811,11 +1787,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                     onEnded={() => setAudioIsPlaying(false)}
                     className="w-full h-8 rounded-lg"
                   />
-                  <p className="text-slate-300 text-[10px] italic mt-1">{localizedInspBird.songDescription}</p>
+                  <p className="text-slate-300 text-[11px] italic mt-1">{localizedInspBird.songDescription}</p>
                 </div>
 
                 <div className="pt-1.5 border-t border-slate-800">
-                  <span className="font-black text-teal-300 block text-[10px]">
+                  <span className="font-black text-teal-300 block text-[11px]">
                     {tx('DESCRIPCIÓN DE PLUMAJE:', 'PLUMAGE DESCRIPTION:')}
                   </span>
                   <p className="text-slate-200 text-[11px] leading-snug">{localizedInspBird.plumageDescription}</p>
@@ -1828,7 +1804,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   setInspectingBird(null);
                   handleOpenJournalForm(inspectingBird);
                 }}
-                className="w-full py-3.5 rounded-2xl game-btn-orange text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
+                className="min-h-11 min-w-11 w-full py-3.5 rounded-2xl game-btn-orange text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
               >
                 <BookOpen className="w-4 h-4 text-amber-300" />
                 <span>{tx('Registrar en Diario de Campo (4 Toques)', 'Log in Field Journal (4 Taps)')}</span>
@@ -1842,30 +1818,30 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* SUBMODAL 3: FORMULARIO CIENTÍFICO DE 4 TOQUES */}
         {/* ============================================================== */}
         {journalModalBird && (
-          <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-3 animate-fadeIn select-none text-white">
+          <div className="absolute inset-0 z-50 bg-black/90  flex flex-col p-3 animate-fadeIn select-none text-white">
             <div className="flex items-center justify-between pb-2 border-b border-teal-900 shrink-0">
               <div>
                 <h4 className="text-xs font-black text-white uppercase tracking-wider">
                   {tx('REGISTRO CIENTÍFICO (4 TOQUES)', 'SCIENTIFIC LOG (4 TAPS)')}
                 </h4>
-                <p className="text-[10px] text-teal-300 font-bold">
+                <p className="text-[11px] text-teal-300 font-bold">
                   {journalModalBird.commonName}
                 </p>
               </div>
-              <button
+              <button aria-label="Cerrar"
                 onClick={() => {
                   soundManager.playClick();
                   setJournalModalBird(null);
                 }}
-                className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center"
+                className="min-h-11 min-w-11 w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-2 space-y-2.5">
+            <div className="pb-safe min-h-0 flex-1 overflow-y-auto py-2 space-y-2.5">
               {/* Auto Metadata: Fecha, Hora y Punto del Sendero */}
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-teal-900 text-[10px] space-y-1">
+              <div className="p-2.5 rounded-xl bg-surface-950 border border-teal-900 text-[11px] space-y-1">
                 <div className="flex items-center justify-between text-slate-400">
                   <span className="flex items-center gap-1 font-bold">
                     <Calendar className="w-3 h-3 text-teal-400" />
@@ -1883,7 +1859,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   <select
                     value={selectedTrailPoint}
                     onChange={(e) => setSelectedTrailPoint(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-lg p-1.5 focus:border-teal-400 outline-none"
+                    className="w-full bg-surface-900 border border-slate-700 text-white text-xs rounded-lg p-1.5 focus:border-teal-400 outline-none"
                   >
                     {CHECKPOINTS_DATA.map((cp) => (
                       <option key={cp.id} value={`${cp.name} (${cp.distanceMeters} m)`}>
@@ -1896,7 +1872,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
               {/* TOQUE 1: COMPORTAMIENTO */}
               <div className="space-y-1">
-                <span className="text-[10px] font-black text-amber-300 uppercase">
+                <span className="text-[11px] font-black text-amber-300 uppercase">
                   {tx('TOQUE 1: COMPORTAMIENTO', 'TAP 1: BEHAVIOR')}
                 </span>
                 <div className="grid grid-cols-2 gap-1.5 text-xs">
@@ -1907,10 +1883,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         soundManager.playClick();
                         setBehavior(b);
                       }}
-                      className={`p-2 rounded-xl font-bold border transition-all text-left ${
+                      className={`min-h-11 min-w-11 p-2 rounded-xl font-bold border transition-all text-left ${
                         behavior === b
                           ? 'bg-teal-600 text-white border-teal-300 shadow'
-                          : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-teal-700'
+                          : 'bg-surface-950 text-slate-300 border-slate-800 hover:border-teal-700'
                       }`}
                     >
                       {b === 'Alimentándose'
@@ -1927,10 +1903,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
               {/* TOQUE 2: CANTIDAD */}
               <div className="space-y-1">
-                <span className="text-[10px] font-black text-emerald-300 uppercase">
+                <span className="text-[11px] font-black text-emerald-300 uppercase">
                   {tx('TOQUE 2: CANTIDAD', 'TAP 2: COUNT')}
                 </span>
-                <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                <div className="grid grid-cols-3 gap-1.5 text-[11px]">
                   {(['1 individuo', 'Pareja (2)', 'Bandada (3 o más)'] as const).map((c) => (
                     <button
                       key={c}
@@ -1938,10 +1914,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         soundManager.playClick();
                         setCount(c);
                       }}
-                      className={`p-2 rounded-xl font-bold border transition-all text-center leading-tight ${
+                      className={`min-h-11 min-w-11 p-2 rounded-xl font-bold border transition-all text-center leading-tight ${
                         count === c
                           ? 'bg-emerald-600 text-white border-emerald-300 shadow'
-                          : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-emerald-700'
+                          : 'bg-surface-950 text-slate-300 border-slate-800 hover:border-emerald-700'
                       }`}
                     >
                       {c === '1 individuo'
@@ -1956,10 +1932,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
               {/* TOQUE 3: ESTRATO */}
               <div className="space-y-1">
-                <span className="text-[10px] font-black text-sky-300 uppercase">
+                <span className="text-[11px] font-black text-sky-300 uppercase">
                   {tx('TOQUE 3: ESTRATO', 'TAP 3: STRATUM')}
                 </span>
-                <div className="grid grid-cols-3 gap-1 text-[10px]">
+                <div className="grid grid-cols-3 gap-1 text-[11px]">
                   {(['Dosel', 'Subdosel', 'Sotobosque', 'Zona Urbanizada', 'En Vuelo'] as const).map((st) => (
                     <button
                       key={st}
@@ -1967,10 +1943,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         soundManager.playClick();
                         setStratum(st);
                       }}
-                      className={`p-1.5 rounded-xl font-bold border transition-all text-center ${
+                      className={`min-h-11 min-w-11 p-1.5 rounded-xl font-bold border transition-all text-center ${
                         stratum === st
                           ? 'bg-sky-600 text-white border-sky-300 shadow'
-                          : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-sky-700'
+                          : 'bg-surface-950 text-slate-300 border-slate-800 hover:border-sky-700'
                       }`}
                     >
                       {st === 'Dosel'
@@ -1989,10 +1965,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
               {/* TOQUE 4: CLIMA */}
               <div className="space-y-1">
-                <span className="text-[10px] font-black text-amber-400 uppercase">
+                <span className="text-[11px] font-black text-amber-400 uppercase">
                   {tx('TOQUE 4: CLIMA DEL MOMENTO', 'TAP 4: CURRENT WEATHER')}
                 </span>
-                <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                <div className="grid grid-cols-3 gap-1.5 text-[11px]">
                   {(['Soleado', 'Nublado', 'Llovizna de Yungas'] as const).map((w) => (
                     <button
                       key={w}
@@ -2000,10 +1976,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                         soundManager.playClick();
                         setWeather(w);
                       }}
-                      className={`p-2 rounded-xl font-bold border transition-all text-center leading-tight ${
+                      className={`min-h-11 min-w-11 p-2 rounded-xl font-bold border transition-all text-center leading-tight ${
                         weather === w
                           ? 'bg-amber-600 text-white border-amber-300 shadow'
-                          : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-amber-700'
+                          : 'bg-surface-950 text-slate-300 border-slate-800 hover:border-amber-700'
                       }`}
                     >
                       {w === 'Soleado'
@@ -2020,7 +1996,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               <div className="pt-1">
                 <button
                   onClick={handleSaveJournalEntry}
-                  className="w-full py-3.5 rounded-2xl game-btn-orange text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl"
+                  className="min-h-11 min-w-11 w-full py-3.5 rounded-2xl game-btn-orange text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl"
                 >
                   <Check className="w-4 h-4 text-amber-300" />
                   <span>{tx('Guardar Observación (+30 XP)', 'Save Observation (+30 XP)')}</span>
