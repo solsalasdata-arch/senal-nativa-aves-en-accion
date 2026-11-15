@@ -39,6 +39,13 @@ export default function App() {
   const [activeProfile, setActiveProfile] = useState<PlayerProfile>(() => getActiveProfile());
   const mindarProfileRef = useRef(activeProfile);
   mindarProfileRef.current = activeProfile;
+  const handleMindARRetrySave = (): boolean => {
+    const checked = updateActiveProfileChecked(mindarProfileRef.current, {});
+    mindarProfileRef.current = checked.profile;
+    setActiveProfile(checked.profile);
+    setProfiles(previous => previous.map(p => p.id === checked.profile.id ? checked.profile : p));
+    return checked.saved;
+  };
   const handleMindARAction = (action: 'register' | 'complete'): MindARActionResult => {
     const current = mindarProfileRef.current;
     const result = (action === 'register' ? registerMindARDiscovery : completeMindARChallenge)(current, Date.now());
@@ -617,6 +624,7 @@ export default function App() {
         <SightingSimulationModal
           onMindARRegister={() => handleMindARAction('register')}
           onMindARComplete={() => handleMindARAction('complete')}
+          onMindARRetrySave={handleMindARRetrySave}
           onMindARJournal={() => { setShowSightingModal(false); setBirdsInitialTab('journal'); setShowBirdsModal(true); }}
           isOpen={showSightingModal}
           onClose={() => setShowSightingModal(false)}

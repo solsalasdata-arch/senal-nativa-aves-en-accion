@@ -24,7 +24,7 @@ export function registerMindARDiscovery(profile: PlayerProfile, now: number): Mi
     fieldJournal: [{ id: `mindar-${MINDAR_TARGET_ID}-${now}`, source: 'mindar-signal' as const, speciesId: MINDAR_SPECIES_ID,
       birdName: bird.commonName, scientificName: bird.scientificName, trailName: 'Señal MindAR · Señal Nativa',
       notes: 'Descubrimiento mediante señal MindAR (imagen escaneada). No es un avistamiento de ave real.', timestamp: now
-    }, ...(profile.fieldJournal || [])].slice(0, 10)
+    }, ...(profile.fieldJournal || [])]
   } };
 }
 

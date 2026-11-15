@@ -26,6 +26,7 @@ import type { MindARActionResult } from '../utils/mindarProgress';
 interface SightingSimulationModalProps {
   onMindARRegister: () => MindARActionResult;
   onMindARComplete: () => MindARActionResult;
+  onMindARRetrySave: () => boolean;
   onMindARJournal: () => void;
   isOpen: boolean;
   onClose: () => void;
@@ -127,6 +128,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   playerProfile,
   onMindARRegister,
   onMindARComplete,
+  onMindARRetrySave,
   onMindARJournal,
   onClose,
   onSightingSuccess,
@@ -436,7 +438,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
       Preparando visor XR…
     </div>
   );
-  if (arMode === 'ar') return <ToucanMindARViewer onClose={onClose} profile={playerProfile} onRegister={onMindARRegister} onComplete={onMindARComplete} onJournal={onMindARJournal} />;
+  if (arMode === 'ar') return <ToucanMindARViewer onClose={onClose} profile={playerProfile} onRegister={onMindARRegister} onComplete={onMindARComplete} onRetrySave={onMindARRetrySave} onJournal={onMindARJournal} />;
 
   const toggleBirdSong = () => {
     if (!detectedBird) return;

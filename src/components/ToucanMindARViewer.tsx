@@ -8,6 +8,7 @@ interface Props {
   profile: PlayerProfile;
   onRegister: () => MindARActionResult;
   onComplete: () => MindARActionResult;
+  onRetrySave: () => boolean;
   onJournal: () => void;
 }
 type TrackingState = 'starting' | 'searching' | 'found' | 'error';
@@ -16,7 +17,7 @@ const tucan = BIRDS_DATA.find((bird) => bird.id === 'tucan-grande');
 
 // MindAR owns the camera in this isolated iframe. The legacy Gemini viewer must NOT
 // start its own getUserMedia stream while this component is mounted.
-export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegister, onComplete, onJournal }) => {
+export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegister, onComplete, onRetrySave, onJournal }) => {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const recognizedRef = useRef(false);
   const readyRef = useRef(false);
@@ -166,7 +167,7 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
               <button type="button" className="w-full min-h-11 border border-teal-700 rounded-xl" onClick={onClose}>Seguir explorando</button>
             </div>}
             {saved === false && <div role="alert" className="text-xs text-amber-200 mt-2">No se pudo guardar en este dispositivo. El progreso puede perderse al cerrar o recargar.
-              <button type="button" className="block min-h-11 underline" onClick={() => runAction(onRegister)}>Reintentar guardar</button>
+              <button type="button" className="block min-h-11 underline" onClick={() => setSaved(onRetrySave())}>Reintentar guardar</button>
             </div>}
           </section>
         )}

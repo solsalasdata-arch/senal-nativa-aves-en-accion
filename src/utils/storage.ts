@@ -134,8 +134,10 @@ export function saveProfilesList(profiles: PlayerProfile[]): boolean {
 export function updateActiveProfileChecked(profile: PlayerProfile, updates: Partial<PlayerProfile>): { profile: PlayerProfile; saved: boolean } {
   const profiles = loadProfilesList();
   const updated = { ...profile, ...updates, lastPlayedAt: Date.now() };
-  const others = profiles.filter(p => p.id !== profile.id);
-  const saved = saveProfilesList([updated, ...others]);
+  const index = profiles.findIndex(p => p.id === profile.id);
+  if (index === -1) profiles.push(updated);
+  else profiles[index] = updated;
+  const saved = saveProfilesList(profiles);
   return { profile: updated, saved };
 }
 

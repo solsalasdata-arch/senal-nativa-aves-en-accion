@@ -29,11 +29,15 @@ test('challenge requires registration and awards exactly once', () => {
   assert.deepEqual(completeMindARChallenge(completed, 4), { updates: {}, status: 'already-rewarded' });
 });
 
-test('empty journal, cap and profile isolation', () => {
+test('empty journal, field entry preservation and profile isolation', () => {
   const p = { ...createDefaultProfile(), fieldJournal: [] };
   assert.equal(registerMindARDiscovery(p, 1).updates.fieldJournal?.length, 1);
-  const full = { ...p, fieldJournal: Array(10).fill(createDefaultProfile().fieldJournal[0]) };
-  assert.equal(registerMindARDiscovery(full, 1).updates.fieldJournal?.length, 10);
+  const full = { ...p, fieldJournal: Array.from({ length: 10 }, (_, index) => ({
+    ...createDefaultProfile().fieldJournal[0], id: `field-${index}`
+  })) };
+  const journal = registerMindARDiscovery(full, 1).updates.fieldJournal!;
+  assert.equal(journal.length, 11);
+  assert.deepEqual(journal.filter(entry => entry.source !== 'mindar-signal'), full.fieldJournal);
   const registered = { ...p, ...registerMindARDiscovery(p, 1).updates, id: 'another-profile' };
   assert.equal(getMindARStatus(registered), 'none');
 });
@@ -50,6 +54,15 @@ test('storage round-trip, migration and checked write failures', () => {
   assert.equal(saveProfilesList([completed]), true);
   assert.deepEqual(loadProfilesList()[0], completed);
   assert.equal(updateActiveProfileChecked(completed, {}).saved, true);
+  const before = { ...createDefaultProfile(), id: 'before' };
+  const after = { ...createDefaultProfile(), id: 'after' };
+  saveProfilesList([before, completed, after]);
+  assert.equal(updateActiveProfileChecked(completed, { name: 'Actualizado' }).saved, true);
+  assert.deepEqual(loadProfilesList().map(profile => profile.id), [before.id, completed.id, after.id]);
+  assert.equal(loadProfilesList()[1].name, 'Actualizado');
+  const missing = { ...createDefaultProfile(), id: 'missing' };
+  assert.equal(updateActiveProfileChecked(missing, {}).saved, true);
+  assert.deepEqual(loadProfilesList().map(profile => profile.id), [before.id, completed.id, after.id, missing.id]);
   const legacy = { ...p };
   delete legacy.mindarDiscoveries;
   saveProfilesList([legacy]);
@@ -60,4 +73,33 @@ test('storage round-trip, migration and checked write failures', () => {
   } });
   assert.equal(saveProfilesList([completed]), false);
   assert.equal(updateActiveProfileChecked(completed, {}).saved, false);
+});
+
+test('retrying a checked save preserves either in-memory discovery step without repeating actions', () => {
+  const data = new Map<string, string>();
+  let failWrites = false;
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      if (failWrites) throw new Error('quota exceeded');
+      data.set(key, value);
+    }
+  } });
+  const initial = createDefaultProfile();
+  saveProfilesList([initial]);
+  let current = initial;
+  for (const action of [registerMindARDiscovery, completeMindARChallenge]) {
+    failWrites = true;
+    const failed = updateActiveProfileChecked(current, action(current, 10).updates);
+    assert.equal(failed.saved, false);
+    assert.deepEqual(loadProfilesList()[0], current);
+    failWrites = false;
+    const retried = updateActiveProfileChecked(failed.profile, {});
+    assert.equal(retried.saved, true);
+    assert.deepEqual(loadProfilesList()[0], retried.profile);
+    assert.equal(retried.profile.mindarDiscoveries?.length, 1);
+    assert.equal(retried.profile.fieldJournal.filter(entry => entry.source === 'mindar-signal').length, 1);
+    current = retried.profile;
+  }
+  assert.equal(current.xp, initial.xp + 40);
 });
