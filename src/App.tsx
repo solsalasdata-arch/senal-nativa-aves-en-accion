@@ -32,6 +32,8 @@ import { OfflineIndicator } from './components/PWAInstallButton';
 import { capFieldJournal } from './utils/journal';
 import { registerMindARDiscovery, completeMindARChallenge, MindARActionResult } from './utils/mindarProgress';
 import { getReturningProfile } from './utils/welcome';
+import { completeStation, savePendingStationToken, readPendingStationToken, clearPendingStationToken } from './utils/stationProgress';
+import { parseStationQr } from './utils/stationQr';
 import { ModalHeader } from './components/ui';
 import { useModalEscape } from './components/ui/useModalEscape';
 
@@ -73,6 +75,27 @@ export default function App() {
   const [showDetailCelebration, setShowDetailCelebration] = useState(false);
   useModalEscape(showDetailCelebration, () => setShowDetailCelebration(false));
   const [showMapModal, setShowMapModal] = useState(false);
+  const [initialStationToken, setInitialStationToken] = useState<string | null>(null);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const parsed = parseStationQr(url.searchParams.get('sn') || '');
+    if (parsed.ok) {
+      savePendingStationToken(parsed.token);
+      url.searchParams.delete('sn');
+      window.history.replaceState(window.history.state, '', url);
+    }
+  }, []);
+  useEffect(() => {
+    if (currentScreen !== 'screen4' || !activeProfile.id) return;
+    const token = readPendingStationToken();
+    if (!token || !parseStationQr(token).ok) return;
+    setInitialStationToken(token);
+    setShowMapModal(true);
+  }, [currentScreen, activeProfile.id]);
+  const consumeInitialStationToken = useCallback(() => {
+    clearPendingStationToken();
+    setInitialStationToken(null);
+  }, []);
   const [showShopModal, setShowShopModal] = useState(false);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -241,27 +264,13 @@ export default function App() {
     setActiveProfile(getActiveProfile());
   };
 
-  // Checkpoint Validation (Paso 14 - MAPAS)
-  const handleValidateCheckpoint = (checkpointId: number, xpReward: number) => {
-    const existing = activeProfile.completedCheckpoints || [];
-    if (existing.includes(checkpointId)) return;
-
-    const newCheckpoints = [...existing, checkpointId];
-    const isNowComplete = newCheckpoints.length >= 8;
-    const newUnlockedRare = isNowComplete
-      ? Array.from(new Set([...(activeProfile.unlockedRareBirds || []), 'urutau', 'jote-real']))
-      : activeProfile.unlockedRareBirds || [];
-
-    handleUpdateProfile({
-      completedCheckpoints: newCheckpoints,
-      hasRouteCompleteSeal: isNowComplete || activeProfile.hasRouteCompleteSeal,
-      unlockedRareBirds: newUnlockedRare,
-      xp: activeProfile.xp + xpReward
-    });
-
-    if (isNowComplete && !activeProfile.hasRouteCompleteSeal) {
-      soundManager.playSuccess();
-    }
+  const handleCompleteStation = (stationId: number, scannedToken: string, answerIndex: number) => {
+    const current = mindarProfileRef.current;
+    const result = completeStation(current, { stationId, scannedToken, answerIndex });
+    if (result.status !== 'completed') return result.status;
+    const updated = handleUpdateProfile(result.updates);
+    if (updated.hasRouteCompleteSeal && !current.hasRouteCompleteSeal) soundManager.playSuccess();
+    return result.status;
   };
 
   // Sighting completion with Star Rating (Paso 12 - Foto Perfecta)
@@ -726,7 +735,9 @@ export default function App() {
           isOpen={showMapModal}
           onClose={() => setShowMapModal(false)}
           playerProfile={activeProfile}
-          onValidateCheckpoint={handleValidateCheckpoint}
+          onCompleteStation={handleCompleteStation}
+          initialStationToken={initialStationToken}
+          onConsumeInitialToken={consumeInitialStationToken}
           onOpenXRVision={() => setShowSightingModal(true)}
           onOpenBirdsCatalog={() => {
             setBirdsInitialTab('catalog');

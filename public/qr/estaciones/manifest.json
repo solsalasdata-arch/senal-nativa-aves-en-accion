@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "1º Descanso \"Mora Negra\"",
+    "token": "SN1.PBSCHUEL.E01.RJNS4J",
+    "url": "https://senal-nativa-aves-en-accion.vercel.app/?sn=SN1.PBSCHUEL.E01.RJNS4J",
+    "files": {
+      "svg": "estacion-01-1-descanso-mora-negra.svg",
+      "png": "estacion-01-1-descanso-mora-negra-qr.png"
+    }
+  },
+  {
+    "id": 2,
+    "name": "1º Mirador \"El Guarán\"",
+    "token": "SN1.PBSCHUEL.E02.U4JUYV",
+    "url": "https://senal-nativa-aves-en-accion.vercel.app/?sn=SN1.PBSCHUEL.E02.U4JUYV",
+    "files": {
+      "svg": "estacion-02-1-mirador-el-guaran.svg",
+      "png": "estacion-02-1-mirador-el-guaran-qr.png"
+    }
+  },
+  {
+    "id": 3,
+    "name": "2º Descanso \"Pucancho\"",
+    "token": "SN1.PBSCHUEL.E03.T68WKC",
+    "url": "https://senal-nativa-aves-en-accion.vercel.app/?sn=SN1.PBSCHUEL.E03.T68WKC",
+    "files": {
+      "svg": "estacion-03-2-descanso-pucancho.svg",
+      "png": "estacion-03-2-descanso-pucancho-qr.png"
+    }
+  },
+  {
+    "id": 4,
+    "name": "3º Descanso \"La Tusca\"",
+    "token": "SN1.PBSCHUEL.E04.GKSDQX",
+    "url": "https://senal-nativa-aves-en-accion.vercel.app/?sn=SN1.PBSCHUEL.E04.GKSDQX",
+    "files": {
+      "svg": "estacion-04-3-descanso-la-tusca.svg",
+      "png": "estacion-04-3-descanso-la-tusca-qr.png"
+    }
+  },
+  {
+    "id": 5,
+    "name": "2º Mirador \"Sacha Higuera\"",
+    "token": "SN1.PBSCHUEL.E05.ZGYLGW",
+    "url": "https://senal-nativa-aves-en-accion.vercel.app/?sn=SN1.PBSCHUEL.E05.ZGYLGW",
+    "files": {
+      "svg": "estacion-05-2-mirador-sacha-higuera.svg",
+      "png": "estacion-05-2-mirador-sacha-higuera-qr.png"
+    }
+  },
+  {
+    "id": 6,
+    "name": "1º Puente \"El Laurel\"",
+    "token": "SN1.PBSCHUEL.E06.UEPUF9",
+    "url": "https://senal-nativa-aves-en-accion.vercel.app/?sn=SN1.PBSCHUEL.E06.UEPUF9",
+    "files": {
+      "svg": "estacion-06-1-puente-el-laurel.svg",
+      "png": "estacion-06-1-puente-el-laurel-qr.png"
+    }
+  },
+  {
+    "id": 7,
+    "name": "2º Puente \"El Ceibo\"",
+    "token": "SN1.PBSCHUEL.E07.8M6WT8",
+    "url": "https://senal-nativa-aves-en-accion.vercel.app/?sn=SN1.PBSCHUEL.E07.8M6WT8",
+    "files": {
+      "svg": "estacion-07-2-puente-el-ceibo.svg",
+      "png": "estacion-07-2-puente-el-ceibo-qr.png"
+    }
+  },
+  {
+    "id": 8,
+    "name": "3º Mirador \"Horco Molle\"",
+    "token": "SN1.PBSCHUEL.E08.4VPPAT",
+    "url": "https://senal-nativa-aves-en-accion.vercel.app/?sn=SN1.PBSCHUEL.E08.4VPPAT",
+    "files": {
+      "svg": "estacion-08-3-mirador-horco-molle.svg",
+      "png": "estacion-08-3-mirador-horco-molle-qr.png"
+    }
+  }
+]
