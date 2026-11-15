@@ -268,11 +268,8 @@ export default function App() {
     const current = mindarProfileRef.current;
     const result = completeStation(current, { stationId, scannedToken, answerIndex });
     if (result.status !== 'completed') return result.status;
-    const checked = updateActiveProfileChecked(current, result.updates);
-    mindarProfileRef.current = checked.profile;
-    setActiveProfile(checked.profile);
-    setProfiles(previous => previous.map(profile => profile.id === checked.profile.id ? checked.profile : profile));
-    if (checked.profile.hasRouteCompleteSeal && !current.hasRouteCompleteSeal) soundManager.playSuccess();
+    const updated = handleUpdateProfile(result.updates);
+    if (updated.hasRouteCompleteSeal && !current.hasRouteCompleteSeal) soundManager.playSuccess();
     return result.status;
   };
 
