@@ -30,7 +30,7 @@ export function StationChallengeModal({ station, profile, initialToken, practice
   const initialVerified = parsedInitial.ok && parsedInitial.stationId === station.id ? parsedInitial.token : null;
   const [practice, setPractice] = useState(initialPractice);
   const [verifiedToken, setVerifiedToken] = useState<string | null>(initialVerified);
-  const [step, setStep] = useState<Step>(initialPractice ? 'question' : profile.completedCheckpoints.includes(station.id)
+  const [step, setStep] = useState<Step>(initialPractice ? 'question' : (profile.completedCheckpoints || []).includes(station.id)
     ? 'already-completed' : initialVerified ? 'recognized' : 'scan');
   const [answer, setAnswer] = useState<number | null>(null);
   const [invalidMessage, setInvalidMessage] = useState('');
@@ -68,7 +68,7 @@ export function StationChallengeModal({ station, profile, initialToken, practice
       setStep('other');
     } else {
       setVerifiedToken(result.token);
-      setStep(profile.completedCheckpoints.includes(station.id) ? 'already-completed' : 'recognized');
+      setStep((profile.completedCheckpoints || []).includes(station.id) ? 'already-completed' : 'recognized');
     }
     return true;
   };
@@ -166,7 +166,7 @@ export function StationChallengeModal({ station, profile, initialToken, practice
       {step === 'recognized' && <Button disabled={!verified} onClick={() => setStep('question')}>{tx("Responder desafío", "Answer challenge")}</Button>}
       {step === 'invalid' && <><p role="alert" className="text-xs text-amber-200">{invalidMessage}</p><Button onClick={scanAgain}>{tx("Volver a escanear", "Scan again")}</Button></>}
       {step === 'other' && other && <><p className="text-sm text-teal-100">{tx('Detectaste la Estación', 'You detected Station')} {other.station.id}: {localizeCheckpoint(other.station, lang).name}</p>
-        <Button onClick={() => { onSelectStation(other.station); setVerifiedToken(other.token); setAnswer(null); setStep(profile.completedCheckpoints.includes(other.station.id) ? 'already-completed' : 'recognized'); }}>{tx('Ir a la Estación', 'Go to Station')} {other.station.id}</Button>
+        <Button onClick={() => { onSelectStation(other.station); setVerifiedToken(other.token); setAnswer(null); setStep((profile.completedCheckpoints || []).includes(other.station.id) ? 'already-completed' : 'recognized'); }}>{tx('Ir a la Estación', 'Go to Station')} {other.station.id}</Button>
         <Button variant="ghost" onClick={scanAgain}>{tx("Volver a escanear", "Scan again")}</Button></>}
       {(step === 'question' || step === 'wrong') && (practice || verified) && <div className="space-y-2">
         <p className="text-xs font-bold text-white">{cp.challenge.question}</p>
