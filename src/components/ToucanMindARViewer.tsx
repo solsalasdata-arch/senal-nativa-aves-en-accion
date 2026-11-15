@@ -110,6 +110,7 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
 <\/script></body></html>`, []);
 
   useEffect(() => {
+    const frame = frameRef.current;
     const timeout = window.setTimeout(() => {
       if (!readyRef.current && !errorReceivedRef.current) { setTracking('error'); setMessage('No se pudo cargar MindAR o la imagen de referencia. Revisá tu conexión.'); }
     }, 15000);
@@ -125,7 +126,18 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
       }
     };
     window.addEventListener('message', receive);
-    return () => { window.clearTimeout(timeout); window.removeEventListener('message', receive); };
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener('message', receive);
+      try {
+        frame?.contentDocument?.querySelectorAll('video').forEach(video => {
+          (video.srcObject as MediaStream | null)?.getTracks().forEach(track => track.stop());
+        });
+      } catch { /* The iframe may already have navigated away. */ }
+      try {
+        if (frame) { frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; }
+      } catch { /* The iframe may already be detached. */ }
+    };
   }, [attempt]);
 
   return (

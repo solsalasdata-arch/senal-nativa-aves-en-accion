@@ -339,16 +339,20 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    let readinessTimeout: number | undefined;
     if (isOpen) {
       setArMode('checking');
+      readinessTimeout = window.setTimeout(() => controller.abort(), 6000);
       // Only MindAR or the legacy Gemini camera can own getUserMedia, never both.
       // HEAD check avoids starting MindAR until the image target file is available.
       Promise.all(['/ar/targets.mind'].map(async (path) => {
         try {
-          const response = await fetch(path, { method: 'HEAD', cache: 'no-store' });
+          const response = await fetch(path, { method: 'HEAD', cache: 'no-store', signal: controller.signal });
           return response.ok && !response.headers.get('content-type')?.includes('text/html');
         } catch { return false; }
       })).then((assetsReady) => {
+        window.clearTimeout(readinessTimeout);
         if (cancelled) return;
         if (assetsReady.every(Boolean)) {
           clearScanTimer();
@@ -388,6 +392,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
     }
     return () => {
       cancelled = true;
+      window.clearTimeout(readinessTimeout);
+      controller.abort();
       clearScanTimer();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
@@ -434,8 +440,9 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
   if (!isOpen) return null;
   if (arMode === 'checking') return (
-    <div className="fixed inset-0 z-50 bg-slate-950 text-teal-100 flex items-center justify-center text-sm font-bold">
+    <div className="fixed inset-0 z-50 bg-slate-950 text-teal-100 flex flex-col gap-4 items-center justify-center text-sm font-bold">
       Preparando visor XR…
+      <button type="button" onClick={onClose} className="min-h-11 px-6 rounded-xl border border-teal-600">Cerrar</button>
     </div>
   );
   if (arMode === 'ar') return <ToucanMindARViewer onClose={onClose} profile={playerProfile} onRegister={onMindARRegister} onComplete={onMindARComplete} onRetrySave={onMindARRetrySave} onJournal={onMindARJournal} />;
