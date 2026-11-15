@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModalHeader } from './ui';
 import { useModalEscape } from './ui/useModalEscape';
 import {
@@ -13,11 +13,12 @@ import {
   Volume2,
   ShieldAlert,
   Layers,
-  Camera,
-  RefreshCw
+  CheckCircle,
+  Clock
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
-import { requestMobileCameraStream } from '../utils/camera';
+import { StationChallengeModal, type StationCompletionStatus } from './StationChallengeModal';
+import { parseStationQr } from '../utils/stationQr';
 import { CHECKPOINTS_DATA, RARE_BIRDS_DATA } from '../data/birdsData';
 import { CheckPoint, PlayerProfile, BirdSpecies } from '../types/game';
 import { useLanguage, localizeCheckpoint, LanguageSelector } from '../utils/i18n';
@@ -26,7 +27,9 @@ interface TrailMapModalProps {
   isOpen: boolean;
   onClose: () => void;
   playerProfile: PlayerProfile;
-  onValidateCheckpoint: (checkpointId: number, xpReward: number) => void;
+  onCompleteStation: (stationId: number, scannedToken: string, answerIndex: number) => StationCompletionStatus;
+  initialStationToken?: string | null;
+  onConsumeInitialToken?: () => void;
   onOpenRareBirdDetails?: (bird: BirdSpecies) => void;
   onOpenXRVision?: () => void;
   onOpenBirdsCatalog?: () => void;
@@ -37,85 +40,38 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
   isOpen,
   onClose,
   playerProfile,
-  onValidateCheckpoint,
+  onCompleteStation,
+  initialStationToken,
+  onConsumeInitialToken,
   onOpenXRVision,
   onOpenBirdsCatalog,
   onOpenSquadsAndSeasons
 }) => {
   const { lang, tx } = useLanguage();
-  const [selectedCheckpoint, setSelectedCheckpoint] = useState<CheckPoint>(CHECKPOINTS_DATA[0]);
+  const initialScan = parseStationQr(initialStationToken || '');
+  const [selectedCheckpoint, setSelectedCheckpoint] = useState<CheckPoint>(() => initialScan.ok ? CHECKPOINTS_DATA.find(cp => cp.id === initialScan.stationId)! : CHECKPOINTS_DATA[0]);
   const [activeStationLayer, setActiveStationLayer] = useState<1 | 2 | 3>(1);
   const [mapVisualMode, setMapVisualMode] = useState<'circuit_3d' | 'physical_plan'>('circuit_3d');
-  const [showChallengeModal, setShowChallengeModal] = useState(false);
-  const [selectedChallengeOption, setSelectedChallengeOption] = useState<number | null>(null);
-  const [challengeSubmitted, setChallengeSubmitted] = useState(false);
+  const [showChallengeModal, setShowChallengeModal] = useState(isOpen && initialScan.ok);
+  const [practice, setPractice] = useState(false);
+  const [challengeToken, setChallengeToken] = useState<string | null>(initialScan.ok ? initialScan.token : null);
   const [showRareBirdsModal, setShowRareBirdsModal] = useState(false);
   const [selectedRareBird, setSelectedRareBird] = useState<BirdSpecies>(RARE_BIRDS_DATA[0]);
 
-  // Mobile QR Camera Scanner State
-  const [qrCameraActive, setQrCameraActive] = useState(false);
-  const [qrFacingMode, setQrFacingMode] = useState<'environment' | 'user'>('environment');
-  const [qrNativePhoto, setQrNativePhoto] = useState<string | null>(null);
-  const [qrCameraError, setQrCameraError] = useState<string | null>(null);
-  const qrVideoRef = useRef<HTMLVideoElement | null>(null);
-  const qrStreamRef = useRef<MediaStream | null>(null);
-  const qrFileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const stopQrCamera = () => {
-    if (qrStreamRef.current) {
-      qrStreamRef.current.getTracks().forEach((t) => t.stop());
-      qrStreamRef.current = null;
-    }
-    if (qrVideoRef.current) {
-      qrVideoRef.current.srcObject = null;
-    }
-    setQrCameraActive(false);
-  };
-
-  const startQrCamera = async (mode: 'environment' | 'user' = qrFacingMode) => {
-    try {
-      setQrCameraError(null);
-      setQrFacingMode(mode);
-
-      const stream = await requestMobileCameraStream(mode, qrStreamRef.current, qrVideoRef.current);
-
-      qrStreamRef.current = stream;
-      setQrNativePhoto(null);
-      setQrCameraActive(true);
-      if (qrVideoRef.current) {
-        qrVideoRef.current.srcObject = stream;
-        qrVideoRef.current.setAttribute('playsinline', 'true');
-        qrVideoRef.current.setAttribute('webkit-playsinline', 'true');
-        qrVideoRef.current.muted = true;
-        await qrVideoRef.current.play().catch(() => {});
-      }
-    } catch {
-      setQrCameraError(
-        tx(
-          'Permiso de cámara bloqueado. Pulsa "📷 Activar Cámara / Usar Cámara del Teléfono".',
-          'Camera permission blocked. Tap "📷 Enable Camera / Use Phone Camera".'
-        )
-      );
-      setQrCameraActive(false);
-    }
-  };
-
   useEffect(() => {
-    if (!isOpen || !showChallengeModal) {
-      stopQrCamera();
-    }
-    return () => {
-      if (qrStreamRef.current) {
-        qrStreamRef.current.getTracks().forEach((t) => t.stop());
-        qrStreamRef.current = null;
-      }
-    };
-  }, [isOpen, showChallengeModal]);
+    if (!isOpen) { setShowChallengeModal(false); return; }
+    const parsed = parseStationQr(initialStationToken || '');
+    if (!parsed.ok) return;
+    setSelectedCheckpoint(CHECKPOINTS_DATA.find(cp => cp.id === parsed.stationId)!);
+    setChallengeToken(parsed.token);
+    setPractice(false);
+    setShowChallengeModal(true);
+    onConsumeInitialToken?.();
+  }, [isOpen, initialStationToken, onConsumeInitialToken]);
 
   useModalEscape(isOpen, () => {
     if (showRareBirdsModal) setShowRareBirdsModal(false);
     else if (showChallengeModal) {
-      stopQrCamera();
       setShowChallengeModal(false);
     } else onClose();
   });
@@ -193,23 +149,15 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
   const stationContext = getStationEcologicalContext(selectedCheckpoint.id);
 
   const handleOpenChallenge = () => {
-    soundManager.playClick();
-    setSelectedChallengeOption(null);
-    setChallengeSubmitted(false);
+    setChallengeToken(null);
+    setPractice(false);
     setShowChallengeModal(true);
   };
 
-  const handleConfirmChallenge = () => {
-    if (selectedChallengeOption === null || challengeSubmitted) return;
-    setChallengeSubmitted(true);
-
-    const isCorrect = selectedChallengeOption === selectedCheckpoint.challenge.correctIndex;
-    if (isCorrect) {
-      soundManager.playSuccess();
-      onValidateCheckpoint(selectedCheckpoint.id, 25);
-    } else {
-      soundManager.playClick();
-    }
+  const openPractice = () => {
+    setChallengeToken(null);
+    setPractice(true);
+    setShowChallengeModal(true);
   };
 
   const circuitMapBgImage =
@@ -407,6 +355,20 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
             </span>
           </div>
 
+          <div className="space-y-2">
+            <p className="flex items-center gap-1.5 text-xs font-bold text-teal-200">
+              {isCurrentCheckpointCompleted ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+              {isCurrentCheckpointCompleted ? 'Completada ✓' : 'Pendiente'}
+            </p>
+            {isCurrentCheckpointCompleted ? <p className="text-xs text-emerald-200">Estación completada anteriormente</p> :
+              <button onClick={handleOpenChallenge} className="min-h-11 w-full py-2.5 px-3 rounded-2xl game-btn-orange text-white text-xs font-black flex items-center justify-center gap-2">
+                <QrCode className="w-4 h-4" />Escanear QR de la estación
+              </button>}
+            <button onClick={openPractice} className="ui-btn ui-btn-ghost w-full text-xs">
+              {isCurrentCheckpointCompleted ? 'Repasar en modo práctica (sin recompensa)' : 'Practicar sin QR (sin recompensa)'}
+            </button>
+          </div>
+
           {/* CONMUTADOR DE LAS 3 CAPAS DE EXPERIENCIA DE LA ESTACIÓN (MIRO BOARD) */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[11px] font-black text-teal-300 uppercase tracking-wider">
@@ -581,18 +543,6 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
                 </p>
               </div>
 
-              <button
-                onClick={handleOpenChallenge}
-                className="min-h-11 min-w-11 w-full py-2.5 px-3 rounded-2xl game-btn-orange text-white text-xs font-black tracking-wide uppercase flex items-center justify-center gap-2 shadow-lg"
-              >
-                <QrCode className="w-4 h-4" />
-                <span>
-                  {isCurrentCheckpointCompleted
-                    ? tx('Repasar Desafío de la Estación (+25 XP)', 'Review Station Challenge (+25 XP)')
-                    : tx('Responder Desafío de la Estación (+25 XP)', 'Answer Station Challenge (+25 XP)')}
-                </span>
-              </button>
-
               {onOpenSquadsAndSeasons && (
                 <button
                   onClick={() => {
@@ -610,232 +560,15 @@ export const TrailMapModal: React.FC<TrailMapModalProps> = ({
         </div>
       </div>
 
-      {/* MODAL DEL DESAFÍO QR / GPS DE LA PARADA */}
-      {showChallengeModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/90  animate-fadeIn">
-          <input
-            ref={qrFileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = () => {
-                if (typeof reader.result === 'string') {
-                  stopQrCamera();
-                  setQrCameraError(null);
-                  setQrNativePhoto(reader.result);
-                }
-              };
-              reader.readAsDataURL(file);
-            }}
-            className="hidden"
-          />
-          <div className="pb-safe min-h-0 relative w-full max-w-xs max-h-[92vh] overflow-y-auto rounded-3xl bg-surface-900 border border-teal-400 p-4 shadow-2xl">
-            <div className="flex items-center justify-between pb-2 border-b border-teal-800">
-              <div className="flex items-center gap-1.5">
-                <QrCode className="w-4 h-4 text-amber-400" />
-                <h4 className="text-xs font-bold text-white">
-                  {tx('ESCÁNER QR Y DESAFÍO DE ESTACIÓN', 'QR SCANNER & STATION CHALLENGE')}
-                </h4>
-              </div>
-              <button aria-label="Cerrar"
-                onClick={() => {
-                  soundManager.playClick();
-                  stopQrCamera();
-                  setShowChallengeModal(false);
-                }}
-                className="min-h-11 min-w-11 w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Visor de Cámara QR para Móviles (Android / iOS Safari) */}
-            <div className="mt-2.5 space-y-1.5">
-              <div className="flex items-center justify-between gap-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundManager.playClick();
-                    if (qrCameraActive) stopQrCamera();
-                    else startQrCamera(qrFacingMode);
-                  }}
-                  className="min-h-11 min-w-11 flex-1 py-1.5 px-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-[11px] font-black flex items-center justify-center gap-1 border border-teal-400 shadow cursor-pointer"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                  <span>
-                    {qrCameraActive
-                      ? tx('Cerrar Escáner QR', 'Close QR Scanner')
-                      : tx('📷 Activar Cámara QR', '📷 Enable QR Camera')}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundManager.playClick();
-                    const nextMode: 'environment' | 'user' =
-                      qrFacingMode === 'environment' ? 'user' : 'environment';
-                    setQrFacingMode(nextMode);
-                    startQrCamera(nextMode);
-                  }}
-                  className="min-h-11 min-w-11 py-1.5 px-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black flex items-center gap-1 border border-slate-900 shadow cursor-pointer"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>🔄 Girar Cámara</span>
-                </button>
-              </div>
-
-              {(qrCameraActive || qrNativePhoto || qrCameraError) && (
-                <div className="relative h-36 rounded-2xl overflow-hidden bg-black border border-teal-400 flex items-center justify-center">
-                  {qrCameraActive ? (
-                    <video
-                      key={qrFacingMode}
-                      ref={(el) => {
-                        qrVideoRef.current = el;
-                        if (el && qrStreamRef.current && el.srcObject !== qrStreamRef.current) {
-                          el.srcObject = qrStreamRef.current;
-                          el.setAttribute('playsinline', 'true');
-                          el.setAttribute('webkit-playsinline', 'true');
-                          el.muted = true;
-                          el.play().catch(() => {});
-                        }
-                      }}
-                      autoPlay
-                      playsInline
-                      muted
-                      style={{
-                        transform: qrFacingMode === 'user' ? 'scaleX(-1)' : 'none'
-                      }}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : qrNativePhoto ? (
-                    <img
-                      src={qrNativePhoto}
-                      alt="Código QR capturado"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="p-3 text-center space-y-1.5">
-                      <p className="text-[11px] text-amber-300">{qrCameraError}</p>
-                      <button
-                        type="button"
-                        onClick={() => qrFileInputRef.current?.click()}
-                        className="min-h-11 min-w-11 px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-[11px] font-black"
-                      >
-                        📷 Usar Cámara del Teléfono
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Marco de enfoque QR */}
-                  <div className="absolute inset-4 border border-dashed border-amber-400/80 rounded-xl pointer-events-none flex items-end justify-center pb-1">
-                    <span className="px-2 py-0.5 rounded bg-black/70 text-[11px] text-amber-300 font-bold">
-                      {tx('Apunta al QR del poste del sendero', 'Point at the trail post QR')}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => qrFileInputRef.current?.click()}
-                className="min-h-11 min-w-11 w-full py-1 text-[11px] text-teal-300 underline hover:text-white text-center cursor-pointer"
-              >
-                {tx('¿Cámara bloqueada? Usar Cámara Nativa del Teléfono', 'Camera blocked? Use Native Phone Camera')}
-              </button>
-            </div>
-
-            <div className="py-3 space-y-2.5">
-              <div className="text-[11px] text-teal-300 font-semibold">
-                {tx('Estación', 'Station')} {localizedCp.id}: {localizedCp.name} (+25 XP)
-              </div>
-              <p className="text-xs font-bold text-white leading-snug">
-                {localizedCp.challenge.question}
-              </p>
-
-              <div className="space-y-1.5 pt-1">
-                {localizedCp.challenge.options.map((option, idx) => {
-                  const isSelected = selectedChallengeOption === idx;
-                  const isCorrect = idx === localizedCp.challenge.correctIndex;
-
-                  let optClass = 'bg-slate-950 border-slate-700 text-slate-300';
-                  if (challengeSubmitted) {
-                    if (isCorrect) optClass = 'bg-emerald-950 border-emerald-400 text-emerald-200 font-bold';
-                    else if (isSelected) optClass = 'bg-rose-950 border-rose-500 text-rose-200';
-                  } else if (isSelected) {
-                    optClass = 'bg-amber-500/20 border-amber-400 text-amber-200 font-bold';
-                  }
-
-                  return (
-                    <button
-                      key={idx}
-                      disabled={challengeSubmitted}
-                      onClick={() => {
-                        soundManager.playClick();
-                        setSelectedChallengeOption(idx);
-                      }}
-                      className={`min-h-11 min-w-11 w-full p-2 rounded-xl border text-left text-[11px] transition-all flex items-start gap-2 ${optClass}`}
-                    >
-                      <span className="w-4 h-4 rounded-full bg-slate-800 flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">
-                        {String.fromCharCode(65 + idx)}
-                      </span>
-                      <span className="flex-1 leading-snug">{option}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {challengeSubmitted && (
-                <div
-                  className={`p-2.5 rounded-xl text-[11px] leading-relaxed ${
-                    selectedChallengeOption === localizedCp.challenge.correctIndex
-                      ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-200'
-                      : 'bg-amber-950/80 border border-amber-500/50 text-amber-200'
-                  }`}
-                >
-                  <span className="font-bold block mb-0.5">
-                    {selectedChallengeOption === localizedCp.challenge.correctIndex
-                      ? tx('¡ESTACIÓN VALIDADA CON ÉXITO! (+25 XP)', 'STATION VALIDATED! (+25 XP)')
-                      : tx('CONSEJO DE CONSERVACIÓN:', 'CONSERVATION TIP:')}
-                  </span>
-                  {localizedCp.challenge.explanation}
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2">
-              {!challengeSubmitted ? (
-                <button
-                  disabled={selectedChallengeOption === null}
-                  onClick={handleConfirmChallenge}
-                  className={`min-h-11 min-w-11 w-full py-2.5 rounded-xl font-bold text-xs tracking-wide transition-all ${
-                    selectedChallengeOption !== null
-                      ? 'game-btn-orange text-white cursor-pointer'
-                      : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
-                  }`}
-                >
-                  {tx('CONFIRMAR RESPUESTA', 'CONFIRM ANSWER')}
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    soundManager.playClick();
-                    stopQrCamera();
-                    setShowChallengeModal(false);
-                  }}
-                  className="min-h-11 min-w-11 w-full py-2.5 rounded-xl game-btn-mint text-emerald-950 font-bold text-xs"
-                >
-                  {tx('LISTO · CONTINUAR RECORRIDO', 'DONE · CONTINUE TRAIL')}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {showChallengeModal && <StationChallengeModal
+        station={selectedCheckpoint}
+        profile={playerProfile}
+        initialToken={challengeToken}
+        practice={practice}
+        onClose={() => setShowChallengeModal(false)}
+        onSelectStation={setSelectedCheckpoint}
+        onCompleteStation={onCompleteStation}
+      />}
 
       {/* MODAL DE AVES RARAS DESBLOQUEADAS: URUTAÚ Y JOTE REAL */}
       {showRareBirdsModal && (
