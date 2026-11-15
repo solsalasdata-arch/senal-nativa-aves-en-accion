@@ -310,7 +310,8 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
         unlockedSilhouettes: profileToRestore.unlockedSilhouettes,
         unlockedAcoustics: profileToRestore.unlockedAcoustics,
         fieldJournal: profileToRestore.fieldJournal,
-        mindarDiscoveries: profileToRestore.mindarDiscoveries || [],
+        mindarDiscoveries: ((profileToRestore.mindarDiscoveries || []) as NonNullable<PlayerProfile['mindarDiscoveries']>)
+          .map(discovery => ({ ...discovery, profileId: activeProfile.id })),
         birdPhotoStars: profileToRestore.birdPhotoStars
       });
 
