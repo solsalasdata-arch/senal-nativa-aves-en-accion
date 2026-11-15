@@ -92,8 +92,14 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
   improveCameraFocus().catch(()=>{});
   notify('ready');
  });
- const cameraError=(error)=>{
-  const name=error && (error.name || (error.error && error.error.name));
+ const cameraError=async(error)=>{
+  let name=error && (error.name || (error.error && error.error.name));
+  if(!name){
+   try{
+    const permission=await navigator.permissions?.query({name:'camera'});
+    if(permission && permission.state==='denied') name='NotAllowedError';
+   }catch(_){}
+  }
   notify('error',name==='NotAllowedError' ? 'Permiso de cámara denegado. Habilitalo en tu navegador.' : name==='NotFoundError' ? 'No se encontró una cámara en este dispositivo.' : 'No se pudo iniciar MindAR o la cámara. Revisá los permisos y la conexión.');
  };
  scene.addEventListener('arError',(event)=>cameraError(event.detail));
