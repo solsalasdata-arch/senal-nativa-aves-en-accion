@@ -21,6 +21,7 @@ export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegist
   const frameRef = useRef<HTMLIFrameElement>(null);
   const recognizedRef = useRef(false);
   const readyRef = useRef(false);
+  const errorReceivedRef = useRef(false);
   const [recognized, setRecognized] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [expanded, setExpanded] = useState(false);
@@ -110,7 +111,7 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      if (!readyRef.current) { setTracking('error'); setMessage('No se pudo cargar MindAR o la imagen de referencia. Revisá tu conexión.'); }
+      if (!readyRef.current && !errorReceivedRef.current) { setTracking('error'); setMessage('No se pudo cargar MindAR o la imagen de referencia. Revisá tu conexión.'); }
     }, 15000);
     const receive = (event: MessageEvent) => {
       if (event.source !== frameRef.current?.contentWindow || event.data?.source !== 'senal-nativa-mindar') return;
@@ -120,7 +121,7 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
           if (!recognizedRef.current) { recognizedRef.current = true; setRecognized(true); }
           setTracking('found'); setMessage('¡Imagen reconocida!'); break;
         case 'lost': setTracking('searching'); setMessage(recognizedRef.current ? 'Seguimiento perdido · podés seguir' : 'Volvé a enfocar la imagen del tucán'); break;
-        case 'error': setTracking('error'); setMessage(event.data.detail || 'Error de cámara o seguimiento'); break;
+        case 'error': errorReceivedRef.current = true; setTracking('error'); setMessage(event.data.detail || 'Error de cámara o seguimiento'); break;
       }
     };
     window.addEventListener('message', receive);
@@ -180,7 +181,7 @@ a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-
         {tracking === 'error' && <div className="absolute bottom-6 inset-x-4 z-10 text-center text-xs text-white bg-slate-900/90 rounded-xl p-3">
           Revisá el permiso de cámara, la conexión y que el sitio use HTTPS.
           <button type="button" className="block w-full min-h-11 text-teal-300" onClick={() => {
-            readyRef.current = false; setTracking('starting'); setMessage('Preparando reconocimiento de imagen…'); setAttempt(value => value + 1);
+            readyRef.current = false; errorReceivedRef.current = false; setTracking('starting'); setMessage('Preparando reconocimiento de imagen…'); setAttempt(value => value + 1);
           }}>Reintentar</button>
           <button type="button" className="min-h-11" onClick={onClose}>Cerrar</button>
         </div>}
