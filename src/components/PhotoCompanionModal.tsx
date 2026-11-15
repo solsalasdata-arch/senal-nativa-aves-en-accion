@@ -331,7 +331,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
         className="hidden"
       />
 
-      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-y-auto [&>*]:shrink-0 bg-surface-900 text-ink sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-white/20 shadow-xl">
         {/* Top Header */}
         <div className="pt-safe shrink-0 bg-forest-950"><ModalHeader title="FOTO CON TU AVE COMPAÑERA" subtitle={`Cámara ${facingMode === 'user' ? 'Frontal (Selfie)' : 'Trasera (Sendero)'} · Sin Flash`} icon={<Camera aria-hidden="true" className="h-5 w-5" />} onClose={() => {
               soundManager.playClick();
