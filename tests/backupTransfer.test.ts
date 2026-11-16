@@ -30,6 +30,17 @@ test('identifiers-only builder used by Drive excludes inline legacy photo bytes 
   assert.equal(profile.unlockedPhotos[0], source);
   assert.equal(profile.fieldJournal[0].photoUrl, source);
 });
+test('parser rejects malformed optional journal fields before summary or rendering can use them', () => {
+  const base = { id: 'entry', timestamp: 1, birdName: 'Ave', scientificName: '', trailName: '', notes: '' };
+  for (const field of ['photoUrl', 'photoId', 'speciesId', 'behavior', 'count', 'stratum', 'weather']) {
+    const profile = { ...createDefaultProfile(), fieldJournal: [{ ...base, [field]: 42 }] };
+    const parsed = parseBackup(JSON.stringify({ profile }));
+    assert.equal(parsed.ok, false, field);
+  }
+  for (const value of [null, { checks: 42, stars: 1 }, { checks: [], stars: 'three' }]) {
+    assert.equal(parseBackup(JSON.stringify({ profile: { ...createDefaultProfile(), fieldJournal: [{ ...base, selfAssessment: value }] } })).ok, false);
+  }
+});
 async function fixture() {
   const backend = new MemoryBackend();
   const profile = createDefaultProfile('Ana');

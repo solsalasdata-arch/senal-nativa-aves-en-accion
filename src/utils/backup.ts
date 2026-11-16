@@ -22,6 +22,7 @@ function validPhoto(ref: unknown): ref is PhotoRef {
   return object(ref) && typeof ref.id === 'string' && typeof ref.profileId === 'string' &&
     ['user', 'composite', 'companion'].includes(ref.kind) && ['indexeddb', 'local'].includes(ref.storage) &&
     ['mime', 'hash'].every(key => typeof ref[key] === 'string') &&
+    ['entryId', 'label'].every(key => ref[key] === undefined || typeof ref[key] === 'string') &&
     ['width', 'height', 'sizeBytes', 'createdAt'].every(key => number(ref[key]));
 }
 export function parseBackup(text: string): ParsedBackup {
@@ -45,7 +46,13 @@ export function parseBackup(text: string): ParsedBackup {
       if (p[key] !== undefined && !Array.isArray(p[key])) throw new Error(`Lista inválida: ${key}.`);
     }
     if (p.fieldJournal?.some((e: unknown) => !object(e) || typeof e.id !== 'string' || !e.id || !number(e.timestamp) ||
-      ['birdName', 'scientificName', 'trailName', 'notes'].some(key => e[key] !== undefined && typeof e[key] !== 'string') ||
+      ['birdName', 'scientificName', 'trailName', 'notes', 'photoUrl', 'photoId', 'speciesId', 'behavior', 'count', 'stratum', 'weather'].some(key => e[key] !== undefined && typeof e[key] !== 'string') ||
+      (e.evidence !== undefined && !['declared', 'photo'].includes(e.evidence)) ||
+      (e.photoKind !== undefined && !['user', 'composite'].includes(e.photoKind)) ||
+      ['stationId', 'stars'].some(key => e[key] !== undefined && !number(e[key])) ||
+      (e.identification !== undefined && (!object(e.identification) || e.identification.method !== 'gemini' || e.identification.status !== 'ai-suggested')) ||
+      (e.selfAssessment !== undefined && (!object(e.selfAssessment) || !Array.isArray(e.selfAssessment.checks) ||
+        e.selfAssessment.checks.some((check: unknown) => typeof check !== 'string') || !number(e.selfAssessment.stars))) ||
       (e.source !== undefined && !['field', 'ai-identification', 'station-activity', 'mindar-signal'].includes(e.source))))
       throw new Error('Registro de diario inválido: requiere id y fecha numérica.');
     for (const key of ['rewardLedger', 'unlockedPhotos', 'unlockedRareBirds', 'unlockedSilhouettes', 'unlockedAcoustics',
