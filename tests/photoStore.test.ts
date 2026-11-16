@@ -76,6 +76,29 @@ test('quota, blocked, failed verification and failed compression return errors w
   assert.equal(await local.available(), false);
   assert.deepEqual(await savePhoto(dataUrl, { profile: createDefaultProfile(), kind: 'user' }, { backend: local, compress }), { ok: false, reason: 'blocked' });
 });
+test('dedup repairs missing photo bytes after an identifiers-only restore', async () => {
+  const backend = new MemoryBackend();
+  const profile = createDefaultProfile();
+  const initial = await savePhoto(dataUrl, { profile, kind: 'user' }, { backend, compress });
+  assert.ok(initial.ok);
+  if (!initial.ok) return;
+  await backend.delete(initial.ref.id);
+  const restored = { ...profile, photos: [initial.ref] };
+  const result = await savePhoto(dataUrl, { profile: restored, kind: 'user' }, { backend, compress });
+  assert.ok(result.ok);
+  if (!result.ok) return;
+  const url = await getPhotoUrl(result.ref, backend);
+  assert.ok(url, 'successful reattachment must have readable bytes');
+  assert.equal(await (await fetch(url!)).text(), 'abc');
+  URL.revokeObjectURL(url!);
+  assert.equal(result.ref.id, initial.ref.id);
+  await backend.put(initial.ref.id, new Blob(['corrupt']));
+  assert.equal((await savePhoto(dataUrl, { profile: restored, kind: 'user' }, { backend, compress })).ok, true);
+  assert.equal(await toDataUrl((await backend.get(initial.ref.id))!), dataUrl);
+  await backend.delete(initial.ref.id);
+  backend.failAt = backend.puts + 1;
+  assert.deepEqual(await savePhoto(dataUrl, { profile: restored, kind: 'user' }, { backend, compress }), { ok: false, reason: 'quota' });
+});
 test('legacy migration is lossless, idempotent, retains non-data URLs and retries after mid-way failure', async () => {
   storage();
   const backend = new MemoryBackend();

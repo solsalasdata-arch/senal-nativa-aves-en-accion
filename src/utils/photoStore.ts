@@ -88,7 +88,15 @@ export async function savePhoto(source: Blob | string, meta: {
     const compressed = await (options.compress || compressPhoto)(source);
     const hash = await hashPhoto(compressed.blob);
     const existing = meta.profile.photos?.find(p => p.profileId === meta.profile.id && p.hash === hash);
-    if (existing) return { ok: true, ref: existing };
+    if (existing) {
+      backend = options.backend || backendFor(existing);
+      const stored = await backend.get(existing.id);
+      if (stored && await hashPhoto(stored) === hash) return { ok: true, ref: existing };
+      await backend.put(existing.id, compressed.blob);
+      const repaired = await backend.get(existing.id);
+      if (!repaired || await hashPhoto(repaired) !== hash) throw new Error('Verificación fallida');
+      return { ok: true, ref: existing };
+    }
     backend = options.backend || await selectBackend();
     id = crypto.randomUUID();
     await backend.put(id, compressed.blob);
