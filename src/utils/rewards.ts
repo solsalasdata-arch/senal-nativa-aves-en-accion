@@ -12,17 +12,17 @@ export function awardJournalEntry(profile: PlayerProfile, entry: JournalEntry): 
   if (profile.fieldJournal.some(e => e.id === entry.id)) return { updates: {}, status: 'already-awarded' };
   const category = getEntryCategory(entry);
   const ai = category === 'ai';
-  const identity = ai ? entry.speciesId || entry.scientificName || entry.birdName : speciesKey(entry);
+  const identity = speciesKey(entry);
   const key = `${ai ? 'ai' : 'field'}-species:${identity}`;
   const eligible = (category === 'field' || ai) && !isWelcomeSeed(entry);
   const older = profile.fieldJournal.some(e => !isWelcomeSeed(e) && getEntryCategory(e) === category &&
-    (ai ? e.speciesId || e.scientificName || e.birdName : speciesKey(e)) === identity);
+    speciesKey(e) === identity);
   const awarded = eligible && !older && !profile.rewardLedger?.includes(key);
   const next: PlayerProfile = { ...profile, fieldJournal: [entry, ...profile.fieldJournal],
     xp: profile.xp + (awarded ? ai ? 50 : 30 : 0),
     rewardLedger: eligible ? Array.from(new Set([...(profile.rewardLedger || []), key])) : profile.rewardLedger,
     sightingsCompleted: profile.sightingsCompleted + (ai ? 1 : 0),
-    birdPhotoStars: ai ? { ...profile.birdPhotoStars, [identity]: Math.max(profile.birdPhotoStars[identity] || 0, entry.selfAssessment?.stars || entry.stars || 0) } : profile.birdPhotoStars };
+    birdPhotoStars: ai ? { ...profile.birdPhotoStars, [entry.speciesId || identity]: Math.max(profile.birdPhotoStars[entry.speciesId || identity] || 0, entry.selfAssessment?.stars || entry.stars || 0) } : profile.birdPhotoStars };
   const badge = awardDetailBadge(next);
   return { status: awarded || badge.status === 'awarded' ? 'awarded' : 'already-awarded', updates: {
     fieldJournal: next.fieldJournal, xp: next.xp, rewardLedger: next.rewardLedger,
@@ -37,5 +37,6 @@ export function awardCompanionPhoto(profile: PlayerProfile, bird: string): Rewar
 export function awardQuizLevelUp(profile: PlayerProfile): RewardResult {
   if (profile.hasRisingObserverBadge) return { updates: {}, status: 'already-awarded' };
   return { status: 'awarded', updates: { xp: profile.xp + 150, level: profile.level + 1, hasRisingObserverBadge: true,
-    questionsAnswered: 5, missions: profile.missions.map(m => m.id === 'm-desafiante' ? { ...m, progress: 5, completed: true } : m) } };
+    questionsAnswered: Math.max(5, profile.questionsAnswered),
+    missions: profile.missions.map(m => m.id === 'm-desafiante' ? { ...m, progress: Math.max(5, m.progress), completed: true } : m) } };
 }

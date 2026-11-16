@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ModalHeader } from './ui';
 import { useModalEscape } from './ui/useModalEscape';
+import type { SaveResult } from '../utils/profileActions';
 import {
   HelpCircle,
   X,
@@ -23,7 +24,7 @@ interface QuizConsignasModalProps {
   isOpen: boolean;
   onClose: () => void;
   playerProfile: PlayerProfile;
-  onLevelUpSuccess: () => void;
+  onLevelUpSuccess: () => SaveResult | void;
   onOpenMap: () => void;
   onOpenBirds: () => void;
 }
@@ -81,11 +82,12 @@ export const QuizConsignasModal: React.FC<QuizConsignasModalProps> = ({
       setSelectedOption(null);
       setIsAnswerSubmitted(false);
     } else {
-      setIsQuizCompleted(true);
       if (score === 5 && hasSighting) {
+        const result = onLevelUpSuccess();
+        if (result && !result.saved) return;
         soundManager.playSuccess();
-        onLevelUpSuccess();
       }
+      setIsQuizCompleted(true);
     }
   };
 

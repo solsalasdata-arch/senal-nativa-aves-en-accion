@@ -25,6 +25,7 @@ import { ToucanMindARViewer } from './ToucanMindARViewer';
 import type { MindARActionResult } from '../utils/mindarProgress';
 import { Button, ModalHeader } from './ui';
 import { useModalEscape } from './ui/useModalEscape';
+import { SAVE_ERROR, SaveResult, SightingCapture, saveResultMessage } from '../utils/profileActions';
 
 interface SightingSimulationModalProps {
   onMindARRegister: () => MindARActionResult;
@@ -34,7 +35,7 @@ interface SightingSimulationModalProps {
   isOpen: boolean;
   onClose: () => void;
   playerProfile: PlayerProfile;
-  onSightingSuccess: (birdId: string, stars: number) => void;
+  onSightingSuccess: (capture: SightingCapture) => Promise<SaveResult> | void;
   onOpenQuizConsignas: () => void;
 }
 
@@ -154,11 +155,28 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   const [showBirdInfoSheet, setShowBirdInfoSheet] = useState(false);
   const [cleanViewMode, setCleanViewMode] = useState(false);
   const [photoResult, setPhotoResult] = useState<{
-    stars: number;
-    criteria: { centered: boolean; focus: boolean; respectful: boolean };
+    entryId: string;
+    birdId: string;
     birdName: string;
     photoUrl: string;
   } | null>(null);
+  const [selfChecks, setSelfChecks] = useState<string[]>([]);
+  const [captureSave, setCaptureSave] = useState<SaveResult | null>(null);
+  const [savingCapture, setSavingCapture] = useState(false);
+  const captureLock = useRef(false);
+  const captureSaveLock = useRef(false);
+  const saveCapture = async () => {
+    if (!photoResult || captureSaveLock.current || captureSave?.saved) return;
+    captureSaveLock.current = true;
+    setSavingCapture(true);
+    try {
+      const result = await onSightingSuccess({ entryId: photoResult.entryId, birdId: photoResult.birdId,
+        photoUrl: photoResult.photoUrl, checks: selfChecks });
+      setCaptureSave(result || { saved: false, status: 'unavailable', error: SAVE_ERROR });
+      if (result && result.saved) soundManager.playSuccess();
+    } catch { setCaptureSave({ saved: false, status: 'error', error: SAVE_ERROR }); }
+    finally { captureSaveLock.current = false; setSavingCapture(false); }
+  };
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -482,18 +500,14 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
   // Handle Foto Perfecta Capture (draws live <video> frame + bird AR overlay onto <canvas>)
   const handleShutterCapture = async () => {
-    if (!detectedBird) return;
+    if (!detectedBird || captureLock.current) return;
+    captureLock.current = true;
     const activeBirdData = detectedBird;
     stopSong();
     soundManager.playShutter();
     setIsPhotoCapturing(true);
 
-    const isFocused = focusSlider >= 65 && focusSlider <= 95;
-    const centered = true;
-    const respectful = true;
-    const stars = isFocused ? 3 : 2;
-
-    let finalPhotoUrl = encodeURI(activeBirdData.image);
+    let finalPhotoUrl = '';
 
     try {
       const canvas = canvasRef.current || document.createElement('canvas');
@@ -575,7 +589,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         ctx.font = 'bold 20px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(
-          `${birdLabel(activeBirdData)} (${'★'.repeat(stars)})`,
+          birdLabel(activeBirdData),
           width / 2,
           height - 50
         );
@@ -589,22 +603,22 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
         finalPhotoUrl = canvas.toDataURL('image/jpeg', 0.92);
       }
-    } catch {
-      // Fallback to bird image
-    }
-
-    setTimeout(() => {
+      if (!finalPhotoUrl) throw new Error('No se pudo crear la composición');
+      setSelfChecks([]);
+      setCaptureSave(null);
       setPhotoResult({
-        stars,
-        criteria: { centered, focus: isFocused, respectful },
+        entryId: crypto.randomUUID(),
+        birdId: activeBirdData.id,
         birdName: activeBirdData.commonName,
         photoUrl: finalPhotoUrl
       });
 
-      soundManager.playSuccess();
-      onSightingSuccess(activeBirdData.id, stars);
+    } catch {
+      setCameraError('No se pudo crear la composición. Reintentá la captura.');
+    } finally {
       setIsPhotoCapturing(false);
-    }, 350);
+      captureLock.current = false;
+    }
   };
 
   return (
@@ -820,6 +834,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   <span className="text-[11px] italic text-teal-300 block truncate">
                     {detectedBird.scientificName}
                   </span>
+                  <p className="text-[11px] text-amber-200">Identificación sugerida por IA (Gemini) · puede contener errores</p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/50 font-extrabold text-amber-300 text-[11px]">
@@ -860,6 +875,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           )}
 
           {/* BOTTOM EDGE OF VIEWPORT: Compact Pill with Focused Bird Name + "ℹ️ Ver Ficha" + "👁️ Limpiar Pantalla" */}
+          {detectedBird && <p className="absolute bottom-16 inset-x-3 z-30 rounded-xl bg-surface-950 p-2 text-[11px] text-amber-200">Identificación sugerida por IA (Gemini) · puede contener errores</p>}
           <div className="absolute bottom-2 inset-x-2.5 z-30 flex items-center justify-between gap-1.5 pointer-events-auto">
             {!cleanViewMode ? (
               <div className="flex-1 min-w-0 px-2.5 py-1.5 rounded-full bg-surface-950  border border-teal-500/60 shadow-lg flex items-center justify-between gap-1.5">
@@ -1008,7 +1024,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
           {/* POPUP DE RESULTADO DE "FOTO PERFECTA" */}
           {photoResult && (
-            <div className="absolute inset-0 z-50 bg-surface-950  flex flex-col items-center justify-center p-5 text-center animate-fadeIn">
+            <div className="absolute inset-0 z-50 bg-surface-950 overflow-y-auto flex flex-col items-center p-4 text-center animate-fadeIn">
               <div
                 className="w-27 h-36 rounded-2xl border border-amber-400 mb-2 shadow-xl flex items-center justify-center overflow-hidden"
                 style={{ backgroundColor: 'rgba(12, 35, 30, 0.85)' }}
@@ -1021,7 +1037,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               </div>
 
               <h4 className="text-base font-black text-white uppercase tracking-wide">
-                ¡FOTO PERFECTA REGISTRADA!
+                FOTO PERFECTA · AUTOEVALUACIÓN
               </h4>
               <p className="text-xs text-amber-300 font-bold mb-2">{photoResult.birdName}</p>
 
@@ -1031,7 +1047,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   <Star
                     key={starIdx}
                     className={`w-7 h-7 ${
-                      starIdx <= photoResult.stars
+                      starIdx <= Math.max(1, selfChecks.length)
                         ? 'text-amber-400 fill-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]'
                         : 'text-slate-600'
                     }`}
@@ -1039,25 +1055,28 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 ))}
               </div>
 
-              {/* 3 Evaluated Criteria */}
               <div className="w-full max-w-xs bg-surface-900 border border-teal-700/60 rounded-2xl p-3 text-left text-xs space-y-1.5 mb-4">
-                <div className="text-[11px] font-bold text-teal-300 uppercase">CRITERIOS SCHUEL:</div>
-                <div className="flex items-center gap-2 text-emerald-300 text-[11px]">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Ave centrada en visor (100% encuadre)</span>
-                </div>
-                <div className="flex items-center gap-2 text-emerald-300 text-[11px]">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Nitidez óptica en dosel de selva</span>
-                </div>
-                <div className="flex items-center gap-2 text-emerald-300 text-[11px]">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Distancia respetuosa sin flash (Norma Schuel)</span>
-                </div>
+                <div className="text-[11px] font-bold text-teal-300 uppercase">Autoevaluación educativa</div>
+                <p>Autoevaluación declarada · la app no analiza la calidad de la foto</p>
+                {['Mantuve distancia respetuosa', 'No usé flash', 'El ave quedó centrada en el encuadre'].map(check => (
+                  <label key={check} className="flex min-h-11 items-center gap-2">
+                    <input type="checkbox" checked={selfChecks.includes(check)} disabled={savingCapture || captureSave?.saved}
+                      onChange={e => setSelfChecks(prev => e.target.checked ? [...prev, check] : prev.filter(c => c !== check))} />
+                    {check}
+                  </label>
+                ))}
+                <p className="text-amber-200">Fotografía interactiva · composición ilustrativa — no es evidencia de que el ave estuvo frente a la cámara</p>
+                <p>Identificación sugerida por IA (Gemini) · puede contener errores</p>
               </div>
+              <button disabled={savingCapture || captureSave?.saved} onClick={saveCapture}
+                className="min-h-11 w-full rounded-xl game-btn-orange text-white text-xs font-bold">
+                {savingCapture ? 'Guardando…' : captureSave?.saved ? 'Guardado' : 'Guardar fotografía y registro'}
+              </button>
+              {captureSave && <p role={captureSave.saved ? 'status' : 'alert'} className="text-xs text-white my-2">{saveResultMessage(captureSave)}</p>}
 
               <div className="w-full flex gap-2">
                 <button
+                  disabled={savingCapture}
                   onClick={() => {
                     soundManager.playClick();
                     setPhotoResult(null);
@@ -1068,6 +1087,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                   Seguir en XR
                 </button>
                 <button
+                  disabled={savingCapture}
                   onClick={() => {
                     soundManager.playClick();
                     setPhotoResult(null);
@@ -1121,7 +1141,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
             <div className="flex items-center justify-between pt-0.5">
               <div className="text-[11px] text-teal-300 font-semibold flex items-center gap-1">
                 <Eye className="w-3.5 h-3.5 text-amber-400" />
-                <span>Enfocar:</span>
+                <span>Efecto visual:</span>
                 <input
                   type="range"
                   min="30"
@@ -1135,7 +1155,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
               {/* WHITE CIRCULAR SHUTTER BUTTON */}
               <button aria-label="Tomar Foto Perfecta"
                 onClick={handleShutterCapture}
-                disabled={!detectedBird}
+                disabled={!detectedBird || isPhotoCapturing}
                 className="min-h-11 min-w-11 w-14 h-14 rounded-full bg-white p-1 border-4 border-slate-900 shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-default disabled:hover:scale-100"
                 title="Tomar Foto Perfecta"
               >

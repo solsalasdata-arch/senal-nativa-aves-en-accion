@@ -1,6 +1,7 @@
 import React from 'react';
 import { ModalHeader } from './ui';
 import { useModalEscape } from './ui/useModalEscape';
+import type { SaveResult } from '../utils/profileActions';
 import {
   Settings,
   X,
@@ -26,7 +27,7 @@ interface OptionsModalProps {
   bgmEnabled: boolean;
   onToggleSound: () => void;
   onToggleBgm: () => void;
-  onResetProgress: () => void;
+  onResetProgress: () => SaveResult | void;
   onChangePlayer: () => void;
   onChangeCompanionOrPhoto: () => void;
   onBackToSplash: () => void;
@@ -298,7 +299,8 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                   )
                 ) {
                   soundManager.playClick();
-                  onResetProgress();
+                  const result = onResetProgress();
+                  if (result && !result.saved) return;
                   onClose();
                 }
               }}

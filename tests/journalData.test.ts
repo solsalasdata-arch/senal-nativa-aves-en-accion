@@ -16,7 +16,9 @@ function storage() {
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
     getItem: (key: string) => data.get(key) ?? null,
     setItem: (key: string, value: string) => { if (fail) throw new DOMException('Blocked', 'SecurityError'); data.set(key, value); },
-    removeItem: (key: string) => data.delete(key)
+    removeItem: (key: string) => data.delete(key),
+    get length() { return data.size; },
+    key: (index: number) => [...data.keys()][index] ?? null
   } });
   return { data, fail: (value: boolean) => { fail = value; } };
 }
@@ -85,6 +87,31 @@ test('AI XP is species based, stars do not multiply it and repeated captures are
   assert.equal(second.xp, 50);
   assert.equal(second.sightingsCompleted, 2);
   assert.equal(second.birdPhotoStars.bird, 3);
+});
+
+test('legacy XR and new AI entries share scientific identity but stars use catalog id', () => {
+  const p = { ...createDefaultProfile(), xp: 50, fieldJournal: [
+    { ...entry('legacy'), source: undefined, speciesId: undefined, notes: 'Foto Perfecta XR', stars: 2 }
+  ] };
+  const result = awardJournalEntry(p, { ...entry('new', 'ai-identification'), speciesId: 'catalog-bird', stars: 3 });
+  assert.equal(result.updates.xp, 50);
+  assert.deepEqual(result.updates.rewardLedger, ['ai-species:Bird species']);
+  assert.equal(result.updates.birdPhotoStars?.['catalog-bird'], 3);
+  const next = { ...p, ...result.updates, fieldJournal: [] };
+  assert.equal(awardJournalEntry(next, { ...entry('after-restore', 'ai-identification'), speciesId: 'catalog-bird' }).updates.xp, 50);
+});
+
+test('identical corrupt data is copied only once across loads and saves', () => {
+  const fake = storage();
+  const key = 'senial_nativa_profiles_list_v2';
+  fake.data.set(key, '{broken');
+  loadProfilesList();
+  loadProfilesList();
+  assert.equal([...fake.data.keys()].filter(k => k.startsWith('senial_nativa_profiles_corrupt_')).length, 1);
+  saveProfilesList([createDefaultProfile()]);
+  fake.data.set(key, '{broken');
+  saveProfilesList([createDefaultProfile()]);
+  assert.equal([...fake.data.keys()].filter(k => k.startsWith('senial_nativa_profiles_corrupt_')).length, 1);
 });
 test('backup roundtrip preserves MindAR, station progress, all progress and photo references', () => {
   storage();

@@ -6,6 +6,16 @@ const STORAGE_KEY_PROFILES = 'senial_nativa_profiles_list_v2';
 const STORAGE_KEY_ACTIVE_ID = 'senial_nativa_active_profile_id_v2';
 const STORAGE_KEY_SQUADS = 'senial_nativa_squads_list_v1';
 
+function preserveCorruptProfiles(raw: string): void {
+  for (let index = 0; index < localStorage.length; index++) {
+    const key = localStorage.key(index);
+    if (key?.startsWith('senial_nativa_profiles_corrupt_') && localStorage.getItem(key) === raw) return;
+  }
+  let timestamp = Date.now();
+  while (localStorage.getItem(`senial_nativa_profiles_corrupt_${timestamp}`) !== null) timestamp++;
+  localStorage.setItem(`senial_nativa_profiles_corrupt_${timestamp}`, raw);
+}
+
 const COMPANION_BIRD_SCIENTIFIC_NAMES: Record<CompanionBirdId, string> = {
   'Tucán Grande': 'Ramphastos toco',
   'Benteveo': 'Pitangus sulphuratus',
@@ -89,7 +99,7 @@ export function loadProfilesList(): PlayerProfile[] {
       parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) throw new Error('Invalid profiles');
     } catch {
-      localStorage.setItem(`senial_nativa_profiles_corrupt_${Date.now()}`, raw);
+      preserveCorruptProfiles(raw);
       return [createDefaultProfile()];
     }
     if (!Array.isArray(parsed) || parsed.length === 0) {
@@ -136,7 +146,7 @@ export function saveProfilesList(profiles: PlayerProfile[]): boolean {
     if (raw) {
       let corrupt = false;
       try { corrupt = !Array.isArray(JSON.parse(raw)); } catch { corrupt = true; }
-      if (corrupt) localStorage.setItem(`senial_nativa_profiles_corrupt_${Date.now()}`, raw);
+      if (corrupt) preserveCorruptProfiles(raw);
     }
     localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(profiles));
     return true;

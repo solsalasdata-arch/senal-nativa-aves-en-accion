@@ -9,8 +9,9 @@ import { parseStationQr, type StationQrResult } from '../utils/stationQr';
 import { completeStation } from '../utils/stationProgress';
 import { createQrDecoder, decodeQrFromFile, startQrScanLoop, stopMediaStream } from '../utils/qrScanner';
 import { requestMobileCameraStream } from '../utils/camera';
+import { SAVE_ERROR, SaveResult } from '../utils/profileActions';
 
-export type StationCompletionStatus = ReturnType<typeof completeStation>['status'];
+export type StationCompletionStatus = ReturnType<typeof completeStation>['status'] | SaveResult;
 type Step = 'scan' | 'recognized' | 'invalid' | 'other' | 'question' | 'wrong' | 'completed' | 'already-completed' | 'practice-done';
 export function StationChallengeModal({ station, profile, initialToken, practice: initialPractice, onClose, onSelectStation, onCompleteStation }: {
   station: CheckPoint; profile: PlayerProfile; initialToken?: string | null; practice: boolean;
@@ -120,7 +121,10 @@ export function StationChallengeModal({ station, profile, initialToken, practice
     submission.current = true;
     if (practice) setStep('practice-done');
     else {
-      const status = onCompleteStation(station.id, verifiedToken!, answer);
+      const result = onCompleteStation(station.id, verifiedToken!, answer);
+      if (typeof result !== 'string' && !result.saved) { setError(result.error || SAVE_ERROR); submission.current = false; return; }
+      const status = (typeof result === 'string' ? result : result.status) as ReturnType<typeof completeStation>['status'];
+      setError(null);
       setStep(status === 'not-scanned' ? 'invalid' : status === 'wrong-answer' ? 'wrong' : status);
       if (status === 'not-scanned') setInvalidMessage(tx("Escaneá el QR de esta estación antes de responder.", "Scan this station’s QR before answering."));
     }
@@ -139,6 +143,7 @@ export function StationChallengeModal({ station, profile, initialToken, practice
       {practice && <p className="p-3 rounded-xl border border-amber-400 text-amber-200 text-xs font-bold">{tx("Modo práctica — no otorga XP ni valida la estación", "Practice mode — no XP or station validation")}</p>}
       <h4 aria-live="polite" className="flex items-center gap-2 text-amber-300 font-bold text-sm">{statuses[step].icon}{statuses[step].label}</h4>
       <p className="text-xs text-teal-200">{tx('Estación', 'Station')} {station.id}: {cp.name}</p>
+      {error === SAVE_ERROR && <p role="alert" className="text-xs text-red-200">{error}</p>}
       {step === 'scan' && <div className="space-y-2">
         <div className="relative h-56 rounded-2xl overflow-hidden bg-black border border-teal-400">
           <video ref={video} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: facing === 'user' ? 'scaleX(-1)' : undefined }} />

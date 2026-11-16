@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ModalHeader, EmptyState } from './ui';
 import { useModalEscape } from './ui/useModalEscape';
+import { SaveResult, SAVE_ERROR, saveResultMessage } from '../utils/profileActions';
 import {
   Bird,
   HelpCircle,
@@ -35,14 +36,14 @@ interface TriviaAndBirdGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
   playerProfile: PlayerProfile;
-  onUnlockSilhouette: (birdId: string, xpGain: number) => void;
-  onUnlockAcoustic: (birdId: string, xpGain: number) => void;
-  onAddJournalEntry: (entry: Omit<JournalEntry, 'id' | 'timestamp'>) => void;
+  onUnlockSilhouette: (birdId: string, xpGain: number) => SaveResult | void;
+  onUnlockAcoustic: (birdId: string, xpGain: number) => SaveResult | void;
+  onAddJournalEntry: (entry: Omit<JournalEntry, 'id' | 'timestamp'>) => SaveResult | void;
   questionsAnsweredCount: number;
-  onQuestionsAnsweredUpdate: (newCount: number) => void;
+  onQuestionsAnsweredUpdate: (newCount: number) => SaveResult | void;
   initialTab?: 'catalog' | 'audio' | 'journal' | 'trivia';
   onOpenDrive?: () => void;
-  onConsumeFreeHints?: (usedCount: number) => void;
+  onConsumeFreeHints?: (usedCount: number) => SaveResult | void;
 }
 
 // Vectorial Black SVG Bird Silhouette Component (shows clear contour of beak, head, wings, tail & perch)
@@ -391,11 +392,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     setSilhouetteGameBird(bird);
     const availableFreeHints = playerProfile.freeSilhouetteHints || 0;
     if (availableFreeHints >= 2) {
-      setHintsRevealed(3);
-      if (onConsumeFreeHints) onConsumeFreeHints(2);
+      const result = onConsumeFreeHints?.(2);
+      setHintsRevealed(result && !result.saved ? 1 : 3);
     } else if (availableFreeHints === 1) {
-      setHintsRevealed(2);
-      if (onConsumeFreeHints) onConsumeFreeHints(1);
+      const result = onConsumeFreeHints?.(1);
+      setHintsRevealed(result && !result.saved ? 1 : 2);
     } else {
       setHintsRevealed(1);
     }
@@ -415,10 +416,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     setSelectedSilhouetteAnswer(guessedCommonName);
 
     if (guessedCommonName.toLowerCase() === silhouetteGameBird.commonName.toLowerCase()) {
+      const xp = getSilhouetteXpReward();
+      const result = onUnlockSilhouette(silhouetteGameBird.id, xp);
+      if (result && !result.saved) { setJournalSavedToast(SAVE_ERROR); return; }
       soundManager.playSuccess();
       setSilhouetteResult('correct');
-      const xp = getSilhouetteXpReward();
-      onUnlockSilhouette(silhouetteGameBird.id, xp);
     } else {
       soundManager.playClick();
       setSilhouetteResult('wrong');
@@ -443,11 +445,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   // Save 4-Toque Field Journal entry
   const handleSaveJournalEntry = () => {
     if (!journalModalBird) return;
-    soundManager.playSuccess();
-
-    const nextCount = Math.min(10, (playerProfile.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length + 1);
-
-    onAddJournalEntry({
+    const result = onAddJournalEntry({
+      source: 'field',
+      speciesId: journalModalBird.id,
+      evidence: 'declared',
       birdName: journalModalBird.commonName,
       scientificName: journalModalBird.scientificName,
       trailName: selectedTrailPoint,
@@ -455,12 +456,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
       behavior,
       count,
       stratum,
-      weather,
-      photoUrl: journalModalBird.image
+      weather
     });
-
+    if (result && !result.saved) { setJournalSavedToast(SAVE_ERROR); return; }
+    soundManager.playSuccess();
     setJournalModalBird(null);
-    setJournalSavedToast(`+30 XP · Observación guardada en Diario de Campo (${nextCount}/10)`);
+    setJournalSavedToast(result ? saveResultMessage(result) : 'Observación guardada en Diario de Campo');
     setTimeout(() => {
       setJournalSavedToast(null);
     }, 3500);
@@ -480,9 +481,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     setAudioGuess(guessedName);
 
     if (guessedName.toLowerCase() === audioTargetBird.commonName.toLowerCase()) {
+      const result = onUnlockAcoustic(audioTargetBird.id, 50);
+      if (result && !result.saved) { setJournalSavedToast(SAVE_ERROR); return; }
       soundManager.playSuccess();
       setAudioResult('correct');
-      onUnlockAcoustic(audioTargetBird.id, 50);
     } else {
       soundManager.playClick();
       setAudioResult('wrong');
@@ -505,10 +507,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
     const isCorrect = selectedOption === currentQ.correctIndex;
     if (isCorrect) {
-      soundManager.playSuccess();
       const updated = Array.from(new Set([...correctAnswersList, currentQ.id]));
+      const result = onQuestionsAnsweredUpdate(updated.length);
+      if (result && !result.saved) { setIsAnswerSubmitted(false); setJournalSavedToast(SAVE_ERROR); return; }
+      soundManager.playSuccess();
       setCorrectAnswersList(updated);
-      onQuestionsAnsweredUpdate(updated.length);
     } else {
       soundManager.playClick();
     }
@@ -666,7 +669,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
         {journalSavedToast && (
           <div className="mx-3 mt-2 px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-400 text-emerald-200 text-[11px] font-black flex items-center justify-between shadow-lg animate-fadeIn">
-            <span>✓ {journalSavedToast}</span>
+            <span role={journalSavedToast === SAVE_ERROR ? 'alert' : 'status'}>{journalSavedToast === SAVE_ERROR ? '' : '✓ '}{journalSavedToast}</span>
             <Award className="w-4 h-4 text-amber-300 shrink-0" />
           </div>
         )}

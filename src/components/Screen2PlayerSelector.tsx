@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Camera, UserPlus, Trash2, Check, Award } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+import { SaveResult, SAVE_ERROR } from '../utils/profileActions';
 import { PlayerProfile, CompanionBirdId } from '../types/game';
 import { EXPLORER_AVATARS, COMPANION_BIRDS_OPTIONS } from '../data/birdsData';
 import { useLanguage, LanguageSelector } from '../utils/i18n';
@@ -10,8 +11,8 @@ import { Button, IconButton, Card, SheetHeader, StatusPill } from './ui';
 interface Screen2PlayerSelectorProps {
   profiles: PlayerProfile[];
   activeProfile: PlayerProfile;
-  onSelectProfile: (profileId: string) => void;
-  onCreateProfile: (name: string, avatarId: string, favoriteBird: CompanionBirdId) => void;
+  onSelectProfile: (profileId: string) => SaveResult | void;
+  onCreateProfile: (name: string, avatarId: string, favoriteBird: CompanionBirdId) => SaveResult | void;
   onDeleteProfile: (profileId: string) => void;
   onAdvanceToScreen3: () => void;
   onAdvanceToScreen4: () => void;
@@ -30,12 +31,18 @@ export const Screen2PlayerSelector: React.FC<Screen2PlayerSelectorProps> = ({ pr
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPlayerName.trim()) { setFormError(tx('Por favor ingresa tu nombre de explorador.', 'Please enter your explorer name.')); return; }
+    const result = onCreateProfile(newPlayerName.trim(), selectedAvatarId, selectedBird);
+    if (result && !result.saved) { setFormError(result.error || SAVE_ERROR); return; }
     soundManager.playSuccess();
-    onCreateProfile(newPlayerName.trim(), selectedAvatarId, selectedBird);
     setShowForm(false); setNewPlayerName(''); setFormError('');
     onAdvanceToScreen3();
   };
-  const handleSelectReturningProfile = (id: string) => { soundManager.playClick(); onSelectProfile(id); onAdvanceToScreen4(); };
+  const handleSelectReturningProfile = (id: string) => {
+    soundManager.playClick();
+    const result = onSelectProfile(id);
+    if (result && !result.saved) return;
+    onAdvanceToScreen4();
+  };
   const handleDeleteWithConfirm = (id: string, name: string) => {
     if (confirm(tx(`¿Estás seguro de eliminar el perfil de "${name}"?`, `Are you sure you want to delete "${name}"'s profile?`))) { soundManager.playClick(); onDeleteProfile(id); }
   };

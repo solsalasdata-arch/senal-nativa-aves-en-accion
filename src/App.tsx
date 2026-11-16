@@ -19,14 +19,18 @@ import { BIRDS_DATA, CATALOG_BIRDS_DATA, PACK_EXTRA_BIRDS_DATA } from './data/bi
 import {
   loadProfilesList,
   getActiveProfile,
-  createNewProfile,
-  switchActiveProfile,
-  deleteProfile,
-  updateActiveProfile,
-  updateActiveProfileChecked
+  createDefaultProfile,
+  saveProfilesList,
+  setActiveProfileId,
+  commitProfile,
+  loadSquadsList
 } from './utils/storage';
 import { soundManager } from './utils/audio';
-import { PlayerProfile, CompanionBirdId, JournalEntry, CatalogBird } from './types/game';
+import { PlayerProfile, CompanionBirdId, JournalEntry, CatalogBird, PhotoRef } from './types/game';
+import { awardJournalEntry, awardCompanionPhoto, awardQuizLevelUp } from './utils/rewards';
+import { savePhoto, deletePhoto, migrateLegacyPhotos } from './utils/photoStore';
+import { SAVE_ERROR, SaveResult, SightingCapture } from './utils/profileActions';
+import { isRealObservation } from './utils/journal';
 import { LanguageProvider } from './utils/i18n';
 import { OfflineIndicator } from './components/PWAInstallButton';
 import { registerMindARDiscovery, completeMindARChallenge, MindARActionResult } from './utils/mindarProgress';
@@ -44,21 +48,16 @@ export default function App() {
   const [activeProfile, setActiveProfile] = useState<PlayerProfile>(() => getActiveProfile());
   const mindarProfileRef = useRef(activeProfile);
   mindarProfileRef.current = activeProfile;
+  const pendingMindAR = useRef<{ profileId: string; action: 'register' | 'complete' } | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const handleMindARRetrySave = (): boolean => {
-    const checked = updateActiveProfileChecked(mindarProfileRef.current, {});
-    mindarProfileRef.current = checked.profile;
-    setActiveProfile(checked.profile);
-    setProfiles(previous => previous.map(p => p.id === checked.profile.id ? checked.profile : p));
-    return checked.saved;
+    const pending = pendingMindAR.current;
+    return pending ? handleMindARAction(pending.action, pending.profileId).saved : true;
   };
-  const handleMindARAction = (action: 'register' | 'complete'): MindARActionResult => {
-    const current = mindarProfileRef.current;
-    const result = (action === 'register' ? registerMindARDiscovery : completeMindARChallenge)(current, Date.now());
-    const checked = updateActiveProfileChecked(current, result.updates);
-    mindarProfileRef.current = checked.profile;
-    setActiveProfile(checked.profile);
-    setProfiles(previous => previous.map(p => p.id === checked.profile.id ? checked.profile : p));
-    return { status: result.status, saved: checked.saved };
+  const handleMindARAction = (action: 'register' | 'complete', profileId = mindarProfileRef.current.id): MindARActionResult => {
+    const checked = handleUpdateProfile(latest => (action === 'register' ? registerMindARDiscovery : completeMindARChallenge)(latest, Date.now()), profileId);
+    pendingMindAR.current = checked.saved ? null : { profileId, action };
+    return { status: checked.status as MindARActionResult['status'], saved: checked.saved };
   };
 
   // Global Audio Toggles
@@ -206,185 +205,190 @@ export default function App() {
     window.history.pushState({ screen: currentScreen, modal: activeModalId }, '');
   }, [currentScreen, activeModalId]);
 
-  // Sync profile update helper
-  const handleUpdateProfile = (updates: Partial<PlayerProfile>) => {
-    const updated = updateActiveProfile({
-      mindarDiscoveries: mindarProfileRef.current.mindarDiscoveries,
-      fieldJournal: mindarProfileRef.current.fieldJournal,
-      ...updates
-    });
-    mindarProfileRef.current = updated;
-    setActiveProfile(updated);
-    setProfiles(loadProfilesList());
-    return updated;
-  };
-
-  // Level Up Check: 1 sighting AND 5 questions answered
-  const checkLevelUp = (sightings: number, questions: number, profile: PlayerProfile) => {
-    if (sightings >= 1 && questions >= 5 && !profile.hasRisingObserverBadge) {
-      soundManager.playSuccess();
-      const updatedMissions = profile.missions.map(m =>
-        m.id === 'm-desafiante' ? { ...m, progress: 5, completed: true } : m
-      );
-      const updated = handleUpdateProfile({
-        level: profile.level + 1,
-        xp: profile.xp + 150,
-        sightingsCompleted: sightings,
-        questionsAnswered: questions,
-        hasRisingObserverBadge: true,
-        missions: updatedMissions
+  type Change = { updates: Partial<PlayerProfile>; status?: string; birds?: CatalogBird[] };
+  const handleUpdateProfile = (mutator: ((latest: PlayerProfile) => Change) | Partial<PlayerProfile>,
+    profileId = mindarProfileRef.current.id): SaveResult & { profile: PlayerProfile; birds?: CatalogBird[] } => {
+    let before = mindarProfileRef.current;
+    try {
+      const checked = commitProfile(profileId, latest => {
+        before = latest;
+        return typeof mutator === 'function' ? mutator(latest) : { updates: mutator };
       });
-      setShowLevelUpModal(true);
-      return updated;
+      if (!checked.saved) {
+        setSaveError(SAVE_ERROR);
+        return { saved: false, status: checked.result.status || 'error', error: SAVE_ERROR, profile: checked.profile };
+      }
+      if (mindarProfileRef.current.id === profileId) {
+        mindarProfileRef.current = checked.profile;
+        setActiveProfile(checked.profile);
+      }
+      setProfiles(loadProfilesList());
+      setSaveError(null);
+      return { saved: true, status: checked.result.status || 'saved', profile: checked.profile,
+        xpGained: checked.profile.xp - before.xp, birds: checked.result.birds };
+    } catch {
+      setSaveError(SAVE_ERROR);
+      return { saved: false, status: 'error', error: SAVE_ERROR, profile: before };
     }
-    return profile;
   };
+  const withLevelUp = (latest: PlayerProfile, updates: Partial<PlayerProfile>): Partial<PlayerProfile> => {
+    const next = { ...latest, ...updates };
+    return next.sightingsCompleted >= 1 && next.questionsAnswered >= 5 && !next.hasRisingObserverBadge
+      ? { ...updates, ...awardQuizLevelUp(next).updates } : updates;
+  };
+  const celebrateLevel = (result: SaveResult & { profile: PlayerProfile }, hadBadge: boolean) => {
+    if (result.saved && !hadBadge && result.profile.hasRisingObserverBadge) {
+      soundManager.playSuccess();
+      setShowLevelUpModal(true);
+    }
+  };
+  useEffect(() => {
+    const refresh = () => {
+      const latest = getActiveProfile();
+      mindarProfileRef.current = latest;
+      setActiveProfile(latest);
+      setProfiles(loadProfilesList());
+    };
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, []);
+  const migratingProfiles = useRef(new Map<string, ReturnType<typeof migrateLegacyPhotos>>());
+  useEffect(() => {
+    const id = activeProfile.id;
+    if (!migratingProfiles.current.has(id)) {
+      migratingProfiles.current.set(id, migrateLegacyPhotos(loadProfilesList().find(p => p.id === id) || activeProfile));
+    }
+    let disposed = false;
+    migratingProfiles.current.get(id)!.then(() => {
+      if (!disposed && mindarProfileRef.current.id === id) {
+        const list = loadProfilesList();
+        const latest = list.find(p => p.id === id);
+        if (latest) { mindarProfileRef.current = latest; setActiveProfile(latest); }
+        setProfiles(list);
+      }
+    }).catch(() => { if (!disposed) setSaveError(SAVE_ERROR); });
+    return () => { disposed = true; };
+  }, [activeProfile.id]);
 
   // Create New Profile
-  const handleCreateProfile = (name: string, avatarId: string, favoriteBird: CompanionBirdId) => {
-    const newProf = createNewProfile(name, avatarId, favoriteBird);
+  const handleCreateProfile = (name: string, avatarId: string, favoriteBird: CompanionBirdId): SaveResult => {
+    const newProf = createDefaultProfile(name, avatarId, favoriteBird);
+    if (!saveProfilesList([newProf, ...loadProfilesList()])) {
+      setSaveError(SAVE_ERROR);
+      return { saved: false, status: 'error', error: SAVE_ERROR };
+    }
+    setActiveProfileId(newProf.id);
+    mindarProfileRef.current = newProf;
     setActiveProfile(newProf);
     setProfiles(loadProfilesList());
+    return { saved: true, status: 'saved' };
   };
 
   // Select Existing Profile
   const handleSelectProfile = (profileId: string) => {
-    const switched = switchActiveProfile(profileId);
-    if (switched) {
-      setActiveProfile(switched);
+    const switched = handleUpdateProfile(() => ({ updates: {} }), profileId);
+    if (switched.saved) {
+      setActiveProfileId(profileId);
+      mindarProfileRef.current = switched.profile;
+      setActiveProfile(switched.profile);
       setProfiles(loadProfilesList());
     }
+    return switched;
   };
 
   // Delete Profile
   const handleDeleteProfile = (profileId: string) => {
-    const remaining = deleteProfile(profileId);
+    const remaining = loadProfilesList().filter(p => p.id !== profileId);
+    if (!remaining.length) remaining.push(createDefaultProfile());
+    if (!saveProfilesList(remaining)) { setSaveError(SAVE_ERROR); return; }
+    if (mindarProfileRef.current.id === profileId) setActiveProfileId(remaining[0].id);
     setProfiles(remaining);
-    setActiveProfile(getActiveProfile());
+    const next = getActiveProfile();
+    mindarProfileRef.current = next;
+    setActiveProfile(next);
   };
 
   const handleCompleteStation = (stationId: number, scannedToken: string, answerIndex: number) => {
-    const current = mindarProfileRef.current;
-    const result = completeStation(current, { stationId, scannedToken, answerIndex });
-    if (result.status !== 'completed') return result.status;
-    const updated = handleUpdateProfile(result.updates);
-    if (updated.hasRouteCompleteSeal && !current.hasRouteCompleteSeal) soundManager.playSuccess();
-    return result.status;
+    return handleUpdateProfile(latest => completeStation(latest, { stationId, scannedToken, answerIndex }));
   };
 
-  // Sighting completion with Star Rating (Paso 12 - Foto Perfecta)
-  const handleSightingSuccess = (birdId: string, stars: number) => {
-    const newSightings = activeProfile.sightingsCompleted + 1;
-    const newXP = activeProfile.xp + (stars === 3 ? 75 : 50);
-
-    const prevStars = activeProfile.birdPhotoStars?.[birdId] || 0;
-    const updatedStars = {
-      ...(activeProfile.birdPhotoStars || {}),
-      [birdId]: Math.max(prevStars, stars)
-    };
-
-    const matchedBird = CATALOG_BIRDS_DATA.find((b) => b.id === birdId);
-    // The Tucán Grande is sighted in XR but has no catalog card
-    const sightedSpecies = matchedBird || BIRDS_DATA.find((b) => b.id === birdId);
-    const birdDisplayName =
-      birdId === 'chinchero-chico' || birdId === '020-ticotico-cejicanelo'
-        ? 'Chinchero Chico / Ticotico'
-        : sightedSpecies?.commonName || 'Benteveo';
-    const birdSciName =
-      birdId === 'chinchero-chico'
-        ? 'Lepidocolaptes angustirostris'
-        : sightedSpecies?.scientificName || 'Pitangus sulphuratus';
-
-    const newJournalEntry: JournalEntry = {
-      id: 'j_' + Date.now(),
-      birdName: birdDisplayName,
-      scientificName: birdSciName,
-      trailName: 'Reserva Natural Urbana Barón Schuel · Selva Montana',
-      notes: `Foto Perfecta XR (${stars} ⭐): Ave centrada, nitidez y distancia respetuosa sin flash.`,
-      timestamp: Date.now(),
-      stars
-    };
-
-    const updatedJournal = [newJournalEntry, ...(activeProfile.fieldJournal || [])];
-
-    const updatedMissions = activeProfile.missions.map(m =>
-      m.id === 'm-media' ? { ...m, progress: 1, completed: true } : m
-    );
-
-    // An XR sighting also classifies the species in the catalog
-    const prevUnlocked = activeProfile.unlockedSilhouettes || [];
-    const updatedUnlocked =
-      matchedBird && !prevUnlocked.includes(matchedBird.id) ? [...prevUnlocked, matchedBird.id] : prevUnlocked;
-
-    const updated = handleUpdateProfile({
-      sightingsCompleted: newSightings,
-      birdPhotoStars: updatedStars,
-      unlockedSilhouettes: updatedUnlocked,
-      xp: newXP,
-      fieldJournal: updatedJournal,
-      missions: updatedMissions
-    });
-
-    checkLevelUp(newSightings, activeProfile.questionsAnswered, updated);
+  const persistPhoto = async (source: string, kind: PhotoRef['kind'], label: string,
+    mutate: (latest: PlayerProfile, ref: PhotoRef) => Change, entryId?: string): Promise<SaveResult> => {
+    const profileId = mindarProfileRef.current.id;
+    const latest = loadProfilesList().find(p => p.id === profileId);
+    if (!latest) return { saved: false, status: 'error', error: SAVE_ERROR };
+    const photo = await savePhoto(source, { profile: latest, kind, entryId, label });
+    if (!photo.ok) { setSaveError(SAVE_ERROR); return { saved: false, status: photo.reason, error: SAVE_ERROR }; }
+    const result = handleUpdateProfile(current => {
+      const ref = current.photos?.find(p => p.hash === photo.ref.hash) || photo.ref;
+      const change = mutate(current, ref);
+      return { ...change, updates: { ...change.updates,
+        photos: [...(current.photos || []).filter(p => p.id !== ref.id), ref] } };
+    }, profileId);
+    const savedRef = result.profile.photos?.find(p => p.hash === photo.ref.hash);
+    if ((!result.saved || savedRef?.id !== photo.ref.id) && !latest.photos?.some(p => p.id === photo.ref.id)) await deletePhoto(photo.ref).catch(() => {});
+    return { ...result, photo: result.saved ? savedRef : undefined };
   };
+  const handleSightingSuccess = async (capture: SightingCapture): Promise<SaveResult> => {
+    const species = CATALOG_BIRDS_DATA.find(b => b.id === capture.birdId) || BIRDS_DATA.find(b => b.id === capture.birdId);
+    if (!species) return { saved: false, status: 'unknown-species', error: 'Especie no disponible' };
+    let hadBadge = true;
+    const result = await persistPhoto(capture.photoUrl, 'composite', 'Fotografía interactiva · composición ilustrativa', (latest, ref) => {
+      hadBadge = latest.hasRisingObserverBadge;
+      const entry: JournalEntry = { id: capture.entryId, speciesId: capture.birdId, source: 'ai-identification',
+        birdName: species.commonName, scientificName: species.scientificName, timestamp: Date.now(),
+        trailName: 'Reserva Natural Urbana Barón Schuel · Selva Montana',
+        notes: 'Identificación sugerida por IA (Gemini) · puede contener errores. Composición ilustrativa; autoevaluación declarada.',
+        identification: { method: 'gemini', status: 'ai-suggested' }, photoId: ref.id, photoKind: 'composite',
+        selfAssessment: { checks: capture.checks, stars: Math.max(1, capture.checks.length) } };
+      const reward = awardJournalEntry(latest, entry);
+      if (!reward.updates.fieldJournal) return reward;
+      return { ...reward, updates: withLevelUp(latest, { ...reward.updates,
+        missions: latest.missions.map(m => m.id === 'm-media' ? { ...m, progress: 1, completed: true } : m),
+        unlockedSilhouettes: Array.from(new Set([...latest.unlockedSilhouettes, capture.birdId])) }) };
+    }, capture.entryId);
+    if (result.saved && !hadBadge && getActiveProfile().hasRisingObserverBadge) setShowLevelUpModal(true);
+    return result;
+  };
+  const handleCompanionPhoto = (photoUrl: string, bird: CompanionBirdId): Promise<SaveResult> =>
+    persistPhoto(photoUrl, 'companion', 'Composición ilustrativa', latest => awardCompanionPhoto(latest, bird));
 
   // Questions update from 5 Consignas
   const handleLevelUpSuccessFromQuiz = () => {
-    const updated = handleUpdateProfile({
-      level: activeProfile.level + 1,
-      xp: activeProfile.xp + 150,
-      questionsAnswered: 5,
-      hasRisingObserverBadge: true,
-      missions: activeProfile.missions.map(m =>
-        m.id === 'm-desafiante' ? { ...m, progress: 5, completed: true } : m
-      )
-    });
-    setShowLevelUpModal(true);
+    const result = handleUpdateProfile(latest => awardQuizLevelUp(latest));
+    if (result.saved && result.status === 'awarded') setShowLevelUpModal(true);
+    return result;
   };
 
   // Questions update from general trivia
   const handleQuestionsAnsweredUpdate = (count: number) => {
-    const xpBonus = count > activeProfile.questionsAnswered ? 20 : 0;
-    const updatedMissions = activeProfile.missions.map(m =>
-      m.id === 'm-desafiante' ? { ...m, progress: count, completed: count >= 5 } : m
-    );
-
-    const updated = handleUpdateProfile({
-      questionsAnswered: count,
-      xp: activeProfile.xp + xpBonus,
-      missions: updatedMissions
+    let hadBadge = true;
+    const result = handleUpdateProfile(latest => {
+      hadBadge = latest.hasRisingObserverBadge;
+      const questions = Math.max(count, latest.questionsAnswered);
+      return { updates: withLevelUp(latest, { questionsAnswered: questions,
+        xp: latest.xp + (count > latest.questionsAnswered ? 20 : 0),
+        missions: latest.missions.map(m => m.id === 'm-desafiante' ? { ...m, progress: questions, completed: questions >= 5 } : m) }) };
     });
-
-    checkLevelUp(activeProfile.sightingsCompleted, count, updated);
+    celebrateLevel(result, hadBadge);
+    return result;
   };
 
   // Change Companion Bird
   const handleSelectCompanionBird = (birdName: CompanionBirdId) => {
-    handleUpdateProfile({ favoriteBird: birdName });
+    return handleUpdateProfile({ favoriteBird: birdName });
   };
 
   // Paso 3: Desbloqueo de Silueta Misteriosa con XP progresivo
   const handleUnlockSilhouette = (birdId: string, xpGain: number) => {
-    const prev = activeProfile.unlockedSilhouettes || [];
-    if (!prev.includes(birdId)) {
-      const updatedList = [...prev, birdId];
-      handleUpdateProfile({
-        unlockedSilhouettes: updatedList,
-        xp: activeProfile.xp + xpGain
-      });
-    }
+    return handleUpdateProfile(latest => ({ updates: latest.unlockedSilhouettes.includes(birdId) ? {} : {
+      unlockedSilhouettes: [...latest.unlockedSilhouettes, birdId], xp: latest.xp + xpGain } }));
   };
 
   // Paso 3: Desbloqueo de Reconocimiento Acústico
   const handleUnlockAcoustic = (birdId: string, xpGain: number) => {
-    const prev = activeProfile.unlockedAcoustics || [];
-    if (!prev.includes(birdId)) {
-      const updatedList = [...prev, birdId];
-      handleUpdateProfile({
-        unlockedAcoustics: updatedList,
-        xp: activeProfile.xp + xpGain
-      });
-    }
+    return handleUpdateProfile(latest => ({ updates: latest.unlockedAcoustics.includes(birdId) ? {} : {
+      unlockedAcoustics: [...latest.unlockedAcoustics, birdId], xp: latest.xp + xpGain } }));
   };
 
   // Paso 13: Registro Científico en Diario de Campo (4 Toques) (+30 XP)
@@ -395,28 +399,26 @@ export default function App() {
       timestamp: Date.now()
     };
 
-    const currentJournal = activeProfile.fieldJournal || [];
-    const updatedJournal = [newEntry, ...currentJournal];
-    const newCount = updatedJournal.filter(entry => entry.source !== 'mindar-signal').length;
-    const shouldAwardDetailBadge = newCount >= 10 && !activeProfile.hasDetailObserverBadge;
-
-    handleUpdateProfile({
-      fieldJournal: updatedJournal,
-      hasDetailObserverBadge: activeProfile.hasDetailObserverBadge || shouldAwardDetailBadge,
-      xp: activeProfile.xp + 30 + (shouldAwardDetailBadge ? 100 : 0)
+    let hadBadge = true;
+    const result = handleUpdateProfile(latest => {
+      hadBadge = latest.hasDetailObserverBadge;
+      return awardJournalEntry(latest, { ...newEntry, source: 'field' });
     });
-
-    if (shouldAwardDetailBadge) {
+    if (result.saved && !hadBadge && result.profile.hasDetailObserverBadge) {
       soundManager.playSuccess();
       setShowDetailCelebration(true);
     }
+    return result;
   };
 
   // Paso 9 / Paso 4: Comprar y Equipar Prendas y Equipo del Avatar en Tienda
   const handleEquipItem = (itemId: string, cost: number) => {
-    const prevPurchased = activeProfile.purchasedGear || ['visera-oficial'];
-    const prevEquipped = activeProfile.equippedItems || ['visera-oficial'];
+    return handleUpdateProfile(latest => {
+    const prevPurchased = latest.purchasedGear || ['visera-oficial'];
+    const prevEquipped = latest.equippedItems || ['visera-oficial'];
     const alreadyOwned = prevPurchased.includes(itemId);
+    const charge = alreadyOwned ? 0 : cost;
+    if (latest.xp < charge) return { updates: {}, status: 'insufficient-xp' };
 
     const nextPurchased = alreadyOwned
       ? prevPurchased
@@ -434,86 +436,97 @@ export default function App() {
       nextEquipped = Array.from(new Set([...prevEquipped, itemId]));
     }
 
-    handleUpdateProfile({
-      xp: Math.max(0, activeProfile.xp - cost),
+    return { updates: {
+      xp: latest.xp - charge,
       purchasedGear: nextPurchased,
       equippedItems: nextEquipped,
       equippedGear: {
-        ...activeProfile.equippedGear,
-        hat: itemId.includes('visera') ? itemId : activeProfile.equippedGear.hat,
-        backpack: itemId.includes('chaleco') ? itemId : activeProfile.equippedGear.backpack,
-        binoculars: itemId.includes('binoculares') ? itemId : activeProfile.equippedGear.binoculars
+        ...latest.equippedGear,
+        hat: itemId.includes('visera') ? itemId : latest.equippedGear.hat,
+        backpack: itemId.includes('chaleco') ? itemId : latest.equippedGear.backpack,
+        binoculars: itemId.includes('binoculares') ? itemId : latest.equippedGear.binoculars
       }
+    } };
     });
   };
 
   // Paso 4: Canjear "Sobre Selva Montana" (100 XP)
-  const handleBuySilhouettePack = (mode: 'hints' | 'silhouettes', cost: number): CatalogBird[] => {
-    const prevAdded = activeProfile.addedPackBirdIds || [];
+  const handleBuySilhouettePack = (mode: 'hints' | 'silhouettes', cost: number) => {
+    return handleUpdateProfile(latest => {
+    if (latest.xp < cost) return { updates: {}, status: 'insufficient-xp', birds: [] };
+    const prevAdded = latest.addedPackBirdIds || [];
     const remaining = PACK_EXTRA_BIRDS_DATA.filter(b => !prevAdded.includes(b.id));
     const newlyUnlocked = mode === 'silhouettes' ? remaining.slice(0, 3) : [];
     const newAddedIds = Array.from(new Set([...prevAdded, ...newlyUnlocked.map(b => b.id)]));
 
-    handleUpdateProfile({
-      xp: Math.max(0, activeProfile.xp - cost),
+    return { updates: {
+      xp: latest.xp - cost,
       addedPackBirdIds: newAddedIds,
-      freeSilhouetteHints: (activeProfile.freeSilhouetteHints || 0) + 2,
-      packsOpenedCount: (activeProfile.packsOpenedCount || 0) + 1
+      freeSilhouetteHints: (latest.freeSilhouetteHints || 0) + 2,
+      packsOpenedCount: (latest.packsOpenedCount || 0) + 1
+    }, birds: newlyUnlocked };
     });
-
-    return newlyUnlocked;
   };
 
   // Consumir pistas gratis del Sobre Selva Montana al abrir una Silueta Misteriosa
   const handleConsumeFreeHints = (usedCount: number) => {
-    const currentHints = activeProfile.freeSilhouetteHints || 0;
-    if (currentHints <= 0) return;
-    handleUpdateProfile({
-      freeSilhouetteHints: Math.max(0, currentHints - usedCount)
-    });
+    return handleUpdateProfile(latest => ({ updates: {
+      freeSilhouetteHints: Math.max(0, (latest.freeSilhouetteHints || 0) - usedCount)
+    } }));
   };
 
   // Paso 15: Registrar especie de la Temporada de Aves Migrantes
   const handleRegisterMigrantBird = (migrantId: string, xpReward: number) => {
-    const prev = activeProfile.registeredMigrantIds || ['mig-loro-alisero'];
-    if (prev.includes(migrantId)) return;
-    handleUpdateProfile({
-      registeredMigrantIds: [...prev, migrantId],
-      xp: activeProfile.xp + xpReward
+    return handleUpdateProfile(latest => {
+      const prev = latest.registeredMigrantIds || ['mig-loro-alisero'];
+      return { updates: prev.includes(migrantId) ? {} : { registeredMigrantIds: [...prev, migrantId], xp: latest.xp + xpReward } };
     });
   };
 
   // Paso 15: Desbloquear Ficha Exclusiva de Evento Especial (Global Big Day / Q'MI RAYMI)
   const handleUnlockSpecialEvent = (eventId: string, xpReward: number) => {
-    const prev = activeProfile.unlockedSpecialEvents || [];
-    if (prev.includes(eventId)) return;
-    handleUpdateProfile({
-      unlockedSpecialEvents: [...prev, eventId],
-      xp: activeProfile.xp + xpReward
+    return handleUpdateProfile(latest => {
+      const prev = latest.unlockedSpecialEvents || [];
+      return { updates: prev.includes(eventId) ? {} : { unlockedSpecialEvents: [...prev, eventId], xp: latest.xp + xpReward } };
     });
   };
 
   // Paso 15: Reclamar recompensa de Meta Grupal Cooperativa de Cuadrilla
-  const handleClaimSquadGoalReward = (xpReward: number) => {
-    handleUpdateProfile({
-      xp: activeProfile.xp + xpReward
+  const handleClaimSquadGoalReward = (squadId: string) => {
+    return handleUpdateProfile(latest => {
+      const squad = loadSquadsList().find(s => s.id === squadId);
+      const key = `squad-goal:${squadId}`;
+      const profiles = loadProfilesList();
+      const species = new Set(squad?.members.flatMap(member => {
+        const profile = profiles.find(p => p.id === member.id);
+        return profile ? profile.fieldJournal.filter(isRealObservation).map(e => e.birdName) : member.contributedSpecies;
+      }));
+      if (!squad || !squad.members.some(m => m.id === latest.id) || species.size < squad.goalTarget)
+        return { updates: {}, status: 'not-eligible' };
+      if (squad.goalRewardClaimed || profiles.some(p => p.rewardLedger?.includes(key))) return { updates: {}, status: 'already-awarded' };
+      return { status: 'awarded', updates: { xp: latest.xp + 150, rewardLedger: [...(latest.rewardLedger || []), key] } };
     });
   };
 
   // Reset Progress of Active Profile
   const handleResetProgress = () => {
-    handleUpdateProfile({
+    return handleUpdateProfile(latest => ({ updates: {
       level: 1,
       xp: 0,
       sightingsCompleted: 0,
       questionsAnswered: 0,
       hasRisingObserverBadge: false,
       hasRouteCompleteSeal: false,
+      hasDetailObserverBadge: false,
+      rewardLedger: [],
+      photos: [],
+      unlockedPhotos: [],
+      missions: createDefaultProfile().missions,
       completedCheckpoints: [],
       birdPhotoStars: {},
       fieldJournal: [],
       mindarDiscoveries: []
-    });
+    } }));
   };
 
   // Audio toggles
@@ -535,6 +548,9 @@ export default function App() {
         {/* 9:16 Centered Mobile Game Container */}
         <div className="relative w-full max-w-[440px] h-[100dvh] sm:h-[880px] sm:max-h-[94vh] sm:rounded-[38px] overflow-hidden shadow-[0_0_60px_rgba(12,110,90,0.4)] border-0 sm:border-4 sm:border-teal-700/60 bg-slate-950 flex flex-col">
           <OfflineIndicator />
+          {saveError && <div role="alert" className="absolute top-2 inset-x-2 z-[100] rounded-xl bg-red-950 border border-red-400 p-3 text-xs text-white">
+            {saveError}<button className="ml-2 underline min-h-11" onClick={() => setSaveError(null)}>Cerrar</button>
+          </div>}
           {/* Render Active Screen */}
           <div className="relative flex-1 w-full h-full overflow-hidden">
           {/* PANTALLA 1: PORTADA */}
@@ -635,13 +651,7 @@ export default function App() {
           onClose={() => setShowPhotoModal(false)}
           currentBirdName={activeProfile.favoriteBird}
           onSelectCompanionBird={handleSelectCompanionBird}
-          onSavePhoto={(photoUrl) => {
-            const updatedPhotos = [photoUrl, ...activeProfile.unlockedPhotos];
-            handleUpdateProfile({
-              unlockedPhotos: updatedPhotos,
-              xp: activeProfile.xp + 25
-            });
-          }}
+          onSavePhoto={handleCompanionPhoto}
         />
 
         {/* MODAL DE AVISTAMIENTO XR Y FOTO PERFECTA (PASO 12) */}
@@ -714,7 +724,7 @@ export default function App() {
                 ¡Felicitaciones, <strong>{activeProfile.name}</strong>! Has completado 10 registros científicos con los 4 toques en tu Diario de Campo.
               </p>
               <div className="p-2.5 rounded-xl bg-amber-950/70 border border-amber-600/50 text-[11px] font-bold text-amber-200">
-                +120 XP y Medalla Dorada de Detalle concedida
+                +100 XP y Medalla Dorada de Detalle concedida
               </div>
               <button
                 onClick={() => {
@@ -779,7 +789,7 @@ export default function App() {
           onSelectProfile={handleSelectProfile}
           onSelectCompanionBird={handleSelectCompanionBird}
           onUpdateAvatar={(avatarId, avatarIcon, favoriteBird) => {
-            handleUpdateProfile({
+            return handleUpdateProfile({
               avatarId,
               avatarIcon,
               ...(favoriteBird ? { favoriteBird } : {})
@@ -825,7 +835,12 @@ export default function App() {
             onClose={() => setShowDriveModal(false)}
             activeProfile={activeProfile}
             onRestoreProfileData={(restored) => {
-              handleUpdateProfile(restored);
+              return handleUpdateProfile(latest => {
+                localStorage.setItem(`senial_nativa_pre_restore_${latest.id}`, JSON.stringify(latest));
+                return { updates: { ...restored, id: latest.id,
+                  mindarDiscoveries: (restored.mindarDiscoveries || []).map(d => ({ ...d, profileId: latest.id })),
+                  photos: (restored.photos || []).map(p => ({ ...p, profileId: latest.id })) } };
+              });
             }}
           />
         </div>

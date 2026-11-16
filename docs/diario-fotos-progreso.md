@@ -30,5 +30,16 @@ ancho/alto 0 significa que las dimensiones originales no fueron registradas.
 `buildBackup` y `parseBackup` no escriben almacenamiento ni suman XP.
 El flujo de restauración debe conservar el id activo y reescribir los
 profileId de fotos y descubrimientos, guardar copia de seguridad e importar
-fotos antes de confirmar los cambios. Estos pasos y la integración de los
-handlers de interfaz corresponden a las siguientes etapas.
+fotos antes de confirmar los cambios.
+
+Los handlers de App ahora calculan sobre el último perfil dentro de
+`commitProfile`, devuelven `SaveResult` y conservan el estado React si falla
+la escritura. El diario recibe
+`onAddJournalEntry(entry: Omit<JournalEntry, 'id' | 'timestamp'>): SaveResult`.
+Foto Perfecta recibe un id estable por captura y espera la autoevaluación antes
+de guardar. Las fotos de compañero y XR solo agregan referencias al perfil;
+los blobs nuevos se eliminan si falla la escritura.
+
+La reclamación de meta grupal comprueba membresía, especies compartidas y
+`squad-goal:<id>` en los perfiles persistidos antes de conceder XP. El
+indicador de cuadrilla también se marca solo después del guardado del perfil.
