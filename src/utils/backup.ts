@@ -3,8 +3,15 @@ import { createDefaultProfile } from './storage';
 
 export type BackupPhoto = { ref: PhotoRef; dataUrl: string };
 export function buildBackup(profile: PlayerProfile, photos?: BackupPhoto[]) {
+  const exportedProfile = structuredClone(profile);
+  if (photos === undefined) {
+    exportedProfile.unlockedPhotos = exportedProfile.unlockedPhotos.filter(url => !/^\s*data:/i.test(url));
+    for (const entry of exportedProfile.fieldJournal) {
+      if (entry.photoUrl && /^\s*data:/i.test(entry.photoUrl)) delete entry.photoUrl;
+    }
+  }
   return { format: 'senal-nativa-backup' as const, formatVersion: 2 as const, app: 'Señal Nativa',
-    exportedAt: new Date().toISOString(), profile: structuredClone(profile),
+    exportedAt: new Date().toISOString(), profile: exportedProfile,
     photos: { included: photos !== undefined, count: photos?.length ?? profile.photos?.length ?? 0,
       ...(photos ? { items: structuredClone(photos) } : {}) } };
 }

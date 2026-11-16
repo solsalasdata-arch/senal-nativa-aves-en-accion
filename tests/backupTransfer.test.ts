@@ -19,6 +19,17 @@ class MemoryBackend implements PhotoBackend {
   async delete(id: string) { this.data.delete(id); }
 }
 const source = 'data:image/jpeg;base64,YWJj';
+test('identifiers-only builder used by Drive excludes inline legacy photo bytes without mutating the profile', () => {
+  const profile = createDefaultProfile();
+  profile.unlockedPhotos = [source, '/assets/bird.jpg'];
+  profile.fieldJournal = [{ id: 'legacy', timestamp: 1, birdName: 'Ave', scientificName: '', trailName: '', notes: '', photoUrl: source }];
+  const backup = buildBackup(profile);
+  assert.deepEqual(backup.profile.unlockedPhotos, ['/assets/bird.jpg']);
+  assert.equal(backup.profile.fieldJournal[0].photoUrl, undefined);
+  assert.equal(backup.photos.included, false);
+  assert.equal(profile.unlockedPhotos[0], source);
+  assert.equal(profile.fieldJournal[0].photoUrl, source);
+});
 async function fixture() {
   const backend = new MemoryBackend();
   const profile = createDefaultProfile('Ana');
