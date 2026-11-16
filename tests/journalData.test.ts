@@ -25,6 +25,16 @@ function storage() {
 function entry(id: string, source: JournalEntry['source'] = 'field'): JournalEntry {
   return { id, source, speciesId: 'bird', birdName: 'Ave', scientificName: 'Bird species', trailName: '', notes: '', timestamp: 100 };
 }
+test('corrupt JSON recovery keeps a stable displayed profile that can commit progress', () => {
+  const fake = storage();
+  fake.data.set('senial_nativa_profiles_list_v2', '{broken');
+  const displayed = loadProfilesList()[0];
+  assert.equal(loadProfilesList()[0].id, displayed.id);
+  const result = commitProfile(displayed.id, () => ({ updates: { xp: 30 } }));
+  assert.equal(result.saved, true);
+  assert.equal(loadProfilesList()[0].xp, 30);
+  assert.ok([...fake.data.entries()].some(([key, value]) => key.startsWith('senial_nativa_profiles_corrupt_') && value === '{broken'));
+});
 test('categories, legacy classification, filters, evidence and synthetic stations', () => {
   const entries = [entry('f'), entry('ai', 'ai-identification'), entry('m', 'mindar-signal'), entry('s', 'station-activity')];
   assert.deepEqual(entries.map(getEntryCategory), ['field', 'ai', 'mindar', 'station']);

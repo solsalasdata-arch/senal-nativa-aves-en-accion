@@ -100,7 +100,7 @@ export function loadProfilesList(): PlayerProfile[] {
       if (!Array.isArray(parsed)) throw new Error('Invalid profiles');
     } catch {
       preserveCorruptProfiles(raw);
-      return [createDefaultProfile()];
+      return [{ ...createDefaultProfile(), id: 'prof_corrupt_recovery' }];
     }
     if (!Array.isArray(parsed) || parsed.length === 0) {
       const defaultProf = createDefaultProfile('Santi Guardián', 'avatar-santi', 'Benteveo');
