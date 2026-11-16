@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ModalHeader, EmptyState } from './ui';
 import { useModalEscape } from './ui/useModalEscape';
+import { buildBackup, parseBackup } from '../utils/backup';
+import { SaveResult, SAVE_ERROR } from '../utils/profileActions';
 import {
   Cloud,
   X,
@@ -37,7 +39,7 @@ interface GoogleDriveModalProps {
   isOpen: boolean;
   onClose: () => void;
   activeProfile: PlayerProfile;
-  onRestoreProfileData: (restoredProfile: Partial<PlayerProfile>) => void;
+  onRestoreProfileData: (restoredProfile: Partial<PlayerProfile>) => SaveResult | Promise<SaveResult> | void;
 }
 
 type PendingConfirmation =
@@ -158,12 +160,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
 
   const buildBackupJsonContent = () => {
     return JSON.stringify(
-      {
-        app: 'Señal Nativa: Aves en Acción',
-        reserve: 'Parque Botánico Municipal Barón Carlos María Schuel (Jujuy)',
-        exportedAt: new Date().toISOString(),
-        profile: activeProfile
-      },
+      buildBackup(activeProfile),
       null,
       2
     );
@@ -299,28 +296,11 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
     setStatusMessage(null);
     try {
       const raw = await getDriveFileContent(file.id);
-      const parsed = JSON.parse(raw);
-      const profileToRestore = parsed.profile || parsed;
-      if (!profileToRestore || typeof profileToRestore.xp !== 'number') {
-        throw new Error('El archivo seleccionado no es un respaldo válido de Señal Nativa.');
-      }
-
-      onRestoreProfileData({
-        level: profileToRestore.level,
-        xp: profileToRestore.xp,
-        sightingsCompleted: profileToRestore.sightingsCompleted,
-        questionsAnswered: profileToRestore.questionsAnswered,
-        hasRisingObserverBadge: profileToRestore.hasRisingObserverBadge,
-        hasRouteCompleteSeal: profileToRestore.hasRouteCompleteSeal,
-        hasDetailObserverBadge: profileToRestore.hasDetailObserverBadge,
-        completedCheckpoints: profileToRestore.completedCheckpoints,
-        unlockedSilhouettes: profileToRestore.unlockedSilhouettes,
-        unlockedAcoustics: profileToRestore.unlockedAcoustics,
-        fieldJournal: profileToRestore.fieldJournal,
-        mindarDiscoveries: ((profileToRestore.mindarDiscoveries || []) as NonNullable<PlayerProfile['mindarDiscoveries']>)
-          .map(discovery => ({ ...discovery, profileId: activeProfile.id })),
-        birdPhotoStars: profileToRestore.birdPhotoStars
-      });
+      const parsed = parseBackup(raw);
+      if (!parsed.ok) throw new Error(parsed.error);
+      if (!window.confirm(`¿Restaurar ${parsed.profile.xp} XP y ${parsed.profile.fieldJournal.length} registros en el perfil activo? Se reemplazará el progreso actual. Las fotos no se incluyen en Drive.`)) return;
+      const result = await onRestoreProfileData(parsed.profile);
+      if (result && !result.saved) throw new Error(SAVE_ERROR);
 
       soundManager.playSuccess();
       setStatusMessage({
@@ -485,7 +465,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
                     className="min-h-11 min-w-11 p-2.5 rounded-xl game-btn-orange text-white font-black text-[11px] flex flex-col items-center justify-center gap-1 shadow disabled:opacity-50"
                   >
                     <Upload className="w-4 h-4" />
-                    <span>Respaldo Perfil (.JSON)</span>
+                    <span>Respaldo Perfil (.JSON) · sin fotografías</span>
                   </button>
                 </div>
               </div>

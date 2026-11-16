@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ModalHeader } from './ui';
 import { useModalEscape } from './ui/useModalEscape';
+import { SaveResult } from '../utils/profileActions';
+import { isRealObservation } from '../utils/journal';
 import {
   Users,
   Sparkles,
@@ -34,9 +36,9 @@ interface SquadsAndSeasonsModalProps {
   onClose: () => void;
   activeProfile: PlayerProfile;
   allProfiles: PlayerProfile[];
-  onRegisterMigrantBird: (migrantId: string, xpReward: number) => void;
-  onUnlockSpecialEvent: (eventId: string, xpReward: number) => void;
-  onClaimSquadGoalReward: (xpReward: number) => void;
+  onRegisterMigrantBird: (migrantId: string, xpReward: number) => SaveResult | void;
+  onUnlockSpecialEvent: (eventId: string, xpReward: number) => SaveResult | void;
+  onClaimSquadGoalReward: (squadId: string) => SaveResult | void;
   initialTab?: 'squads' | 'seasons' | 'ranking';
 }
 
@@ -79,15 +81,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
 
   // Collect all species observed by activeProfile
   const getProfileSpeciesNames = (prof: PlayerProfile): string[] => {
-    const allCatalog = [...CATALOG_BIRDS_DATA, ...PACK_EXTRA_BIRDS_DATA];
-    const fromSilhouettes = (prof.unlockedSilhouettes || [])
-      .map(id => allCatalog.find(b => b.id === id)?.commonName)
-      .filter((n): n is string => Boolean(n));
-    const fromJournal = (prof.fieldJournal || []).filter(j => j.source !== 'mindar-signal').map(j => j.birdName);
-    const fromMigrants = (prof.registeredMigrantIds || [])
-      .map(id => SEASON_MIGRANT_BIRDS.find(m => m.id === id)?.commonName)
-      .filter((n): n is string => Boolean(n));
-    return Array.from(new Set([prof.favoriteBird, ...fromSilhouettes, ...fromJournal, ...fromMigrants]));
+    return Array.from(new Set(prof.fieldJournal.filter(isRealObservation).map(j => j.birdName)));
   };
 
   // Compute combined shared sightings for currentSquad
@@ -134,7 +128,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
           favoriteBird: activeProfile.favoriteBird,
           isDeviceProfile: true,
           contributedSpecies: getProfileSpeciesNames(activeProfile),
-          journalCount: (activeProfile.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length
+          journalCount: (activeProfile.fieldJournal || []).filter(isRealObservation).length
         }
       ],
       sharedSightings: getProfileSpeciesNames(activeProfile),
@@ -195,7 +189,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
   // Friendly Ranking Calculation (Pestaña C)
   const calculateFriendlyStats = (prof: PlayerProfile) => {
     const allCatalog = [...CATALOG_BIRDS_DATA, ...PACK_EXTRA_BIRDS_DATA];
-    const journalCount = (prof.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length;
+    const journalCount = (prof.fieldJournal || []).filter(isRealObservation).length;
     const completedMissions = (prof.missions || []).filter(m => m.completed).length;
     const checkpointsCount = (prof.completedCheckpoints || []).length;
 
@@ -222,7 +216,7 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
       }
     });
 
-    (prof.fieldJournal || []).filter(j => j.source !== 'mindar-signal').forEach(entry => {
+    (prof.fieldJournal || []).filter(isRealObservation).forEach(entry => {
       if (entry.stratum) {
         const normalized =
           entry.stratum.toLowerCase().includes('urban')
@@ -493,8 +487,9 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                   {sharedSightingsList.length >= currentSquad.goalTarget && !currentSquad.goalRewardClaimed && (
                     <button
                       onClick={() => {
+                        const result = onClaimSquadGoalReward(currentSquad.id);
+                        if (result && (!result.saved || result.status === 'not-eligible')) return;
                         soundManager.playSuccess();
-                        onClaimSquadGoalReward(150);
                         const next = squads.map((s, i) =>
                           i === selectedSquadIdx ? { ...s, goalRewardClaimed: true } : s
                         );
@@ -728,8 +723,8 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                         ) : (
                           <button
                             onClick={() => {
-                              soundManager.playSuccess();
-                              onRegisterMigrantBird(bird.id, 40);
+                              const result = onRegisterMigrantBird(bird.id, 40);
+                              if (!result || result.saved) soundManager.playSuccess();
                             }}
                             className="min-h-11 min-w-11 px-2.5 py-1.5 rounded-xl game-btn-mint text-emerald-950 text-[11px] font-black shadow cursor-pointer"
                           >
@@ -800,8 +795,9 @@ export const SquadsAndSeasonsModal: React.FC<SquadsAndSeasonsModalProps> = ({
                       ) : (
                         <button
                           onClick={() => {
+                            const result = onUnlockSpecialEvent(ev.id, ev.xpReward);
+                            if (result && !result.saved) return;
                             soundManager.playSuccess();
-                            onUnlockSpecialEvent(ev.id, ev.xpReward);
                             setInspectingEventCard(ev);
                           }}
                           className="min-h-11 min-w-11 px-3 py-1.5 rounded-xl game-btn-orange text-white text-[11px] font-black shadow cursor-pointer"

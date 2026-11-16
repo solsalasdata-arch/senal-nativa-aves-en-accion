@@ -18,6 +18,9 @@ export function completeStation(profile: PlayerProfile, input: {
   const routeComplete = CHECKPOINTS_DATA.every(item => completedCheckpoints.includes(item.id));
   return { status: 'completed', updates: {
     xp: profile.xp + STATION_REWARD_XP,
+    fieldJournal: [{ id: `station-${station.id}`, source: 'station-activity', stationId: station.id,
+      birdName: station.name, scientificName: '', trailName: '', notes: 'Actividad de estación completada', timestamp: Date.now()
+    }, ...profile.fieldJournal.filter(entry => entry.id !== `station-${station.id}`)],
     completedCheckpoints,
     hasRouteCompleteSeal: routeComplete || profile.hasRouteCompleteSeal,
     unlockedRareBirds: routeComplete

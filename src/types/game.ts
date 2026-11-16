@@ -1,7 +1,13 @@
 export type CompanionBirdId = 'Tucán Grande' | 'Benteveo' | 'Chinchero Chico' | 'Picaflor Cometa';
 
 export interface JournalEntry {
-  source?: 'field' | 'mindar-signal';
+  source?: 'field' | 'mindar-signal' | 'ai-identification' | 'station-activity';
+  evidence?: 'declared' | 'photo';
+  photoId?: string;
+  photoKind?: 'user' | 'composite';
+  identification?: { method: 'gemini'; status: 'ai-suggested' };
+  stationId?: number;
+  selfAssessment?: { checks: string[]; stars: number };
   speciesId?: string;
   id: string;
   birdName: string;
@@ -59,6 +65,8 @@ export interface MindARDiscovery {
 }
 
 export interface PlayerProfile {
+  rewardLedger?: string[];
+  photos?: PhotoRef[];
   mindarDiscoveries?: MindARDiscovery[];
   id: string;
   name: string;
@@ -98,6 +106,22 @@ export interface PlayerProfile {
 }
 
 export type PlayerState = PlayerProfile;
+
+export interface PhotoRef {
+  id: string;
+  profileId: string;
+  kind: 'user' | 'composite' | 'companion';
+  mime: string;
+  width: number;
+  height: number;
+  sizeBytes: number;
+  hash: string;
+  createdAt: number;
+  storage: 'indexeddb' | 'local';
+  entryId?: string;
+  label?: string;
+  migratedFrom?: 'unlockedPhotos';
+}
 
 export interface Mission {
   id: string;
