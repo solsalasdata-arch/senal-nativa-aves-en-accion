@@ -4,11 +4,14 @@ import { useModalEscape } from './ui/useModalEscape';
 import { Camera, X, ShieldAlert, Sparkles, RefreshCw, CheckCircle2, Download, Upload } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { requestMobileCameraStream } from '../utils/camera';
+import { CompanionBirdId } from '../types/game';
+import { SAVE_ERROR, SaveResult, saveResultMessage } from '../utils/profileActions';
+import { downloadPhoto } from '../utils/photoStore';
 
 interface PhotoCompanionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSavePhoto?: (photoUrl: string) => void;
+  onSavePhoto?: (photoUrl: string, bird: CompanionBirdId) => Promise<SaveResult>;
   currentBirdName?: string;
   onSelectCompanionBird?: (birdName: 'Tucán Grande' | 'Benteveo' | 'Chinchero Chico' | 'Picaflor Cometa') => void;
 }
@@ -72,6 +75,22 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [saveResult, setSaveResult] = useState<SaveResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const saveLock = useRef(false);
+  const captureLock = useRef(false);
+  const capturedBird = useRef<CompanionBirdId>(selectedCompanion.name);
+  const persistCapture = async (source: string) => {
+    if (saveLock.current) return;
+    saveLock.current = true;
+    setSaving(true);
+    try {
+      const result = onSavePhoto ? await onSavePhoto(source, capturedBird.current) : { saved: false, status: 'unavailable', error: SAVE_ERROR };
+      setSaveResult(result);
+      if (result.saved) soundManager.playSuccess();
+    } catch { setSaveResult({ saved: false, status: 'error', error: SAVE_ERROR }); }
+    finally { saveLock.current = false; setSaving(false); }
+  };
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -131,6 +150,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
     } else {
       stopCamera();
       setCapturedPhoto(null);
+      setSaveResult(null);
       setNativePhotoUrl(null);
     }
     return () => {
@@ -176,6 +196,9 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
 
   // Real Canvas Capture: draws <video> frame + FULL UNCROPPED companion bird illustration inside a rounded card
   const handleTakePhoto = async () => {
+    if (captureLock.current) return;
+    captureLock.current = true;
+    try {
     soundManager.playShutter();
     setIsCapturing(true);
 
@@ -185,6 +208,7 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas no disponible');
 
     if (ctx) {
       // 1. Draw base layer: Live <video> frame, or Native Phone Photo, or Jungle Backdrop
@@ -305,13 +329,17 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
 
       const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
       setCapturedPhoto(dataUrl);
-      if (onSavePhoto) onSavePhoto(dataUrl);
-      soundManager.playSuccess();
+      capturedBird.current = selectedCompanion.name;
+      setSaveResult(null);
+      await persistCapture(dataUrl);
     }
 
-    setTimeout(() => {
+    } catch {
+      setCameraError('No se pudo crear la composición. Reintentá la captura.');
+    } finally {
       setIsCapturing(false);
-    }, 300);
+      captureLock.current = false;
+    }
   };
 
   useModalEscape(isOpen, onClose);
@@ -517,28 +545,35 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
           </div>
         )}
 
+        <p className="px-3 text-xs text-amber-200">Composición ilustrativa · no es evidencia de un avistamiento real</p>
+        {(saving || saveResult) && <p role={saveResult?.saved === false ? 'alert' : 'status'} className="px-3 py-2 text-xs text-white">
+          {saving ? 'Guardando…' : saveResultMessage(saveResult!)}
+        </p>}
+        {capturedPhoto && saveResult?.saved === false && <button disabled={saving} onClick={() => persistCapture(capturedPhoto)} className="min-h-11 text-amber-200">Reintentar guardar</button>}
         {/* Bottom Shutter Action Bar */}
         <div className="pb-safe p-3 bg-surface-950 border-t border-teal-900/80 flex items-center justify-between gap-2">
           {capturedPhoto ? (
             <>
               <button
                 type="button"
+                disabled={saving}
                 onClick={() => {
                   soundManager.playClick();
                   setCapturedPhoto(null);
+                  setSaveResult(null);
                 }}
                 className="min-h-11 min-w-11 flex-1 py-2.5 px-2.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition-colors"
               >
                 Otra foto
               </button>
-              <a
-                href={capturedPhoto}
-                download={`senal-nativa-${selectedCompanion.id}.jpg`}
+              <button
+                disabled={!saveResult?.photo}
+                onClick={() => saveResult?.photo && downloadPhoto(saveResult.photo).catch(() => setCameraError('No se pudo descargar la fotografía'))}
                 className="min-h-11 py-2.5 px-3 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold flex items-center gap-1"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Descargar</span>
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -548,13 +583,14 @@ export const PhotoCompanionModal: React.FC<PhotoCompanionModalProps> = ({
                 }}
                 className="min-h-11 min-w-11 flex-1 py-2.5 px-2.5 rounded-xl game-btn-orange text-white text-xs font-bold"
               >
-                Guardar y Volver
+                Volver
               </button>
             </>
           ) : (
             <button
               type="button"
               onClick={handleTakePhoto}
+              disabled={isCapturing || saving}
               className="min-h-11 min-w-11 w-full py-3 rounded-2xl game-btn-orange flex items-center justify-center gap-2 text-white font-bold text-sm tracking-wide cursor-pointer"
             >
               <Camera className="w-5 h-5 text-amber-200" />

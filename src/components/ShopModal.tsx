@@ -16,13 +16,14 @@ import { soundManager } from '../utils/audio';
 import { SHOP_ITEMS, PACK_EXTRA_BIRDS_DATA } from '../data/birdsData';
 import { PlayerProfile, CatalogBird } from '../types/game';
 import { AvatarIcon } from './AvatarIcon';
+import { SaveResult } from '../utils/profileActions';
 
 interface ShopModalProps {
   isOpen: boolean;
   onClose: () => void;
   playerState: PlayerProfile;
-  onEquipItem: (itemId: string, cost: number) => void;
-  onBuySilhouettePack: (mode: 'hints' | 'silhouettes', cost: number) => CatalogBird[];
+  onEquipItem: (itemId: string, cost: number) => SaveResult | void;
+  onBuySilhouettePack: (mode: 'hints' | 'silhouettes', cost: number) => (SaveResult & { birds?: CatalogBird[] }) | CatalogBird[];
   onOpenBirdsCatalog?: () => void;
 }
 
@@ -69,8 +70,9 @@ export const ShopModal: React.FC<ShopModalProps> = ({
 
   const handleReserveSouvenir = (itemId: string, cost: number) => {
     if (reservedSouvenirs.includes(itemId) || playerState.xp < cost) return;
+    const result = onEquipItem(itemId, cost);
+    if (result && (!result.saved || result.status === 'insufficient-xp')) return;
     soundManager.playSuccess();
-    onEquipItem(itemId, cost);
     const updated = [...reservedSouvenirs, itemId];
     setReservedSouvenirs(updated);
     try {
@@ -89,8 +91,10 @@ export const ShopModal: React.FC<ShopModalProps> = ({
 
   const handleOpenPack = (mode: 'hints' | 'silhouettes') => {
     if (!canAffordPack) return;
+    const result = onBuySilhouettePack(mode, 100);
+    if (!Array.isArray(result) && (!result.saved || result.status === 'insufficient-xp')) return;
+    const unlockedBirds = Array.isArray(result) ? result : result.birds || [];
     soundManager.playSuccess();
-    const unlockedBirds = onBuySilhouettePack(mode, 100);
     setPackRevealResult({
       mode,
       birds: unlockedBirds
@@ -266,8 +270,8 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                       <button
                         disabled={!canAfford}
                         onClick={() => {
-                          soundManager.playSuccess();
-                          onEquipItem(item.id, item.cost);
+                          const result = onEquipItem(item.id, item.cost);
+                          if (!result || (result.saved && result.status !== 'insufficient-xp')) soundManager.playSuccess();
                         }}
                         className={`min-h-11 min-w-11 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ${
                           canAfford

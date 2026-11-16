@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ModalHeader, EmptyState } from './ui';
 import { useModalEscape } from './ui/useModalEscape';
+import { SaveResult, SAVE_ERROR, saveResultMessage } from '../utils/profileActions';
+import { JournalPanel } from './JournalPanel';
 import {
   Bird,
   HelpCircle,
@@ -35,14 +37,14 @@ interface TriviaAndBirdGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
   playerProfile: PlayerProfile;
-  onUnlockSilhouette: (birdId: string, xpGain: number) => void;
-  onUnlockAcoustic: (birdId: string, xpGain: number) => void;
-  onAddJournalEntry: (entry: Omit<JournalEntry, 'id' | 'timestamp'>) => void;
+  onUnlockSilhouette: (birdId: string, xpGain: number) => SaveResult | void;
+  onUnlockAcoustic: (birdId: string, xpGain: number) => SaveResult | void;
+  onAddJournalEntry: (entry: Omit<JournalEntry, 'id' | 'timestamp'>, photo?: File) => SaveResult | Promise<SaveResult> | void;
   questionsAnsweredCount: number;
-  onQuestionsAnsweredUpdate: (newCount: number) => void;
+  onQuestionsAnsweredUpdate: (newCount: number) => SaveResult | void;
   initialTab?: 'catalog' | 'audio' | 'journal' | 'trivia';
   onOpenDrive?: () => void;
-  onConsumeFreeHints?: (usedCount: number) => void;
+  onConsumeFreeHints?: (usedCount: number) => SaveResult | void;
 }
 
 // Vectorial Black SVG Bird Silhouette Component (shows clear contour of beak, head, wings, tail & perch)
@@ -260,6 +262,9 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
   // 4-Toques Scientific Field Journal Form
   const [journalModalBird, setJournalModalBird] = useState<CatalogBird | null>(null);
+  const [journalPhoto, setJournalPhoto] = useState<File | undefined>();
+  const [savingJournal, setSavingJournal] = useState(false);
+  const journalSaveLock = useRef(false);
   const [behavior, setBehavior] = useState<'Alimentándose' | 'Cantando' | 'En reposo' | 'En vuelo'>('Cantando');
   const [count, setCount] = useState<'1 individuo' | 'Pareja (2)' | 'Bandada (3 o más)'>('1 individuo');
   const [stratum, setStratum] = useState<'Dosel' | 'Subdosel' | 'Sotobosque' | 'Zona urbanizada' | 'Zona Urbanizada' | 'En vuelo' | 'En Vuelo'>('Subdosel');
@@ -391,11 +396,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     setSilhouetteGameBird(bird);
     const availableFreeHints = playerProfile.freeSilhouetteHints || 0;
     if (availableFreeHints >= 2) {
-      setHintsRevealed(3);
-      if (onConsumeFreeHints) onConsumeFreeHints(2);
+      const result = onConsumeFreeHints?.(2);
+      setHintsRevealed(result && !result.saved ? 1 : 3);
     } else if (availableFreeHints === 1) {
-      setHintsRevealed(2);
-      if (onConsumeFreeHints) onConsumeFreeHints(1);
+      const result = onConsumeFreeHints?.(1);
+      setHintsRevealed(result && !result.saved ? 1 : 2);
     } else {
       setHintsRevealed(1);
     }
@@ -415,10 +420,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     setSelectedSilhouetteAnswer(guessedCommonName);
 
     if (guessedCommonName.toLowerCase() === silhouetteGameBird.commonName.toLowerCase()) {
+      const xp = getSilhouetteXpReward();
+      const result = onUnlockSilhouette(silhouetteGameBird.id, xp);
+      if (result && !result.saved) { setJournalSavedToast(SAVE_ERROR); return; }
       soundManager.playSuccess();
       setSilhouetteResult('correct');
-      const xp = getSilhouetteXpReward();
-      onUnlockSilhouette(silhouetteGameBird.id, xp);
     } else {
       soundManager.playClick();
       setSilhouetteResult('wrong');
@@ -427,6 +433,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
   // Open 4-Toque Field Journal form with automatic active checkpoint detection
   const handleOpenJournalForm = (bird: CatalogBird) => {
+    setJournalPhoto(undefined);
     soundManager.playClick();
     setJournalModalBird(bird);
     setStratum(bird.stratum);
@@ -441,29 +448,37 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   };
 
   // Save 4-Toque Field Journal entry
-  const handleSaveJournalEntry = () => {
-    if (!journalModalBird) return;
-    soundManager.playSuccess();
-
-    const nextCount = Math.min(10, (playerProfile.fieldJournal || []).filter(j => j.source !== 'mindar-signal').length + 1);
-
-    onAddJournalEntry({
-      birdName: journalModalBird.commonName,
-      scientificName: journalModalBird.scientificName,
-      trailName: selectedTrailPoint,
-      notes: `Registro Científico 4 Toques: Comportamiento ${behavior}, ${count}, Estrato ${stratum}, Clima ${weather}.`,
-      behavior,
-      count,
-      stratum,
-      weather,
-      photoUrl: journalModalBird.image
-    });
-
-    setJournalModalBird(null);
-    setJournalSavedToast(`+30 XP · Observación guardada en Diario de Campo (${nextCount}/10)`);
-    setTimeout(() => {
-      setJournalSavedToast(null);
-    }, 3500);
+  const handleSaveJournalEntry = async () => {
+    if (!journalModalBird || journalSaveLock.current) return;
+    journalSaveLock.current = true;
+    setSavingJournal(true);
+    try {
+      const result = await onAddJournalEntry({
+        source: 'field',
+        speciesId: journalModalBird.id,
+        evidence: journalPhoto ? 'photo' : 'declared',
+        birdName: journalModalBird.commonName,
+        scientificName: journalModalBird.scientificName,
+        trailName: selectedTrailPoint,
+        notes: `Registro Científico 4 Toques: Comportamiento ${behavior}, ${count}, Estrato ${stratum}, Clima ${weather}.`,
+        behavior,
+        count,
+        stratum,
+        weather
+      }, journalPhoto);
+      if (result && !result.saved) { setJournalSavedToast(result.error || SAVE_ERROR); return; }
+      soundManager.playSuccess();
+      setJournalModalBird(null);
+      setJournalSavedToast(result ? saveResultMessage(result) : 'Observación guardada en Diario de Campo');
+      setTimeout(() => {
+        setJournalSavedToast(null);
+      }, 3500);
+    } catch {
+      setJournalSavedToast(SAVE_ERROR);
+    } finally {
+      journalSaveLock.current = false;
+      setSavingJournal(false);
+    }
   };
 
   // Bioacoustic Recognition Game Handlers
@@ -480,9 +495,10 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     setAudioGuess(guessedName);
 
     if (guessedName.toLowerCase() === audioTargetBird.commonName.toLowerCase()) {
+      const result = onUnlockAcoustic(audioTargetBird.id, 50);
+      if (result && !result.saved) { setJournalSavedToast(SAVE_ERROR); return; }
       soundManager.playSuccess();
       setAudioResult('correct');
-      onUnlockAcoustic(audioTargetBird.id, 50);
     } else {
       soundManager.playClick();
       setAudioResult('wrong');
@@ -505,10 +521,11 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
     const isCorrect = selectedOption === currentQ.correctIndex;
     if (isCorrect) {
-      soundManager.playSuccess();
       const updated = Array.from(new Set([...correctAnswersList, currentQ.id]));
+      const result = onQuestionsAnsweredUpdate(updated.length);
+      if (result && !result.saved) { setIsAnswerSubmitted(false); setJournalSavedToast(SAVE_ERROR); return; }
+      soundManager.playSuccess();
       setCorrectAnswersList(updated);
-      onQuestionsAnsweredUpdate(updated.length);
     } else {
       soundManager.playClick();
     }
@@ -548,9 +565,6 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
     return true;
   });
 
-  const journalEntries = playerProfile.fieldJournal || [];
-  const journalCount = journalEntries.filter(entry => entry.source !== 'mindar-signal').length;
-  const hasDetailBadge = playerProfile.hasDetailObserverBadge || journalCount >= 10;
 
   // Build deterministic 4 options for Silueta Misteriosa across all 21 species
   const getSilhouetteOptions = (bird: CatalogBird): string[] => {
@@ -642,7 +656,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
             >
               <BookOpen className="w-3.5 h-3.5 mb-0.5" />
               <span>{tx('Diario', 'Journal')}</span>
-              {hasDetailBadge && (
+              {playerProfile.hasDetailObserverBadge && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-slate-900" />
               )}
             </button>
@@ -666,7 +680,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
 
         {journalSavedToast && (
           <div className="mx-3 mt-2 px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-400 text-emerald-200 text-[11px] font-black flex items-center justify-between shadow-lg animate-fadeIn">
-            <span>✓ {journalSavedToast}</span>
+            <span role={journalSavedToast === SAVE_ERROR || journalSavedToast.startsWith('Seleccioná') ? 'alert' : 'status'}>{journalSavedToast === SAVE_ERROR || journalSavedToast.startsWith('Seleccioná') ? '' : '✓ '}{journalSavedToast}</span>
             <Award className="w-4 h-4 text-amber-300 shrink-0" />
           </div>
         )}
@@ -1135,137 +1149,12 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
         {/* ============================================================== */}
         {activeTab === 'journal' && (
           <div className="pb-safe min-h-0 flex-1 overflow-y-auto p-3.5 space-y-3">
-            {/* Lámina Oficial "DIARIO DE AVENTURAS: ¡Anota tus aventuras del día!" sin recortes */}
             <div className="rounded-2xl overflow-hidden border border-amber-400/80 bg-[#E8FAF6] p-2 shadow-xl flex items-center justify-center min-h-[240px]">
-              <img
-                src="/assets/aistudio/Toucan_writing_adventure_diary_9f3bf558.jpg"
-                alt="Diario de Aventuras Oficial"
-                className="w-full h-[240px] object-contain object-top rounded-xl"
-              />
+              <img src="/assets/aistudio/Toucan_writing_adventure_diary_9f3bf558.jpg" alt="Diario de Aventuras Oficial" className="w-full h-[240px] object-contain object-top rounded-xl" />
             </div>
-
-            {/* Observer of Details Badge Tracker */}
-            <div className="ui-card rounded-2xl p-3 bg-surface-950 border border-amber-500/60 space-y-2 text-white">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
-                  <Award className="w-4 h-4 text-amber-400" />
-                  Insignia Observador de Detalles
-                </span>
-                <span className="text-xs font-black text-amber-400">
-                  {Math.min(10, journalCount)}/10
-                </span>
-              </div>
-
-              <div className="w-full bg-surface-900 h-2.5 rounded-full overflow-hidden border border-amber-900">
-                <div
-                  className="h-full bg-gradient-to-r from-teal-400 to-amber-400 transition-all duration-500"
-                  style={{ width: `${Math.min(100, (journalCount / 10) * 100)}%` }}
-                />
-              </div>
-
-              {hasDetailBadge ? (
-                <div className="p-2 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-200 text-[11px] font-bold flex items-center gap-2">
-                  <span className="text-xl">🏅</span>
-                  <div>
-                    <div>¡Insignia Obtenida!</div>
-                    <div className="text-[11px] font-normal text-emerald-300">
-                      Has registrado 10 observaciones científicas con el método de 4 Toques.
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[11px] text-amber-200/80">
-                  Completa 10 registros científicos con los 4 Toques (Comportamiento, Cantidad, Estrato, Clima) para ganar la Insignia Dorada.
-                </p>
-              )}
-            </div>
-
-            {/* Quick Register & Google Drive Sync Triggers */}
-            <div className="flex items-center justify-between gap-2 px-1">
-              <span className="text-xs font-black text-ink uppercase truncate">
-                Observaciones ({journalCount})
-              </span>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {onOpenDrive && (
-                  <button
-                    onClick={() => {
-                      soundManager.playClick();
-                      onOpenDrive();
-                    }}
-                    className="min-h-11 min-w-11 px-2.5 py-1 rounded-xl bg-surface-950 text-teal-200 border border-teal-400 hover:bg-surface-900 text-[11px] font-black flex items-center gap-1 shadow"
-                  >
-                    <Cloud className="w-3 h-3 text-teal-300" />
-                    <span>Google Drive</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => handleOpenJournalForm(CATALOG_BIRDS_DATA[5])}
-                  className="min-h-11 min-w-11 px-2.5 py-1 rounded-xl game-btn-orange text-white text-[11px] font-black flex items-center gap-1 shadow"
-                >
-                  <span>+ Registrar</span>
-                </button>
-              </div>
-            </div>
-
-            <p className="text-xs text-teal-300">Señales MindAR: {playerProfile.mindarDiscoveries?.length || 0} descubierta(s) · {playerProfile.mindarDiscoveries?.some(d => d.challengeCompletedAt !== undefined) ? 'desafío completado' : 'desafío pendiente'}</p>
-            {/* Entries List */}
-            {journalEntries.length === 0 ? (
-              <EmptyState title="No hay observaciones registradas todavía." text={'Abre la Ficha Técnica de cualquier ave del catálogo y pulsa "Registrar en Diario de Campo (4 Toques)".'} />
-            ) : (
-              <div className="space-y-2.5">
-                {journalEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="ui-card p-3 rounded-2xl bg-surface-950 border border-teal-900 space-y-1.5 text-white"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h5 className="text-xs font-black text-white">{entry.birdName}</h5>
-                        <p className="text-[11px] italic text-teal-300 font-serif">
-                          {entry.scientificName}
-                        </p>
-                      </div>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface-900 text-teal-200 border border-teal-800">
-                        {entry.trailName || 'Sendero Las Yungas'}
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] text-teal-300">{entry.source === 'mindar-signal' ? 'Descubrimiento mediante señal MindAR' : 'Avistamiento de ave real'}</p>
-                    {entry.source === 'mindar-signal' && <p className="text-xs text-slate-300">{entry.notes}</p>}
-                    {/* 4 Toque Pills */}
-                    {entry.source !== 'mindar-signal' && <div className="grid grid-cols-2 gap-1 text-[11px]">
-                      <div className="bg-surface-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
-                        <span className="text-teal-400 font-bold">1. Acción: </span>
-                        {entry.behavior || 'En reposo'}
-                      </div>
-                      <div className="bg-surface-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
-                        <span className="text-teal-400 font-bold">2. Cantidad: </span>
-                        {entry.count || '1 individuo'}
-                      </div>
-                      <div className="bg-surface-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
-                        <span className="text-teal-400 font-bold">3. Estrato: </span>
-                        {entry.stratum || 'Subdosel'}
-                      </div>
-                      <div className="bg-surface-900 px-2 py-1 rounded border border-slate-800 text-slate-300">
-                        <span className="text-teal-400 font-bold">4. Clima: </span>
-                        {entry.weather || 'Soleado'}
-                      </div>
-                    </div>
-
-                    }
-                    <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-900">
-                      <span>{new Date(entry.timestamp).toLocaleDateString()} · {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      {entry.stars ? (
-                        <span className="text-amber-400 font-bold">Foto {'★'.repeat(entry.stars)}</span>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <JournalPanel profile={playerProfile} onRegister={() => handleOpenJournalForm(CATALOG_BIRDS_DATA[5])} onOpenDrive={onOpenDrive} />
           </div>
         )}
-
         {/* ============================================================== */}
         {/* TAB 4: TRIVIA DE LAS YUNGAS (5 PREGUNTAS) */}
         {/* ============================================================== */}
@@ -1998,13 +1887,25 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
               </div>
 
               {/* Save Button */}
+              <label className="block space-y-2 text-xs text-teal-200">
+                <span>{tx('Adjuntar foto (opcional)', 'Attach photo (optional)')}</span>
+                <input type="file" accept="image/*" capture="environment" disabled={savingJournal}
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file && !file.type.startsWith('image/')) { setJournalSavedToast('Seleccioná un archivo de imagen.'); e.target.value = ''; setJournalPhoto(undefined); return; }
+                    setJournalPhoto(file);
+                  }} className="block w-full min-h-11" />
+              </label>
+              {journalPhoto && <button className="min-h-11 text-xs underline" disabled={savingJournal} onClick={() => setJournalPhoto(undefined)}>{tx('Quitar foto', 'Remove photo')}: {journalPhoto.name}</button>}
+              <p className="text-xs text-amber-200">{tx('+30 XP solo por la primera observación de cada especie. Las siguientes se guardan sin XP. La foto es evidencia declarada por el usuario.', '+30 XP only for the first observation of each species. Later observations are saved without XP. Photo evidence is user-declared.')}</p>
               <div className="pt-1">
                 <button
                   onClick={handleSaveJournalEntry}
+                  disabled={savingJournal}
                   className="min-h-11 min-w-11 w-full py-3.5 rounded-2xl game-btn-orange text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl"
                 >
                   <Check className="w-4 h-4 text-amber-300" />
-                  <span>{tx('Guardar Observación (+30 XP)', 'Save Observation (+30 XP)')}</span>
+                  <span>{savingJournal ? tx('Guardando…', 'Saving…') : tx('Guardar observación', 'Save observation')}</span>
                 </button>
               </div>
             </div>
