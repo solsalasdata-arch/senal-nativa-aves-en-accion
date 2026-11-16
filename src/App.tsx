@@ -538,12 +538,27 @@ export default function App() {
 
   const handleRestoreProfileData = (restored: Partial<PlayerProfile>, photos?: BackupPhoto[]): SaveResult | Promise<SaveResult> => {
     const profileId = mindarProfileRef.current.id;
-    const commitRestore = (data: Partial<PlayerProfile>) => handleUpdateProfile(latest => {
-      localStorage.setItem(`senial_nativa_pre_restore_${latest.id}`, JSON.stringify(latest));
-      return { updates: { ...data, id: latest.id,
-        mindarDiscoveries: (data.mindarDiscoveries || []).map(d => ({ ...d, profileId: latest.id })),
-        photos: (data.photos || []).map(p => ({ ...p, profileId: latest.id })) } };
-    }, profileId);
+    const commitRestore = (data: Partial<PlayerProfile>): SaveResult | Promise<SaveResult> => {
+      const result = handleUpdateProfile(latest => {
+        localStorage.setItem(`senial_nativa_pre_restore_${latest.id}`, JSON.stringify(latest));
+        return { updates: { ...data, id: latest.id,
+          mindarDiscoveries: (data.mindarDiscoveries || []).map(d => ({ ...d, profileId: latest.id })),
+          photos: (data.photos || []).map(p => ({ ...p, profileId: latest.id })) } };
+      }, profileId);
+      if (!result.saved || !result.profile.unlockedPhotos.some(url => url.startsWith('data:'))) return result;
+      const migration = migrateLegacyPhotos(result.profile);
+      migratingProfiles.current.set(profileId, migration);
+      return migration.then(() => {
+        const profiles = loadProfilesList();
+        const latest = profiles.find(profile => profile.id === profileId);
+        if (latest && mindarProfileRef.current.id === profileId) {
+          mindarProfileRef.current = latest;
+          setActiveProfile(latest);
+        }
+        setProfiles(profiles);
+        return result;
+      });
+    };
     if (photos === undefined) return commitRestore(restored);
     return (async () => {
       let newRefs: PhotoRef[] = [];
@@ -553,7 +568,7 @@ export default function App() {
         localStorage.setItem(`senial_nativa_pre_restore_${profileId}`, JSON.stringify(target));
         const imported = await importBackupPhotos(restored as PlayerProfile, photos, target);
         newRefs = imported.newRefs;
-        const result = commitRestore(imported.profile);
+        const result = await commitRestore(imported.profile);
         if (!result.saved) await Promise.all(newRefs.map(ref => deletePhoto(ref).catch(() => {})));
         return result;
       } catch (error) {

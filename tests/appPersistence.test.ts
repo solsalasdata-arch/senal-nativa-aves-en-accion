@@ -85,6 +85,21 @@ function harness(initial?: PlayerProfile[]) {
     current: () => loadProfilesList().find(p => p.id === profiles[0].id)! };
 }
 const observation = { source: 'field' as const, birdName: 'Ave', scientificName: 'Avis test', trailName: '', notes: '' };
+test('restoring inline legacy photos migrates them without changing profile ID or waiting for reload', async () => {
+  const app = harness();
+  const migrationEffect = app.effects.find(effect => effect.toString().includes('migratingProfiles'))!;
+  migrationEffect();
+  await Promise.resolve();
+  const result = await app.find('GoogleDriveModal').onRestoreProfileData({
+    ...app.current(), unlockedPhotos: ['data:image/jpeg;base64,YWJj'], photos: []
+  });
+  assert.equal(result.saved, true);
+  assert.deepEqual(app.current().unlockedPhotos, []);
+  assert.equal(app.current().photos?.length, 1);
+  assert.equal(app.current().photos?.[0].profileId, app.profiles[0].id);
+  app.render();
+  assert.equal(app.find('TriviaAndBirdGuideModal').playerProfile.photos?.length, 1);
+});
 
 test('App journal, trivia, quiz, unlocks and shop always use latest persisted progress', () => {
   const app = harness([{ ...createDefaultProfile(), xp: 200 }]);
