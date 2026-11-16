@@ -595,8 +595,10 @@ export default function App() {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-[#07241E] to-slate-950 flex items-center justify-center p-0 sm:p-4 select-none">
-        {/* 9:16 Centered Mobile Game Container */}
+      <div className="flex h-[100dvh] w-full items-start justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-[#07241E] to-slate-950 p-0 select-none sm:h-auto sm:min-h-screen sm:items-center sm:p-4">
+        {/* On mobile, the parent and the app share the same dynamic viewport height.
+            Using min-h-screen (100vh) here would vertically center a 100dvh child
+            against Chrome UI-inclusive space, causing a top gap and clipped bottom nav. */}
         <div className="relative w-full max-w-[440px] h-[100dvh] sm:h-[880px] sm:max-h-[94vh] sm:rounded-[38px] overflow-hidden shadow-[0_0_60px_rgba(12,110,90,0.4)] border-0 sm:border-4 sm:border-teal-700/60 bg-slate-950 flex flex-col">
           <OfflineIndicator />
           {saveError && <div role="alert" className="absolute top-2 inset-x-2 z-[100] rounded-xl bg-red-950 border border-red-400 p-3 text-xs text-white">
