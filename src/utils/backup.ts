@@ -64,6 +64,9 @@ export function parseBackup(text: string): ParsedBackup {
             !/^data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$/i.test(item.dataUrl)))
           throw new Error('Fotografías del respaldo inválidas.');
         photos = data.photos.items;
+        if (photos.length !== (p.photos?.length || 0) || new Set(photos.map(item => item.ref.id)).size !== photos.length ||
+          photos.some(item => !p.photos?.some((ref: PhotoRef) => ref.id === item.ref.id && ref.hash === item.ref.hash && ref.kind === item.ref.kind)))
+          throw new Error('Las fotografías incluidas no coinciden con las referencias del perfil.');
       } else warnings.push('No incluye fotografías: solo se guardaron identificadores locales.');
     } else warnings.push('Respaldo antiguo: algunos campos se completaron con valores iniciales.');
     return { ok: true, profile: { ...defaults, ...p, fieldJournal: p.fieldJournal || [] }, photos, warnings };

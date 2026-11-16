@@ -19,6 +19,9 @@ import {
 import { soundManager } from '../utils/audio';
 import { useLanguage } from '../utils/i18n';
 import { PWAInstallButton } from './PWAInstallButton';
+import { BackupRecovery } from './BackupRecovery';
+import type { PlayerProfile } from '../types/game';
+import type { BackupPhoto } from '../utils/backup';
 
 interface OptionsModalProps {
   isOpen: boolean;
@@ -32,6 +35,8 @@ interface OptionsModalProps {
   onChangeCompanionOrPhoto: () => void;
   onBackToSplash: () => void;
   onOpenDrive: () => void;
+  activeProfile?: PlayerProfile;
+  onRestoreProfileData?: (profile: PlayerProfile, photos: BackupPhoto[]) => Promise<SaveResult>;
 }
 
 export const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -45,7 +50,9 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
   onChangePlayer,
   onChangeCompanionOrPhoto,
   onBackToSplash,
-  onOpenDrive
+  onOpenDrive,
+  activeProfile,
+  onRestoreProfileData
 }) => {
   const { lang, setLang, tx } = useLanguage();
 
@@ -64,6 +71,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
 
         {/* Content */}
         <div className="pb-safe min-h-0 p-4 space-y-4 flex-1 overflow-y-auto text-xs text-slate-200">
+          {activeProfile && onRestoreProfileData && <BackupRecovery key={activeProfile.id} profile={activeProfile} onRestore={onRestoreProfileData} />}
           {/* SECCIÓN 0: SELECTOR DE IDIOMA Y MODO PWA OFFLINE */}
           <div className="ui-card bg-surface-950 rounded-2xl p-3 border border-amber-400/50 space-y-2.5">
             <div className="flex items-center justify-between">

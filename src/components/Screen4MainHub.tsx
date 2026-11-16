@@ -9,6 +9,7 @@ import { PlayerProfile, Mission } from '../types/game';
 import { useLanguage, LanguageSelector, localizeMission, localizeDifficultyLabel } from '../utils/i18n';
 import { PWAInstallButton } from './PWAInstallButton';
 import { AvatarIcon } from './AvatarIcon';
+import { isRealObservation } from '../utils/journal';
 import { Button, IconButton, Card, ModalHeader, ProgressBar, EmptyState, StatusPill } from './ui';
 
 export type HubSheet = 'more' | 'progress' | 'missions' | null;
@@ -74,11 +75,10 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
   }, [hubSheet, onHubSheetChange]);
 
   const stats = [
-    [tx('Avistamientos', 'Sightings'), playerProfile.sightingsCompleted],
-    [tx('Aves descubiertas', 'Birds discovered'), playerProfile.unlockedSilhouettes?.length ?? 0],
+    [tx('Observaciones reales', 'Real observations'), playerProfile.fieldJournal.filter(isRealObservation).length],
     [tx('Descubrimientos MindAR', 'MindAR discoveries'), playerProfile.mindarDiscoveries?.length ?? 0],
-    [tx('Registros en diario', 'Journal entries'), playerProfile.fieldJournal?.length ?? 0],
-    [tx('Estaciones', 'Stations'), `${playerProfile.completedCheckpoints?.length ?? 0} / 8`],
+    [tx('Estaciones completadas', 'Completed stations'), `${playerProfile.completedCheckpoints?.length ?? 0} / 8`],
+    [tx('Fotos guardadas', 'Saved photos'), playerProfile.photos?.length ?? 0],
   ];
   const badges = [
     { name: tx('Observador en Ascenso', 'Rising Observer'), earned: playerProfile.hasRisingObserverBadge },
@@ -143,6 +143,7 @@ export const Screen4MainHub: React.FC<Screen4MainHubProps> = ({
             <section><h3 className="mb-2 text-base font-semibold">{tx('Insignias', 'Badges')}</h3><ul className="space-y-2">{badges.map(badge => <li key={badge.name} className="flex items-center gap-3 rounded-xl border border-white/15 p-3">{badge.earned ? <Award aria-hidden="true" className="h-5 w-5 shrink-0 text-amber-200" /> : <Lock aria-hidden="true" className="h-5 w-5 shrink-0 text-ink-muted" />}<div><p className="text-sm font-semibold">{badge.name}</p><p className="text-xs text-ink-muted">{badge.earned ? tx('Conseguida', 'Earned') : tx('Pendiente', 'Pending')}</p></div></li>)}</ul></section>
             <div className="border-t border-white/15 pt-2">
               <MenuRow icon={<BookOpen className="h-5 w-5" />} title={tx('Ver diario de campo', 'View field journal')} text={tx('Tus registros y observaciones', 'Your records and observations')} onClick={() => navigate(onOpenJournal)} />
+              <MenuRow icon={<Cloud className="h-5 w-5" />} title={tx('Respaldo y recuperación', 'Backup and recovery')} text={tx('Exportar o restaurar un archivo local', 'Export or restore a local file')} onClick={() => navigate(onOpenOptions)} />
               <MenuRow icon={<Footprints className="h-5 w-5" />} title={tx('Misiones del día', 'Daily missions')} text={tx('Consultá tus objetivos y recompensas', 'View your goals and rewards')} onClick={() => openSheet('missions')} />
               {onOpenMiroAvatar && <MenuRow icon={<UserRound className="h-5 w-5" />} title={tx('Perfil y avatar', 'Profile and avatar')} text={tx('Tu personaje y ave compañera', 'Your character and companion bird')} onClick={() => navigate(onOpenMiroAvatar)} />}
               <MenuRow icon={<ShoppingBag className="h-5 w-5" />} title={tx('Recompensas / tienda', 'Rewards / shop')} text={tx('Explorá el equipo disponible', 'Explore available gear')} onClick={() => navigate(onOpenShop)} />

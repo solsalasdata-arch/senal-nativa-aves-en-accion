@@ -35,7 +35,7 @@ fotos antes de confirmar los cambios.
 Los handlers de App ahora calculan sobre el último perfil dentro de
 `commitProfile`, devuelven `SaveResult` y conservan el estado React si falla
 la escritura. El diario recibe
-`onAddJournalEntry(entry: Omit<JournalEntry, 'id' | 'timestamp'>): SaveResult`.
+`onAddJournalEntry(entry: Omit<JournalEntry, 'id' | 'timestamp'>, photo?: File): SaveResult | Promise<SaveResult>`.
 Foto Perfecta recibe un id estable por captura y espera la autoevaluación antes
 de guardar. Las fotos de compañero y XR solo agregan referencias al perfil;
 los blobs nuevos se eliminan si falla la escritura.
@@ -43,3 +43,15 @@ los blobs nuevos se eliminan si falla la escritura.
 La reclamación de meta grupal comprueba membresía, especies compartidas y
 `squad-goal:<id>` en los perfiles persistidos antes de conceder XP. El
 indicador de cuadrilla también se marca solo después del guardado del perfil.
+
+El diario muestra categorías, fechas conocidas, estaciones antiguas sin fecha
+inventada y una galería de fotos locales. Adjuntar una foto propia guarda sus
+bytes antes de confirmar la observación; si el perfil no se puede guardar,
+se elimina el blob nuevo.
+
+Respaldo y recuperación, en Opciones, exporta JSON con fotografías por defecto.
+Si alguna no puede leerse, informa cuáles fallaron y exporta solo identificadores
+sin afirmar que incluyó fotos. La restauración exige resumen y confirmación:
+guarda la copia previa, verifica e importa bytes sin recomprimir, reescribe las
+referencias y confirma el perfil. Un fallo revierte los blobs nuevos, no el
+perfil actual. Los blobs anteriores se conservan para la copia de seguridad.

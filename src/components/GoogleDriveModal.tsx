@@ -39,7 +39,7 @@ interface GoogleDriveModalProps {
   isOpen: boolean;
   onClose: () => void;
   activeProfile: PlayerProfile;
-  onRestoreProfileData: (restoredProfile: Partial<PlayerProfile>) => SaveResult | void;
+  onRestoreProfileData: (restoredProfile: Partial<PlayerProfile>) => SaveResult | Promise<SaveResult> | void;
 }
 
 type PendingConfirmation =
@@ -299,7 +299,7 @@ export const GoogleDriveModal: React.FC<GoogleDriveModalProps> = ({
       const parsed = parseBackup(raw);
       if (!parsed.ok) throw new Error(parsed.error);
       if (!window.confirm(`¿Restaurar ${parsed.profile.xp} XP y ${parsed.profile.fieldJournal.length} registros en el perfil activo? Se reemplazará el progreso actual. Las fotos no se incluyen en Drive.`)) return;
-      const result = onRestoreProfileData(parsed.profile);
+      const result = await onRestoreProfileData(parsed.profile);
       if (result && !result.saved) throw new Error(SAVE_ERROR);
 
       soundManager.playSuccess();

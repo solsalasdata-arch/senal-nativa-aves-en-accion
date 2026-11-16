@@ -30,6 +30,8 @@ import { PlayerProfile, CompanionBirdId, JournalEntry, CatalogBird, PhotoRef } f
 import { awardJournalEntry, awardCompanionPhoto, awardQuizLevelUp } from './utils/rewards';
 import { savePhoto, deletePhoto, migrateLegacyPhotos } from './utils/photoStore';
 import { SAVE_ERROR, SaveResult, SightingCapture } from './utils/profileActions';
+import { importBackupPhotos } from './utils/backupTransfer';
+import type { BackupPhoto } from './utils/backup';
 import { isRealObservation } from './utils/journal';
 import { LanguageProvider } from './utils/i18n';
 import { OfflineIndicator } from './components/PWAInstallButton';
@@ -312,7 +314,7 @@ export default function App() {
     return handleUpdateProfile(latest => completeStation(latest, { stationId, scannedToken, answerIndex }));
   };
 
-  const persistPhoto = async (source: string, kind: PhotoRef['kind'], label: string,
+  const persistPhoto = async (source: Blob | string, kind: PhotoRef['kind'], label: string,
     mutate: (latest: PlayerProfile, ref: PhotoRef) => Change, entryId?: string): Promise<SaveResult> => {
     const profileId = mindarProfileRef.current.id;
     const latest = loadProfilesList().find(p => p.id === profileId);
@@ -392,7 +394,7 @@ export default function App() {
   };
 
   // Paso 13: Registro Científico en Diario de Campo (4 Toques) (+30 XP)
-  const handleAddJournalEntry = (entry: Omit<JournalEntry, 'id' | 'timestamp'>) => {
+  const handleAddJournalEntry = (entry: Omit<JournalEntry, 'id' | 'timestamp'>, photo?: File): SaveResult | Promise<SaveResult> => {
     const newEntry: JournalEntry = {
       ...entry,
       id: 'j_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
@@ -400,15 +402,20 @@ export default function App() {
     };
 
     let hadBadge = true;
-    const result = handleUpdateProfile(latest => {
+    const award = (latest: PlayerProfile, ref?: PhotoRef) => {
       hadBadge = latest.hasDetailObserverBadge;
-      return awardJournalEntry(latest, { ...newEntry, source: 'field' });
-    });
-    if (result.saved && !hadBadge && result.profile.hasDetailObserverBadge) {
-      soundManager.playSuccess();
-      setShowDetailCelebration(true);
-    }
-    return result;
+      return awardJournalEntry(latest, { ...newEntry, source: 'field',
+        ...(ref ? { photoId: ref.id, photoKind: 'user', evidence: 'photo' } : {}) });
+    };
+    const finish = (result: SaveResult & { profile?: PlayerProfile }) => {
+      if (result.saved && !hadBadge && (result.profile || mindarProfileRef.current).hasDetailObserverBadge) {
+        soundManager.playSuccess();
+        setShowDetailCelebration(true);
+      }
+      return result;
+    };
+    return photo ? persistPhoto(photo, 'user', 'Foto propia', award, newEntry.id).then(finish)
+      : finish(handleUpdateProfile(latest => award(latest)));
   };
 
   // Paso 9 / Paso 4: Comprar y Equipar Prendas y Equipo del Avatar en Tienda
@@ -527,6 +534,35 @@ export default function App() {
       fieldJournal: [],
       mindarDiscoveries: []
     } }));
+  };
+
+  const handleRestoreProfileData = (restored: Partial<PlayerProfile>, photos?: BackupPhoto[]): SaveResult | Promise<SaveResult> => {
+    const profileId = mindarProfileRef.current.id;
+    const commitRestore = (data: Partial<PlayerProfile>) => handleUpdateProfile(latest => {
+      localStorage.setItem(`senial_nativa_pre_restore_${latest.id}`, JSON.stringify(latest));
+      return { updates: { ...data, id: latest.id,
+        mindarDiscoveries: (data.mindarDiscoveries || []).map(d => ({ ...d, profileId: latest.id })),
+        photos: (data.photos || []).map(p => ({ ...p, profileId: latest.id })) } };
+    }, profileId);
+    if (photos === undefined) return commitRestore(restored);
+    return (async () => {
+      let newRefs: PhotoRef[] = [];
+      try {
+        const target = loadProfilesList().find(p => p.id === profileId);
+        if (!target) throw new Error(SAVE_ERROR);
+        localStorage.setItem(`senial_nativa_pre_restore_${profileId}`, JSON.stringify(target));
+        const imported = await importBackupPhotos(restored as PlayerProfile, photos, target);
+        newRefs = imported.newRefs;
+        const result = commitRestore(imported.profile);
+        if (!result.saved) await Promise.all(newRefs.map(ref => deletePhoto(ref).catch(() => {})));
+        return result;
+      } catch (error) {
+        await Promise.all(newRefs.map(ref => deletePhoto(ref).catch(() => {})));
+        const message = error instanceof Error && !['QuotaExceededError', 'SecurityError'].includes(error.name) ? error.message : SAVE_ERROR;
+        setSaveError(message);
+        return { saved: false, status: 'error', error: message };
+      }
+    })();
   };
 
   // Audio toggles
@@ -816,6 +852,8 @@ export default function App() {
 
         {/* MODAL DE OPCIONES DEL JUEGO */}
         <OptionsModal
+          activeProfile={activeProfile}
+          onRestoreProfileData={async (profile, photos) => handleRestoreProfileData(profile, photos)}
           isOpen={showOptionsModal}
           onClose={() => setShowOptionsModal(false)}
           soundEnabled={soundEnabled}
@@ -834,14 +872,7 @@ export default function App() {
             isOpen={showDriveModal}
             onClose={() => setShowDriveModal(false)}
             activeProfile={activeProfile}
-            onRestoreProfileData={(restored) => {
-              return handleUpdateProfile(latest => {
-                localStorage.setItem(`senial_nativa_pre_restore_${latest.id}`, JSON.stringify(latest));
-                return { updates: { ...restored, id: latest.id,
-                  mindarDiscoveries: (restored.mindarDiscoveries || []).map(d => ({ ...d, profileId: latest.id })),
-                  photos: (restored.photos || []).map(p => ({ ...p, profileId: latest.id })) } };
-              });
-            }}
+            onRestoreProfileData={handleRestoreProfileData}
           />
         </div>
       </div>

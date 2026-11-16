@@ -29,7 +29,7 @@ test('hub sheets have labelled dialogs and preserve routes, stats and locked bad
   const more = render({ hubSheet: 'more' });
   for (const text of ['role="dialog"', 'aria-modal="true"', 'aria-labelledby="hub-sheet-title"', 'Actividades', 'Cuenta y datos', 'Cambiar ave compañera / foto', 'Sincronizar con Google Drive', 'Opciones y sonido']) assert.ok(more.includes(text));
   const progress = render({ hubSheet: 'progress' });
-  for (const text of ['Avistamientos', 'Aves descubiertas', 'Descubrimientos MindAR', 'Registros en diario', 'Estaciones', 'Pendiente', 'Ver diario de campo', 'Perfil y avatar', 'Recompensas / tienda']) assert.ok(progress.includes(text));
+  for (const text of ['Observaciones reales', 'Descubrimientos MindAR', 'Estaciones completadas', 'Fotos guardadas', 'Respaldo y recuperación', 'Pendiente', 'Ver diario de campo', 'Perfil y avatar', 'Recompensas / tienda']) assert.ok(progress.includes(text));
   assert.equal((progress.match(/Pendiente/g) ?? []).length, 3);
   const earned = render({ hubSheet: 'progress', playerProfile: { ...playerProfile, hasRisingObserverBadge: true } });
   assert.match(earned, /Conseguida/);
