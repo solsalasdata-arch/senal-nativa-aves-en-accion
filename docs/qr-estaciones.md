@@ -64,6 +64,8 @@ no son una prueba antifraude y pueden perderse al borrar sus datos.
 2. Al iniciar, la app valida `sn`, guarda el token en `localStorage` con la
    clave `senial_nativa_pending_station_v1` y quita `sn` de la URL, conservando
    los demás parámetros. Los tokens inválidos se ignoran.
+   Los QR impresos que apuntan a `/?sn=...` siguen abriendo la experiencia:
+   la entrada cambia la ruta a `/app?sn=...` antes de montar la aplicación.
 3. El token pendiente sobrevive a la bienvenida, selección y creación de perfil.
    Tanto «Continuar» de un perfil que regresa como el recorrido de un perfil
    nuevo llegan al hub (`screen4`).

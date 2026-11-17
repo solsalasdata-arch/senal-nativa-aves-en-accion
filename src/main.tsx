@@ -1,6 +1,19 @@
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
+import LandingPage from './LandingPage.tsx';
 import './index.css';
+
+// Existing station QR codes point to /?sn=... . Keep them opening the app
+// directly while moving the public introduction to /.
+const entryUrl = new URL(window.location.href);
+const hasStationQr = entryUrl.searchParams.has('sn');
+if (hasStationQr && entryUrl.pathname !== '/app') {
+  entryUrl.pathname = '/app';
+  window.history.replaceState(window.history.state, '', entryUrl);
+}
+const isAppRoute = entryUrl.pathname === '/app' || hasStationQr;
+document.body.classList.toggle('overflow-hidden', isAppRoute);
+document.body.classList.toggle('select-none', isAppRoute);
 
 // Clear any legacy cache that might hold stale Vite pre-bundled React chunks
 if ('caches' in window) {
@@ -26,6 +39,8 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(
+  isAppRoute ? <App /> : <LandingPage />
+);
 
 

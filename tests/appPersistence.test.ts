@@ -17,11 +17,11 @@ const bundle = await build({
     name: 'app-handler-harness',
     setup(builder) {
       builder.onResolve({ filter: /^\//, namespace: 'test-hooks' }, args => ({ path: args.path, external: true }));
-      builder.onResolve({ filter: /^react$/ }, args => args.importer.endsWith('/src/App.tsx')
+      builder.onResolve({ filter: /^react$/ }, args => args.importer.replaceAll('\\', '/').endsWith('/src/App.tsx')
         ? { path: 'react-hooks', namespace: 'test-hooks' } : { path: require.resolve('react'), external: true });
       builder.onResolve({ filter: /^react\// }, args => ({ path: require.resolve(args.path), external: true }));
       builder.onLoad({ filter: /.*/, namespace: 'test-hooks' }, () => ({ contents: `
-        import React from ${JSON.stringify(require.resolve('react'))};
+        import React from 'react';
         export default React;
         export const useState = (...args) => globalThis.__appHooks.useState(...args);
         export const useRef = (...args) => globalThis.__appHooks.useRef(...args);

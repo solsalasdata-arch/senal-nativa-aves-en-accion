@@ -3,7 +3,7 @@
   "name": "Señal Nativa: Aves en Acción — Parque Botánico Barón Schuel",
   "short_name": "SeñalNativa",
   "description": "Experiencia interactiva 2D/XR, bioacústica offline y ciencia ciudadana para el Parque Botánico Municipal Barón Carlos María Schuel (Yungas de Jujuy).",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
