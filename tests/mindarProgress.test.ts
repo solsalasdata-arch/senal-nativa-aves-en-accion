@@ -19,6 +19,23 @@ test('registration preserves field data and creates only one signal without inve
   assert.equal(getMindARStatus(next), 'registered');
 });
 
+test('four compiled target indices resolve to the matching bird and register independently', () => {
+  const expected = ['001-chingolo', 'tucan-grande', '007-benteveo', '014-hornero'];
+  let profile = createDefaultProfile('Ana');
+  for (const [index, speciesId] of expected.entries()) {
+    const result = registerMindARDiscovery(profile, 200 + index, index);
+    profile = { ...profile, ...result.updates };
+    assert.equal(result.status, 'registered');
+    assert.equal(profile.mindarDiscoveries?.at(-1)?.speciesId, speciesId);
+    assert.equal(profile.mindarDiscoveries?.at(-1)?.targetId, `${speciesId}#${index}`);
+    assert.equal(profile.fieldJournal[0].speciesId, speciesId);
+    assert.equal(getMindARStatus(profile, index), 'registered');
+  }
+  assert.equal(profile.mindarDiscoveries?.length, 4);
+  assert.equal(profile.fieldJournal.filter(entry => entry.source === 'mindar-signal').length, 4);
+  assert.equal(profile.sightingsCompleted, 0);
+});
+
 test('field journal keeps old records and signals without a cap', () => {
   const field = createDefaultProfile().fieldJournal[0];
   const fields = Array.from({ length: 11 }, (_, index) => ({ ...field, id: `field-${index}` }));

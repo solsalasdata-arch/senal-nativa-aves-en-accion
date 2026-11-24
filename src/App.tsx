@@ -50,15 +50,15 @@ export default function App() {
   const [activeProfile, setActiveProfile] = useState<PlayerProfile>(() => getActiveProfile());
   const mindarProfileRef = useRef(activeProfile);
   mindarProfileRef.current = activeProfile;
-  const pendingMindAR = useRef<{ profileId: string; action: 'register' | 'complete' } | null>(null);
+  const pendingMindAR = useRef<{ profileId: string; action: 'register' | 'complete'; targetIndex: number } | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const handleMindARRetrySave = (): boolean => {
     const pending = pendingMindAR.current;
-    return pending ? handleMindARAction(pending.action, pending.profileId).saved : true;
+    return pending ? handleMindARAction(pending.action, pending.profileId, pending.targetIndex).saved : true;
   };
-  const handleMindARAction = (action: 'register' | 'complete', profileId = mindarProfileRef.current.id): MindARActionResult => {
-    const checked = handleUpdateProfile(latest => (action === 'register' ? registerMindARDiscovery : completeMindARChallenge)(latest, Date.now()), profileId);
-    pendingMindAR.current = checked.saved ? null : { profileId, action };
+  const handleMindARAction = (action: 'register' | 'complete', profileId = mindarProfileRef.current.id, targetIndex = 1): MindARActionResult => {
+    const checked = handleUpdateProfile(latest => (action === 'register' ? registerMindARDiscovery : completeMindARChallenge)(latest, Date.now(), targetIndex), profileId);
+    pendingMindAR.current = checked.saved ? null : { profileId, action, targetIndex };
     return { status: checked.status as MindARActionResult['status'], saved: checked.saved };
   };
 
@@ -709,8 +709,8 @@ export default function App() {
 
         {/* MODAL DE AVISTAMIENTO XR Y FOTO PERFECTA (PASO 12) */}
         <SightingSimulationModal
-          onMindARRegister={() => handleMindARAction('register')}
-          onMindARComplete={() => handleMindARAction('complete')}
+          onMindARRegister={(targetIndex) => handleMindARAction('register', undefined, targetIndex)}
+          onMindARComplete={(targetIndex) => handleMindARAction('complete', undefined, targetIndex)}
           onMindARRetrySave={handleMindARRetrySave}
           onMindARJournal={() => { setShowSightingModal(false); setBirdsInitialTab('journal'); setShowBirdsModal(true); }}
           isOpen={showSightingModal}
