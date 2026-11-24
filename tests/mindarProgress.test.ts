@@ -14,7 +14,7 @@ test('registration preserves field data and creates only one signal without inve
   assert.equal(entry.source, 'mindar-signal');
   for (const key of ['behavior', 'count', 'stratum', 'weather', 'stars', 'coords']) assert.equal(key in entry, false);
   assert.deepEqual(next.fieldJournal.slice(1), p.fieldJournal);
-  for (const key of ['sightingsCompleted', 'birdPhotoStars', 'missions', 'unlockedSilhouettes'] as const) assert.deepEqual(next[key], p[key]);
+  assert.deepEqual(next.unlockedSilhouettes, ['001-chingolo', 'tucan-grande', '007-benteveo']);
   assert.deepEqual(registerMindARDiscovery(next, 101), { updates: {}, status: 'already-registered' });
   assert.equal(getMindARStatus(next), 'registered');
 });
@@ -33,6 +33,7 @@ test('four compiled target indices resolve to the matching bird and register ind
   }
   assert.equal(profile.mindarDiscoveries?.length, 4);
   assert.equal(profile.fieldJournal.filter(entry => entry.source === 'mindar-signal').length, 4);
+  assert.deepEqual(profile.unlockedSilhouettes, expected);
   assert.equal(profile.sightingsCompleted, 0);
 });
 

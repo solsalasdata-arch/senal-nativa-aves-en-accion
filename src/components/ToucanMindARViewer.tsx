@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BIRDS_DATA, CATALOG_BIRDS_DATA } from '../data/birdsData';
 import { MINDAR_CHALLENGES } from '../data/mindarChallenges';
 import type { PlayerProfile } from '../types/game';
-import { getMindARStatus, MindARActionResult } from '../utils/mindarProgress';
+import { getMindARStatus, isMindARTargetUnlocked, MindARActionResult } from '../utils/mindarProgress';
 import { ArrowLeft, HelpCircle, LoaderCircle, ScanLine, Check, CheckCircle2, BookOpen, AlertTriangle, ChevronUp, ChevronDown, Volume2, Sparkles } from 'lucide-react';
 import { useLanguage } from '../utils/i18n';
 import { Button, IconButton } from './ui';
@@ -69,8 +69,10 @@ export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegist
     audioRef.current?.pause();
     const audio = new Audio(encodeURI(audioUrl));
     audioRef.current = audio;
-    setAudioStatus('');
-    void audio.play().catch(() => setAudioStatus(tx('El navegador bloqueó el canto automático. Tocá “Escuchar canto” para reproducirlo.', 'Autoplay was blocked. Tap “Listen to bird call” to play it.')));
+    audio.onended = () => setAudioStatus('');
+    audio.onerror = () => setAudioStatus(tx('No se pudo reproducir el archivo de canto.', 'The bird-call file could not be played.'));
+    setAudioStatus(tx('Reproduciendo el archivo de canto.', 'Playing the bird-call recording.'));
+    void audio.play().catch(() => setAudioStatus(tx('No se pudo reproducir el archivo de canto.', 'The bird-call file could not be played.')));
   };
   const runAction = (action: () => MindARActionResult) => {
     const result = action();
@@ -178,6 +180,13 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
           {
             const targetIndex = Number(event.data.detail?.targetIndex);
             if (Number.isInteger(targetIndex) && targetIndex >= 0 && targetIndex < TARGET_BIRDS.length) {
+              if (!isMindARTargetUnlocked(profile, targetIndex)) {
+                const nextRequired = TARGET_BIRDS.find((_, index) => isMindARTargetUnlocked(profile, index));
+                setMessage(nextRequired
+                  ? `Primero descubrí al ${nextRequired.commonName}.`
+                  : 'Seguí la secuencia de descubrimientos para habilitar esta ave.');
+                break;
+              }
               if (recognizedRef.current !== targetIndex) {
                 recognizedRef.current = targetIndex;
                 setRecognizedTarget(targetIndex);
@@ -191,7 +200,6 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
                 setSaved(result.saved);
                 if (result.status === 'registered') {
                   setRevealTarget(targetIndex);
-                  playBirdAudio(targetIndex);
                 }
               }
               setTracking('found');
@@ -244,10 +252,10 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
         <iframe key={attempt} ref={frameRef} title="Visor MindAR de aves" srcDoc={scene} allow="camera; accelerometer; gyroscope"
           className="absolute inset-0 w-full h-full border-0" />
         {revealTarget !== null && <div className="absolute inset-0 z-40 flex items-center justify-center bg-forest-950/75 p-5 backdrop-blur-sm motion-safe:animate-fadeIn">
-          <section role="dialog" aria-modal="true" aria-labelledby="discovery-reveal-title" className="ui-card w-full max-w-sm space-y-4 p-5 text-center shadow-2xl">
-            <Sparkles aria-hidden="true" className="mx-auto h-8 w-8 text-amber-300" />
-            <h2 id="discovery-reveal-title" className="text-2xl font-bold text-emerald-200">{tx('¡Nuevo descubrimiento!', 'New discovery!')}</h2>
-            <img src={TARGET_BIRDS[revealTarget].image} alt="" className="mx-auto h-36 w-full rounded-2xl object-cover" />
+          <section role="dialog" aria-modal="true" aria-labelledby="discovery-reveal-title" className="ui-card flex max-h-[calc(100dvh-2.5rem)] w-full max-w-sm flex-col gap-2 overflow-y-auto p-3 text-center shadow-2xl sm:gap-4 sm:p-5">
+            <Sparkles aria-hidden="true" className="mx-auto h-6 w-6 shrink-0 text-amber-300 sm:h-8 sm:w-8" />
+            <h2 id="discovery-reveal-title" className="text-xl font-bold text-emerald-200 sm:text-2xl">{tx('¡Nuevo descubrimiento!', 'New discovery!')}</h2>
+            <img src={TARGET_BIRDS[revealTarget].image} alt="" className="mx-auto max-h-[22dvh] w-full max-w-[min(100%,20rem)] shrink-0 rounded-2xl object-contain sm:max-h-52" />
             <div><h3 className="text-xl font-semibold">{TARGET_BIRDS[revealTarget].commonName}</h3><p className="text-sm italic text-ink-muted">{TARGET_BIRDS[revealTarget].scientificName}</p></div>
             {audioStatus && <p role="status" aria-live="polite" className="text-sm text-ink-muted">{audioStatus}</p>}
             <Button variant="secondary" fullWidth onClick={() => playBirdAudio(revealTarget)}><Volume2 aria-hidden="true" className="mr-2 inline h-4 w-4" />{tx('Escuchar canto', 'Listen to bird call')}</Button>
