@@ -36,6 +36,25 @@ test('four compiled target indices resolve to the matching bird and register ind
   assert.equal(profile.sightingsCompleted, 0);
 });
 
+test('all four targets can complete their own challenge once per profile', () => {
+  let profile = createDefaultProfile('Ana');
+  for (let targetIndex = 0; targetIndex < 4; targetIndex++) {
+    profile = { ...profile, ...registerMindARDiscovery(profile, 300 + targetIndex, targetIndex).updates };
+  }
+
+  for (let targetIndex = 0; targetIndex < 4; targetIndex++) {
+    const result = completeMindARChallenge(profile, 400 + targetIndex, targetIndex);
+    assert.equal(result.status, 'rewarded');
+    profile = { ...profile, ...result.updates };
+  }
+
+  assert.equal(profile.xp, createDefaultProfile('Ana').xp + 4 * 40);
+  for (let targetIndex = 0; targetIndex < 4; targetIndex++) {
+    assert.equal(getMindARStatus(profile, targetIndex), 'rewarded');
+    assert.equal(completeMindARChallenge(profile, 500 + targetIndex, targetIndex).status, 'already-rewarded');
+  }
+});
+
 test('field journal keeps old records and signals without a cap', () => {
   const field = createDefaultProfile().fieldJournal[0];
   const fields = Array.from({ length: 11 }, (_, index) => ({ ...field, id: `field-${index}` }));

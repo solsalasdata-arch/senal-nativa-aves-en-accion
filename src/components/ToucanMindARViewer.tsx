@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BIRDS_DATA, CATALOG_BIRDS_DATA, TRIVIA_QUESTIONS } from '../data/birdsData';
+import { BIRDS_DATA, CATALOG_BIRDS_DATA } from '../data/birdsData';
+import { MINDAR_CHALLENGES } from '../data/mindarChallenges';
 import type { PlayerProfile } from '../types/game';
 import { getMindARStatus, MindARActionResult } from '../utils/mindarProgress';
-import { ArrowLeft, HelpCircle, LoaderCircle, ScanLine, Check, CheckCircle2, BookOpen, AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, HelpCircle, LoaderCircle, ScanLine, Check, CheckCircle2, BookOpen, AlertTriangle, ChevronUp, ChevronDown, Volume2, Sparkles } from 'lucide-react';
 import { useLanguage } from '../utils/i18n';
 import { Button, IconButton } from './ui';
 
@@ -21,7 +22,11 @@ const TARGET_BIRDS = TARGET_SPECIES.map(id => {
   const bird = CATALOG_BIRDS_DATA.find(candidate => candidate.id === id);
   if (!bird) {
     const gameBird = BIRDS_DATA.find(candidate => candidate.id === id)!;
-    return { ...gameBird, detail: gameBird.diet };
+    return {
+      ...gameBird,
+      image: '/assets/aistudio/toucan_guide_portrait.jpg',
+      detail: gameBird.diet,
+    };
   }
   return {
     ...bird,
@@ -49,10 +54,24 @@ export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegist
   const [saved, setSaved] = useState<boolean | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [revealTarget, setRevealTarget] = useState<number | null>(null);
+  const [challengeStatus, setChallengeStatus] = useState<string>('');
+  const [audioStatus, setAudioStatus] = useState<string>('');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const activeTarget = recognizedTarget ?? 1;
   const activeBird = TARGET_BIRDS[activeTarget];
   const progress = getMindARStatus(profile, activeTarget);
-  const question = TRIVIA_QUESTIONS.find(q => q.id === 1);
+  const question = MINDAR_CHALLENGES[activeTarget as keyof typeof MINDAR_CHALLENGES];
+  const playBirdAudio = (targetIndex = activeTarget) => {
+    const bird = TARGET_BIRDS[targetIndex];
+    const audioUrl = (bird as typeof bird & { audioUrl?: string }).audioUrl;
+    if (!audioUrl) return;
+    audioRef.current?.pause();
+    const audio = new Audio(encodeURI(audioUrl));
+    audioRef.current = audio;
+    setAudioStatus('');
+    void audio.play().catch(() => setAudioStatus(tx('El navegador bloqueó el canto automático. Tocá “Escuchar canto” para reproducirlo.', 'Autoplay was blocked. Tap “Listen to bird call” to play it.')));
+  };
   const runAction = (action: () => MindARActionResult) => {
     const result = action();
     setSaved(result.saved);
@@ -68,11 +87,25 @@ export const ToucanMindARViewer: React.FC<Props> = ({ onClose, profile, onRegist
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020617}
 body{position:relative}
-video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:0!important;display:block!important;visibility:visible!important}
+video{position:absolute!important;z-index:0!important;display:block!important;visibility:visible!important}
 a-scene{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:1!important;background:transparent!important}
 a-scene canvas,.a-canvas{background:transparent!important} .a-enter-vr,.a-enter-ar{display:none!important}</style>
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"><\/script>
+<script>
+(function(){
+ const devices=navigator.mediaDevices;
+ if(!devices || typeof devices.getUserMedia!=='function') return;
+ const request=devices.getUserMedia.bind(devices);
+ try{
+  Object.defineProperty(devices,'getUserMedia',{configurable:true,value:(constraints)=>{
+   const requestedVideo=constraints && constraints.video;
+   if(!requestedVideo || typeof requestedVideo!=='object') return request(constraints);
+   return request({...constraints,video:{...requestedVideo,width:requestedVideo.width ?? {ideal:1280},height:requestedVideo.height ?? {ideal:720}}});
+  }});
+ }catch(_){/* Keep the browser's default camera settings if the method cannot be wrapped. */}
+})();
+<\/script>
 </head><body>
 <a-scene mindar-image="imageTargetSrc: /ar/targets.mind; autoStart: true; uiLoading: no; uiScanning: no; uiError: no;"
  color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true; alpha: true" background="color: #000000; transparent: true"
@@ -92,30 +125,19 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
   const track=video && video.srcObject && video.srcObject.getVideoTracks()[0];
   if(!track || !track.applyConstraints) return;
   const capabilities=track.getCapabilities ? track.getCapabilities() : {};
-  const advanced={};
-  if(Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('continuous')){
-    advanced.focusMode='continuous';
-  }
-  // Only request a higher resolution when supported. Never require it.
-  const constraints={};
-  if(capabilities.width && capabilities.width.max>=1280) constraints.width={ideal:Math.min(1920,capabilities.width.max)};
-  if(capabilities.height && capabilities.height.max>=720) constraints.height={ideal:Math.min(1080,capabilities.height.max)};
-  if(Object.keys(advanced).length) constraints.advanced=[advanced];
-  if(!Object.keys(constraints).length) return;
+  if(!Array.isArray(capabilities.focusMode) || !capabilities.focusMode.includes('continuous')) return;
   try{
-    await track.applyConstraints(constraints);
+    await track.applyConstraints({advanced:[{focusMode:'continuous'}]});
   }catch(e){
-    // Some Samsung/Chrome cameras reject combined constraints; retry focus alone.
-    if(Object.keys(advanced).length){
-      try{await track.applyConstraints({advanced:[advanced]});}catch(_){}
-    }
+    // Focus mode is optional; keep the camera stream running with its default focus.
   }
  }
  scene.addEventListener('arReady',()=>{
   const renderer=scene.renderer;
   if(renderer){renderer.setClearColor(0x000000,0);renderer.setClearAlpha(0);}
   improveCameraFocus().catch(()=>{});
-  notify('ready');
+  const video=document.querySelector('video');
+  notify('ready',{width:video?.videoWidth || 0,height:video?.videoHeight || 0});
  });
  const cameraError=async(error)=>{
   let name=error && (error.name || (error.error && error.error.name));
@@ -141,7 +163,17 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
     const receive = (event: MessageEvent) => {
       if (event.source !== frameRef.current?.contentWindow || event.data?.source !== 'senal-nativa-mindar') return;
       switch (event.data.type) {
-        case 'ready': readyRef.current = true; window.clearTimeout(timeout); setTracking('searching'); setMessage('Apuntá a una de las cuatro aves'); break;
+        case 'ready': {
+          readyRef.current = true;
+          window.clearTimeout(timeout);
+          setTracking('searching');
+          const width = Number(event.data.detail?.width);
+          const height = Number(event.data.detail?.height);
+          setMessage(width > 0 && height > 0 && (width < 960 || height < 540)
+            ? `Cámara en ${width} × ${height} px. Probá con más luz y mantené el teléfono firme.`
+            : 'Apuntá a una de las cuatro aves');
+          break;
+        }
         case 'found':
           {
             const targetIndex = Number(event.data.detail?.targetIndex);
@@ -153,8 +185,14 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
                 setCorrect(false);
                 setSelectedOption(null);
                 setFeedback('');
+                setChallengeStatus('');
+                setAudioStatus('');
                 const result = onRegisterRef.current(targetIndex);
                 setSaved(result.saved);
+                if (result.status === 'registered') {
+                  setRevealTarget(targetIndex);
+                  playBirdAudio(targetIndex);
+                }
               }
               setTracking('found');
               setMessage(`¡Descubriste al ${TARGET_BIRDS[targetIndex].commonName}!`);
@@ -177,6 +215,8 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
       try {
         if (frame) { frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; }
       } catch { /* The iframe may already be detached. */ }
+      audioRef.current?.pause();
+      audioRef.current = null;
     };
   }, [attempt]);
 
@@ -187,7 +227,7 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
     : progress === 'rewarded'
     ? { text: tx('Completado', 'Completed'), icon: CheckCircle2 }
     : progress === 'registered'
-    ? { text: activeTarget === 1 ? tx('Registrado · desafío pendiente', 'Registered · challenge pending') : tx('Descubrimiento guardado', 'Discovery saved'), icon: BookOpen }
+    ? { text: tx('Registrado · desafío pendiente', 'Registered · challenge pending'), icon: BookOpen }
     : recognizedTarget !== null || tracking === 'found'
     ? { text: tx('Reconocido', 'Recognized'), icon: CheckCircle2 }
     : { text: tx('Buscando tarjetas de aves', 'Searching for bird cards'), icon: ScanLine };
@@ -195,7 +235,7 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
   const steps = [
     { label: tx('Registrar', 'Register'), done: progress !== 'none' },
     { label: tx('Ficha', 'Field guide'), done: progress !== 'none' },
-    { label: tx('Desafío', 'Challenge'), done: activeTarget !== 1 || correct || progress === 'rewarded' },
+    { label: tx('Desafío', 'Challenge'), done: correct || progress === 'rewarded' },
   ];
 
   return (
@@ -203,6 +243,18 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
       <div className="relative h-full w-full overflow-hidden bg-black sm:max-h-[94dvh] sm:max-w-md sm:rounded-3xl sm:border sm:border-forest-800">
         <iframe key={attempt} ref={frameRef} title="Visor MindAR de aves" srcDoc={scene} allow="camera; accelerometer; gyroscope"
           className="absolute inset-0 w-full h-full border-0" />
+        {revealTarget !== null && <div className="absolute inset-0 z-40 flex items-center justify-center bg-forest-950/75 p-5 backdrop-blur-sm motion-safe:animate-fadeIn">
+          <section role="dialog" aria-modal="true" aria-labelledby="discovery-reveal-title" className="ui-card w-full max-w-sm space-y-4 p-5 text-center shadow-2xl">
+            <Sparkles aria-hidden="true" className="mx-auto h-8 w-8 text-amber-300" />
+            <h2 id="discovery-reveal-title" className="text-2xl font-bold text-emerald-200">{tx('¡Nuevo descubrimiento!', 'New discovery!')}</h2>
+            <img src={TARGET_BIRDS[revealTarget].image} alt="" className="mx-auto h-36 w-full rounded-2xl object-cover" />
+            <div><h3 className="text-xl font-semibold">{TARGET_BIRDS[revealTarget].commonName}</h3><p className="text-sm italic text-ink-muted">{TARGET_BIRDS[revealTarget].scientificName}</p></div>
+            {audioStatus && <p role="status" aria-live="polite" className="text-sm text-ink-muted">{audioStatus}</p>}
+            <Button variant="secondary" fullWidth onClick={() => playBirdAudio(revealTarget)}><Volume2 aria-hidden="true" className="mr-2 inline h-4 w-4" />{tx('Escuchar canto', 'Listen to bird call')}</Button>
+            <Button fullWidth onClick={() => { setRevealTarget(null); setExpanded(true); }}>{tx('Probar el desafío', 'Try the challenge')}</Button>
+            <Button variant="ghost" fullWidth onClick={() => setRevealTarget(null)}>{tx('Seguir explorando', 'Keep exploring')}</Button>
+          </section>
+        </div>}
         <div className="pt-safe absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-forest-950/95 via-forest-950/75 to-transparent px-4 pb-6">
           <header className="flex items-center gap-3">
             <IconButton label={tx('Salir del escáner', 'Exit scanner')} onClick={onClose}><ArrowLeft aria-hidden="true" className="h-5 w-5" /></IconButton>
@@ -231,23 +283,24 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
             </button>
             <div id="scanner-details" className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-3">
               <div className="flex items-center gap-3"><img src={activeBird.image} alt="" className="h-16 w-20 rounded-xl object-cover" /><div><h3 className="text-xl font-semibold">{activeBird.commonName}</h3><p className="text-xs italic text-ink-muted">{activeBird.scientificName}</p></div></div>
+              <Button variant="secondary" fullWidth onClick={() => playBirdAudio(activeTarget)}><Volume2 aria-hidden="true" className="mr-2 inline h-4 w-4" />{tx('Escuchar canto', 'Listen to bird call')}</Button>
               {!expanded && <p className="text-xs leading-relaxed text-ink-muted">{activeBird.funFact.match(/[^.!?]+[.!?]?/)?.[0]}</p>}
               <ol aria-label={tx('Pasos del descubrimiento', 'Discovery steps')} className="grid grid-cols-3 gap-2">{steps.map((step, index) => <li key={step.label} className="flex items-center gap-1 text-[11px] font-semibold">{step.done ? <Check aria-hidden="true" className="h-4 w-4 shrink-0 text-action-emerald" /> : <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-ink-muted">{index + 1}</span>}{step.label}</li>)}</ol>
               {saved === false && <div role="alert" className="rounded-xl border border-amber-300 bg-amber-950 p-3 text-xs leading-relaxed text-amber-100">No se pudo guardar en este dispositivo. El progreso puede perderse al cerrar o recargar.
                 <Button variant="ghost" className="mt-2 text-xs" onClick={() => setSaved(onRetrySave())}>{tx('Reintentar guardar', 'Retry saving')}</Button>
               </div>}
               {expanded && <div className="animate-fadeIn space-y-3">
-                {activeTarget === 1 && progress === 'registered' && question && <div className="space-y-3 rounded-2xl border border-white/20 bg-surface-950 p-3 text-xs">
+                {progress === 'registered' && question && <div className="space-y-3 rounded-2xl border border-white/20 bg-surface-950 p-3 text-xs">
                   <h4 className="text-sm font-semibold">{question.question}</h4>
                   <p className="text-ink-muted">{tx('Podés probar todas las veces que necesites, sin penalización.', 'You can try as often as you need, without penalty.')}</p>
                   {!correct && question.options.map((option, index) => <button type="button" key={option} aria-pressed={selectedOption === index} onClickCapture={() => setSelectedOption(index)} className={`block min-h-11 w-full rounded-xl border p-3 text-left leading-relaxed ${selectedOption === index ? 'border-amber-300 bg-amber-950 text-amber-100' : 'border-white/25 bg-surface-800'}`} onClick={() => {
                     if (index === question.correctIndex) { setCorrect(true); setFeedback(question.explanation); }
-                    else setFeedback('Todavía no. Probá de nuevo: pensá cómo el pico ayuda a regular el calor.');
+                    else setFeedback(tx('Todavía no. Probá otra respuesta.', 'Not yet. Try another answer.'));
                   }}>{option}{selectedOption === index && <span className="mt-1 block font-semibold">{tx('Todavía no · probá otra respuesta', 'Not yet · try another answer')}</span>}</button>)}
-                  <p role="status" className="leading-relaxed text-amber-200">{feedback}</p>
-                  {correct && <Button fullWidth onClick={() => runAction(() => onComplete(activeTarget))}>{tx('Recibir +40 XP', 'Receive +40 XP')}</Button>}
+                  <p role="status" aria-live="polite" className="leading-relaxed text-amber-200">{feedback || challengeStatus}</p>
+                  {correct && <Button fullWidth onClick={() => { runAction(() => onComplete(activeTarget)); setChallengeStatus(tx('Desafío completado.', 'Challenge completed.')); }}>{tx('Recibir +40 XP', 'Receive +40 XP')}</Button>}
                 </div>}
-                {activeTarget === 1 && progress === 'rewarded' && <div className="space-y-3 rounded-2xl bg-surface-950 p-3 text-sm">
+                {progress === 'rewarded' && <div className="space-y-3 rounded-2xl bg-surface-950 p-3 text-sm">
                   <p className="font-semibold text-emerald-200">{saved === null ? tx('Ya registrado · desafío completado', 'Already registered · challenge completed') : tx('+40 XP · desafío completado', '+40 XP · challenge completed')}</p>
                   <p className="text-xs leading-relaxed text-ink-muted">Total: {profile.xp} XP. {saved === true ? tx('Progreso guardado en este dispositivo.', 'Progress saved on this device.') : saved === false ? tx('Progreso solo en esta sesión.', 'Progress only in this session.') : tx('Sin XP extra por volver a escanear.', 'No extra XP for scanning again.')}</p>
                   <Button fullWidth onClick={onJournal}>{tx('Ver mi diario', 'View my journal')}</Button>
@@ -262,8 +315,8 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
             </div>
             {(!expanded || progress === 'none') && <footer className="shrink-0 border-t border-white/15 px-4 pt-3">
               {progress === 'none' && <Button fullWidth onClick={() => runAction(() => onRegister(activeTarget))}>{tx('Registrar descubrimiento', 'Register discovery')}</Button>}
-              {progress === 'registered' && activeTarget === 1 && <Button fullWidth onClick={() => setExpanded(true)}>{tx('Responder desafío', 'Answer challenge')}</Button>}
-              {activeTarget === 1 && progress === 'rewarded' && <Button fullWidth onClick={onJournal}>{tx('Ver mi diario', 'View my journal')}</Button>}
+              {progress === 'registered' && <Button fullWidth onClick={() => setExpanded(true)}>{tx('Responder desafío', 'Answer challenge')}</Button>}
+              {progress === 'rewarded' && <Button fullWidth onClick={onJournal}>{tx('Ver mi diario', 'View my journal')}</Button>}
             </footer>}
           </section>
         )}
