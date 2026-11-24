@@ -66,9 +66,52 @@ export type IdentifyBirdResult =
   | { kind: 'other_bird'; name: string }
   | { kind: 'no_bird' };
 
+type ModelResponse = { text?: string | null };
+
+function isRetryableModelError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { status?: unknown; statusCode?: unknown; code?: unknown; name?: unknown };
+  const status = Number(candidate.status ?? candidate.statusCode);
+  if (status === 404 || status === 429 || (status >= 500 && status <= 599)) return true;
+  const code = String(candidate.code || '').toUpperCase();
+  return ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN', 'UND_ERR_CONNECT_TIMEOUT'].includes(code) ||
+    candidate.name === 'TimeoutError' || candidate.name === 'AbortError';
+}
+
+export async function identifyWithFallback(
+  models: string[],
+  ask: (model: string) => Promise<ModelResponse>
+): Promise<ModelResponse> {
+  try {
+    return await ask(models[0]);
+  } catch (error) {
+    if (models.length < 2 || !isRetryableModelError(error)) throw error;
+    return ask(models[1]);
+  }
+}
+
+export function normalizeModelAnswer(value: unknown): IdentifyBirdResult {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('invalid_model_answer');
+  const answer = value as { kind?: unknown; catalogNumber?: unknown; name?: unknown };
+  if (answer.kind === 'no_bird') return { kind: 'no_bird' };
+  if (answer.kind === 'catalog') {
+    if (typeof answer.catalogNumber !== 'string' || !/^\d{3}$/.test(answer.catalogNumber)) {
+      throw new Error('invalid_catalog_number');
+    }
+    return CATALOG_SPECIES.some((species) => species.number === answer.catalogNumber)
+      ? { kind: 'catalog', catalogNumber: answer.catalogNumber }
+      : { kind: 'other_bird', name: '' };
+  }
+  if (answer.kind === 'other_bird') {
+    if (answer.name !== undefined && typeof answer.name !== 'string') throw new Error('invalid_bird_name');
+    return { kind: 'other_bird', name: (answer.name || '').slice(0, 60) };
+  }
+  throw new Error('invalid_model_kind');
+}
+
 const PROMPT = `Eres el identificador de aves de una app educativa del Parque Botánico Barón Schuel (Yungas de Jujuy, Argentina).
 Mira la imagen, que viene de la cámara de un teléfono, y responde:
-- "catalog": se ve claramente un ave real (en vivo, o en una foto, pantalla o lámina) y es una de las especies de la lista. Indica su número en catalogNumber.
+- "catalog": se ve claramente un ave real (en vivo, o en una foto, pantalla o lámina) y es una de las especies de la lista. Indica en catalogNumber exactamente el código de tres dígitos de la lista.
 - "other_bird": se ve claramente un ave real pero NO es ninguna especie de la lista, o no puedes distinguir cuál es. Indica en name su nombre común en español si lo reconoces, o deja name vacío.
 - "no_bird": no hay un ave reconocible (personas, objetos, muebles, plantas, paisajes, texto, logos, juguetes, imagen borrosa u oscura).
 Sé estricto: nunca elijas una especie de la lista por parecido vago ni para no dejar la respuesta vacía.
@@ -171,27 +214,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           }
         }
       });
-    const response = await ask(models[0]).catch((err) => {
-      console.error(`identify-bird: ${models[0]} failed, trying ${models[1]}`, err);
-      return ask(models[1]);
-    });
-
-    const answer = JSON.parse(response.text || '{}') as { kind?: string; catalogNumber?: string; name?: string };
-    let result: IdentifyBirdResult = { kind: 'no_bird' };
-    if (answer.kind === 'catalog') {
-      // An empty number must not turn into 000 (the Tucán)
-      const digits = String(answer.catalogNumber || '').replace(/\D/g, '');
-      const number = digits ? digits.padStart(3, '0') : '';
-      // A number outside the list means the model saw a bird we have not loaded
-      result = CATALOG_SPECIES.some((s) => s.number === number)
-        ? { kind: 'catalog', catalogNumber: number }
-        : { kind: 'other_bird', name: '' };
-    } else if (answer.kind === 'other_bird') {
-      result = { kind: 'other_bird', name: String(answer.name || '').slice(0, 60) };
-    }
-    return send(res, 200, result);
-  } catch (err) {
-    console.error('identify-bird failed', err);
+    const response = await identifyWithFallback(models, ask);
+    if (typeof response.text !== 'string' || !response.text.trim()) throw new Error('empty_model_answer');
+    const answer: unknown = JSON.parse(response.text);
+    return send(res, 200, normalizeModelAnswer(answer));
+  } catch {
+    // Avoid logging image data, client identifiers, provider bodies, or credentials.
     return send(res, 502, { error: 'identification_failed' });
   }
 }
