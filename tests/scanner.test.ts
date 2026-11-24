@@ -21,10 +21,19 @@ test('empty scanner starts full-screen with named controls and a polite loading 
   assert.doesNotMatch(html, /Registrar descubrimiento|Responder desafío|Ver mi diario/);
 });
 
+test('camera requests an HD preference before MindAR starts and keeps its aspect-ratio sizing', () => {
+  const html = render(profile);
+  assert.match(html, /devices\.getUserMedia/);
+  assert.match(html, /ideal:1280/);
+  assert.match(html, /ideal:720/);
+  assert.doesNotMatch(html, /video\{[^}]*width:100%/);
+  assert.doesNotMatch(html, /video\{[^}]*height:100%/);
+});
+
 test('registered scanner offers a collapsed accessible sheet and challenge action without reward', () => {
   const registered = { ...profile, ...registerMindARDiscovery(profile, 1).updates };
   const html = render(registered);
-  for (const text of ['Tucán Grande', 'Ramphastos toco', 'Ver ficha completa', 'aria-expanded="false"', 'aria-controls="scanner-details"', 'Pasos del descubrimiento', 'Registrar', 'Desafío', 'Responder desafío']) assert.ok(html.includes(text), `missing: ${text}`);
+  for (const text of ['Tucán Grande', 'Ramphastos toco', 'toucan_guide_portrait.jpg', 'Escuchar canto', 'Ver ficha completa', 'aria-expanded="false"', 'aria-controls="scanner-details"', 'Pasos del descubrimiento', 'Registrar', 'Desafío', 'Responder desafío']) assert.ok(html.includes(text), `missing: ${text}`);
   assert.doesNotMatch(html, /Registrar descubrimiento|Recibir \+40 XP|Ver mi diario/);
 });
 
