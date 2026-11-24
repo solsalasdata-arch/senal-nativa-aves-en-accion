@@ -28,8 +28,8 @@ import { useModalEscape } from './ui/useModalEscape';
 import { SAVE_ERROR, SaveResult, SightingCapture, saveResultMessage } from '../utils/profileActions';
 
 interface SightingSimulationModalProps {
-  onMindARRegister: () => MindARActionResult;
-  onMindARComplete: () => MindARActionResult;
+  onMindARRegister: (targetIndex: number) => MindARActionResult;
+  onMindARComplete: (targetIndex: number) => MindARActionResult;
   onMindARRetrySave: () => boolean;
   onMindARJournal: () => void;
   isOpen: boolean;

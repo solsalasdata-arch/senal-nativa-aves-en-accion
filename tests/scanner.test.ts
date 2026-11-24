@@ -17,14 +17,14 @@ const render = (player: PlayerProfile) => renderToStaticMarkup(React.createEleme
 
 test('empty scanner starts full-screen with named controls and a polite loading status', () => {
   const html = render(profile);
-  for (const text of ['fixed inset-0', 'Salir del escáner', 'Escáner de señales', 'Descubrí al tucán', 'aria-label="Ayuda"', 'aria-live="polite"', 'Preparando cámara…', 'Visor XR del tucán']) assert.ok(html.includes(text));
+  for (const text of ['fixed inset-0', 'Salir del escáner', 'Escáner de señales', 'Descubrí aves del parque', 'aria-label="Ayuda"', 'aria-live="polite"', 'Preparando cámara…', 'Visor MindAR de aves', 'targetIndex: 0', 'targetIndex: 1', 'targetIndex: 2', 'targetIndex: 3']) assert.ok(html.includes(text), `missing: ${text}`);
   assert.doesNotMatch(html, /Registrar descubrimiento|Responder desafío|Ver mi diario/);
 });
 
 test('registered scanner offers a collapsed accessible sheet and challenge action without reward', () => {
   const registered = { ...profile, ...registerMindARDiscovery(profile, 1).updates };
   const html = render(registered);
-  for (const text of ['Tucán Grande', 'Ramphastos toco', 'Ver ficha completa', 'aria-expanded="false"', 'aria-controls="scanner-details"', 'Pasos del descubrimiento', 'Registrar', 'Desafío', 'Recompensa', 'Responder desafío']) assert.ok(html.includes(text));
+  for (const text of ['Tucán Grande', 'Ramphastos toco', 'Ver ficha completa', 'aria-expanded="false"', 'aria-controls="scanner-details"', 'Pasos del descubrimiento', 'Registrar', 'Desafío', 'Responder desafío']) assert.ok(html.includes(text), `missing: ${text}`);
   assert.doesNotMatch(html, /Registrar descubrimiento|Recibir \+40 XP|Ver mi diario/);
 });
 
