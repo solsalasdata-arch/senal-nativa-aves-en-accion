@@ -41,6 +41,11 @@ interface SightingSimulationModalProps {
 
 const XR_TUTORIAL_SEEN_KEY = 'senial_nativa_xr_tutorial_seen_v1';
 const XR_MAX_SCAN_ATTEMPTS = 4;
+const XR_SCAN_EXAMPLES = [
+  { name: 'Chingolo', src: '/assets/aves/1-Chingolo.jpg', cue: 'Encuadre amplio' },
+  { name: 'Benteveo', src: '/assets/aves/7-Benteveo.jpg', cue: 'Ave visible y enfocada' },
+  { name: 'Hornero', src: '/assets/aves/14-Hornero.jpg', cue: 'Buena luz, poco fondo' }
+];
 
 type ScanState = 'scanning' | 'detected' | 'other_bird' | 'no_bird' | 'error' | 'no_camera';
 
@@ -142,6 +147,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   const [arMode, setArMode] = useState<'checking' | 'ar' | 'legacy'>('checking');
   const [detectedBird, setDetectedBird] = useState<CatalogBird | null>(null);
   const [scanState, setScanState] = useState<ScanState>('scanning');
+  const [scanErrorDetail, setScanErrorDetail] = useState<string | null>(null);
   const [otherBirdName, setOtherBirdName] = useState('');
   const [isSongPlaying, setIsSongPlaying] = useState(false);
   const [canFlipCamera, setCanFlipCamera] = useState(false);
@@ -185,6 +191,8 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
   const scanTimerRef = useRef<number | null>(null);
   const scanIdRef = useRef(0);
   const scanAbortRef = useRef<AbortController | null>(null);
+  const scanRequestInFlightRef = useRef(false);
+  const pendingScanIdRef = useRef<number | null>(null);
   const cameraStartingRef = useRef(false);
   const nativePhotoRef = useRef<string | null>(null);
 
@@ -255,10 +263,18 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
         return;
       }
 
+      if (scanRequestInFlightRef.current) {
+        pendingScanIdRef.current = scanId;
+        return;
+      }
+
       let result: IdentifyBirdResult | null = null;
+      let requestErrorDetail: string | null = null;
       const controller = new AbortController();
       scanAbortRef.current = controller;
-      const timeout = window.setTimeout(() => controller.abort(), 25000);
+      let timedOut = false;
+      scanRequestInFlightRef.current = true;
+      const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 25000);
       try {
         const res = await fetch('/api/identify-bird', {
           method: 'POST',
@@ -267,17 +283,31 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
           signal: controller.signal
         });
         if (res.ok) result = (await res.json()) as IdentifyBirdResult;
+        else requestErrorDetail = res.status >= 500
+          ? 'El servicio está ocupado. Esperá un momento y probá de nuevo.'
+          : 'No se pudo procesar la imagen. Elegí otra foto o volvé a intentar.';
       } catch {
-        // offline, timed out or cancelled
+        requestErrorDetail = timedOut
+          ? 'El reconocimiento tardó demasiado. Revisá la conexión e intentá de nuevo.'
+          : !navigator.onLine
+            ? 'No hay conexión. El reconocimiento necesita internet; probá cuando tengas señal.'
+            : 'No se pudo conectar con el servicio. Revisá la conexión e intentá de nuevo.';
       } finally {
         window.clearTimeout(timeout);
+        scanRequestInFlightRef.current = false;
+        if (scanAbortRef.current === controller) scanAbortRef.current = null;
+        const pendingId = pendingScanIdRef.current;
+        pendingScanIdRef.current = null;
+        if (pendingId !== null && pendingId === scanIdRef.current) runScanAttempt(pendingId, 1, 0);
       }
       if (scanIdRef.current !== scanId) return;
 
       if (!result) {
+        setScanErrorDetail(requestErrorDetail ?? 'No llegó una respuesta del servicio. Revisá la conexión e intentá de nuevo.');
         setScanState('error');
         return;
       }
+      setScanErrorDetail(null);
       if (result.kind === 'catalog') {
         const catalogNumber = result.catalogNumber;
         const bird =
@@ -303,6 +333,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
   const startScan = () => {
     clearScanTimer();
+    setScanErrorDetail(null);
     stopSong();
     setDetectedBird(null);
     setShowBirdInfoSheet(false);
@@ -876,6 +907,7 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
 
           {/* BOTTOM EDGE OF VIEWPORT: Compact Pill with Focused Bird Name + "ℹ️ Ver Ficha" + "👁️ Limpiar Pantalla" */}
           {detectedBird && <p className="absolute bottom-16 inset-x-3 z-30 rounded-xl bg-surface-950 p-2 text-[11px] text-amber-200">Identificación sugerida por IA (Gemini) · puede contener errores</p>}
+          {scanState === 'error' && scanErrorDetail && !showTutorial && <p role="alert" className="absolute top-12 inset-x-3 z-30 rounded-xl border border-rose-400/60 bg-surface-950 p-2 text-center text-[11px] text-rose-100">{scanErrorDetail}</p>}
           <div className="absolute bottom-2 inset-x-2.5 z-30 flex items-center justify-between gap-1.5 pointer-events-auto">
             {!cleanViewMode ? (
               <div className="flex-1 min-w-0 px-2.5 py-1.5 rounded-full bg-surface-950  border border-teal-500/60 shadow-lg flex items-center justify-between gap-1.5">
@@ -977,6 +1009,15 @@ export const SightingSimulationModal: React.FC<SightingSimulationModalProps> = (
                 <h4 className="text-sm font-black text-white text-center uppercase tracking-wide">
                   ¿Cómo avistar un ave?
                 </h4>
+                <p className="mt-1 text-center text-[11px] text-slate-300">Para ayudar a la IA: acercá el encuadre sin invadir al ave, buscá buena luz y evitá ramas que la tapen.</p>
+                <div className="mt-2 grid grid-cols-3 gap-1.5" aria-label="Referencias visuales de aves bien encuadradas">
+                  {XR_SCAN_EXAMPLES.map((example) => (
+                    <figure key={example.name} className="min-w-0 rounded-xl border border-teal-800/60 bg-slate-800 p-1">
+                      <img src={example.src} alt={`Referencia de encuadre: ${example.name}`} className="h-16 w-full rounded-lg object-cover" loading="lazy" />
+                      <figcaption className="mt-1 text-center text-[9px] leading-tight text-teal-100">{example.name}<br />{example.cue}</figcaption>
+                    </figure>
+                  ))}
+                </div>
                 <ol className="mt-2.5 space-y-2">
                   {[
                     {
