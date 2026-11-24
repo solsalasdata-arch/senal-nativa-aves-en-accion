@@ -303,9 +303,12 @@ export default function App() {
     const remaining = loadProfilesList().filter(p => p.id !== profileId);
     if (!remaining.length) remaining.push(createDefaultProfile());
     if (!saveProfilesList(remaining)) { setSaveError(SAVE_ERROR); return; }
-    if (mindarProfileRef.current.id === profileId) setActiveProfileId(remaining[0].id);
+    const activeId = remaining.some(profile => profile.id === mindarProfileRef.current.id)
+      ? mindarProfileRef.current.id
+      : remaining[0].id;
+    setActiveProfileId(activeId);
     setProfiles(remaining);
-    const next = getActiveProfile();
+    const next = remaining.find(profile => profile.id === activeId)!;
     mindarProfileRef.current = next;
     setActiveProfile(next);
   };

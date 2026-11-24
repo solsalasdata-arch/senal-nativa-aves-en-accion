@@ -7,6 +7,7 @@ export const MINDAR_TARGETS = [
   { targetIndex: 2, speciesId: '007-benteveo' },
   { targetIndex: 3, speciesId: '014-hornero' }
 ] as const;
+export const MINDAR_INITIAL_UNLOCKS = ['001-chingolo', 'tucan-grande'] as const;
 export const MINDAR_TARGET_ID = 'tucan-grande#1';
 export const MINDAR_SPECIES_ID = 'tucan-grande';
 const LEGACY_TOUCAN_TARGET_ID = 'tucan-grande#0';
@@ -33,11 +34,20 @@ export function getMindARStatus(profile: PlayerProfile, targetIndex = 1): 'none'
   return !discovery ? 'none' : discovery.challengeCompletedAt !== undefined ? 'rewarded' : 'registered';
 }
 
+export function isMindARTargetUnlocked(profile: PlayerProfile, targetIndex: number): boolean {
+  const target = targetForIndex(targetIndex);
+  if (!target) return false;
+  if (getMindARStatus(profile, targetIndex) !== 'none') return true;
+  if (targetIndex <= 1) return true;
+  return getMindARStatus(profile, targetIndex - 1) !== 'none';
+}
+
 // One discovery and one reward per target per profile; rescanning never grants XP.
 export function registerMindARDiscovery(profile: PlayerProfile, now: number, targetIndex = 1): MindARResult {
   const target = targetForIndex(targetIndex);
   if (!target) return { updates: {}, status: 'not-registered' };
   if (getMindARStatus(profile, targetIndex) !== 'none') return { updates: {}, status: 'already-registered' };
+  if (!isMindARTargetUnlocked(profile, targetIndex)) return { updates: {}, status: 'not-registered' };
   const bird = CATALOG_BIRDS_DATA.find(b => b.id === target.speciesId)
     ?? BIRDS_DATA.find(b => b.id === target.speciesId);
   if (!bird) return { updates: {}, status: 'not-registered' };
@@ -46,6 +56,10 @@ export function registerMindARDiscovery(profile: PlayerProfile, now: number, tar
     mindarDiscoveries: [...(profile.mindarDiscoveries || []), {
       targetId, speciesId: target.speciesId, profileId: profile.id, discoveredAt: now, xpAwarded: 0
     }],
+    unlockedSilhouettes: Array.from(new Set([...(profile.unlockedSilhouettes || []), target.speciesId,
+      ...(MINDAR_TARGETS.find(candidate => candidate.targetIndex === targetIndex + 1)?.speciesId
+        ? [MINDAR_TARGETS.find(candidate => candidate.targetIndex === targetIndex + 1)!.speciesId]
+        : [])])),
     fieldJournal: [{ id: `mindar-${targetId}-${now}`, source: 'mindar-signal' as const, speciesId: target.speciesId,
       birdName: bird.commonName, scientificName: bird.scientificName, trailName: 'Señal MindAR · Señal Nativa',
       notes: 'Descubrimiento mediante señal MindAR (imagen escaneada). No es un avistamiento de ave real.', timestamp: now

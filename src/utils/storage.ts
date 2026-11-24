@@ -1,6 +1,7 @@
 import { PlayerProfile, CompanionBirdId, Squad } from '../types/game';
 import { INITIAL_MISSIONS, EXPLORER_AVATARS } from '../data/birdsData';
 import { isRealObservation } from './journal';
+import { MINDAR_INITIAL_UNLOCKS, MINDAR_TARGETS } from './mindarProgress';
 
 const STORAGE_KEY_PROFILES = 'senial_nativa_profiles_list_v2';
 const STORAGE_KEY_ACTIVE_ID = 'senial_nativa_active_profile_id_v2';
@@ -49,7 +50,7 @@ export function createDefaultProfile(
     completedCheckpoints: [],
     birdPhotoStars: {},
     unlockedRareBirds: [],
-    unlockedSilhouettes: ['007-benteveo'],
+    unlockedSilhouettes: [...MINDAR_INITIAL_UNLOCKS],
     unlockedAcoustics: [],
     addedPackBirdIds: [],
     freeSilhouetteHints: 0,
@@ -109,7 +110,17 @@ export function loadProfilesList(): PlayerProfile[] {
       return [defaultProf];
     }
     return parsed.map((p: Partial<PlayerProfile>) => {
-      const rawUnlocked = p.unlockedSilhouettes || ['007-benteveo'];
+      const storedUnlocks = p.unlockedSilhouettes ?? [...MINDAR_INITIAL_UNLOCKS];
+      const mindarUnlocks = (p.mindarDiscoveries || [])
+        .filter(discovery => discovery.profileId === p.id)
+        .map(discovery => discovery.speciesId);
+      const hasOnlyWelcomeEntry = (p.fieldJournal || []).every(entry => entry.id === 'j_init');
+      const hasLegacyDefaultBenteveo = storedUnlocks.length === 1 && storedUnlocks[0] === '007-benteveo'
+        && mindarUnlocks.length === 0 && (p.sightingsCompleted || 0) === 0 && (p.xp || 0) === 0 && hasOnlyWelcomeEntry;
+      const rawUnlocked = Array.from(new Set([
+        ...(hasLegacyDefaultBenteveo ? [...MINDAR_INITIAL_UNLOCKS] : storedUnlocks),
+        ...mindarUnlocks
+      ]));
       const migratedUnlocked = Array.from(
         new Set(rawUnlocked.map(id => (id === '016-benteveo' ? '007-benteveo' : id)))
       );
