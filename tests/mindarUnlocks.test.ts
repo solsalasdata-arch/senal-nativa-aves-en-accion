@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createDefaultProfile, saveProfilesList, loadProfilesList, setActiveProfileId, getActiveProfile, deleteProfile } from '../src/utils/storage';
-import { registerMindARDiscovery, MINDAR_TARGETS } from '../src/utils/mindarProgress';
+import { getMindARDiscoveredSpecies, registerMindARDiscovery, MINDAR_TARGETS } from '../src/utils/mindarProgress';
 
 function memoryStorage() {
   const data = new Map<string, string>();
@@ -28,6 +28,16 @@ test('MindAR targets can be registered in any scan order', () => {
   }
   assert.equal(profile.mindarDiscoveries?.length, 4);
   assert.deepEqual(profile.unlockedSilhouettes, ['001-chingolo', 'tucan-grande', '014-hornero', '007-benteveo']);
+});
+
+test('My Birds contains only MindAR species scanned by this profile', () => {
+  const profile = createDefaultProfile('Ana');
+  const otherProfile = { ...createDefaultProfile('Leo'), id: 'other' };
+  const tucan = registerMindARDiscovery(profile, 10, 1);
+  const otherBird = registerMindARDiscovery(otherProfile, 11, 2);
+  const current = { ...profile, ...tucan.updates,
+    mindarDiscoveries: [...(tucan.updates.mindarDiscoveries || []), ...(otherBird.updates.mindarDiscoveries || [])] };
+  assert.deepEqual(getMindARDiscoveredSpecies(current), ['tucan-grande']);
 });
 
 test('deleting the active last profile creates and selects a fresh profile', () => {

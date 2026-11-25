@@ -34,6 +34,13 @@ export function getMindARStatus(profile: PlayerProfile, targetIndex = 1): 'none'
   return !discovery ? 'none' : discovery.challengeCompletedAt !== undefined ? 'rewarded' : 'registered';
 }
 
+export function getMindARDiscoveredSpecies(profile: PlayerProfile): string[] {
+  const targetSpecies = new Set<string>(MINDAR_TARGETS.map(target => target.speciesId));
+  return Array.from(new Set((profile.mindarDiscoveries || [])
+    .filter(discovery => discovery.profileId === profile.id && targetSpecies.has(discovery.speciesId))
+    .map(discovery => discovery.speciesId)));
+}
+
 // One discovery and one reward per target per profile; rescanning never grants XP.
 export function registerMindARDiscovery(profile: PlayerProfile, now: number, targetIndex = 1): MindARResult {
   const target = targetForIndex(targetIndex);
