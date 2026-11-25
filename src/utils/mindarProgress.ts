@@ -34,20 +34,11 @@ export function getMindARStatus(profile: PlayerProfile, targetIndex = 1): 'none'
   return !discovery ? 'none' : discovery.challengeCompletedAt !== undefined ? 'rewarded' : 'registered';
 }
 
-export function isMindARTargetUnlocked(profile: PlayerProfile, targetIndex: number): boolean {
-  const target = targetForIndex(targetIndex);
-  if (!target) return false;
-  if (getMindARStatus(profile, targetIndex) !== 'none') return true;
-  if (targetIndex <= 1) return true;
-  return getMindARStatus(profile, targetIndex - 1) !== 'none';
-}
-
 // One discovery and one reward per target per profile; rescanning never grants XP.
 export function registerMindARDiscovery(profile: PlayerProfile, now: number, targetIndex = 1): MindARResult {
   const target = targetForIndex(targetIndex);
   if (!target) return { updates: {}, status: 'not-registered' };
   if (getMindARStatus(profile, targetIndex) !== 'none') return { updates: {}, status: 'already-registered' };
-  if (!isMindARTargetUnlocked(profile, targetIndex)) return { updates: {}, status: 'not-registered' };
   const bird = CATALOG_BIRDS_DATA.find(b => b.id === target.speciesId)
     ?? BIRDS_DATA.find(b => b.id === target.speciesId);
   if (!bird) return { updates: {}, status: 'not-registered' };

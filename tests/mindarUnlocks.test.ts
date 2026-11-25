@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createDefaultProfile, saveProfilesList, loadProfilesList, setActiveProfileId, getActiveProfile, deleteProfile } from '../src/utils/storage';
-import { isMindARTargetUnlocked, registerMindARDiscovery, MINDAR_TARGETS } from '../src/utils/mindarProgress';
+import { registerMindARDiscovery, MINDAR_TARGETS } from '../src/utils/mindarProgress';
 
 function memoryStorage() {
   const data = new Map<string, string>();
@@ -18,28 +18,16 @@ test('new profiles start with only the first MindAR target unlocked', () => {
   assert.deepEqual(profile.unlockedSilhouettes, ['001-chingolo', 'tucan-grande']);
 });
 
-test('MindAR discoveries unlock only the next target in sequence', () => {
+test('MindAR targets can be registered in any scan order', () => {
   let profile = createDefaultProfile('Ana');
   assert.deepEqual(profile.unlockedSilhouettes, ['001-chingolo', 'tucan-grande']);
-  for (const target of MINDAR_TARGETS) {
-    if (!profile.unlockedSilhouettes.includes(target.speciesId)) {
-      const foundUnlock = registerMindARDiscovery(profile, target.targetIndex, target.targetIndex);
-      assert.equal(foundUnlock.status, 'not-registered');
-      assert.deepEqual(foundUnlock.updates, {});
-      continue;
-    }
-    profile = { ...profile, ...registerMindARDiscovery(profile, target.targetIndex + 10, target.targetIndex).updates };
-    assert.deepEqual(profile.unlockedSilhouettes, MINDAR_TARGETS.slice(0, target.targetIndex + 2).map(item => item.speciesId));
+  for (const target of [...MINDAR_TARGETS].reverse()) {
+    const result = registerMindARDiscovery(profile, target.targetIndex + 10, target.targetIndex);
+    assert.equal(result.status, 'registered', `${target.speciesId} should be available immediately`);
+    profile = { ...profile, ...result.updates };
   }
-});
-
-test('a locked target cannot be recorded before its predecessor is discovered', () => {
-  const profile = { ...createDefaultProfile('Ana'), unlockedSilhouettes: ['007-benteveo'] };
-  const locked = registerMindARDiscovery(profile, 20, 3);
-  assert.equal(locked.status, 'not-registered');
-  assert.deepEqual(locked.updates, {});
-  assert.equal(profile.mindarDiscoveries?.length, 0);
-  assert.equal(isMindARTargetUnlocked(profile, 2), false);
+  assert.equal(profile.mindarDiscoveries?.length, 4);
+  assert.deepEqual(profile.unlockedSilhouettes, ['001-chingolo', 'tucan-grande', '014-hornero', '007-benteveo']);
 });
 
 test('deleting the active last profile creates and selects a fresh profile', () => {
