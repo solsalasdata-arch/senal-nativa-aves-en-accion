@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BIRDS_DATA, CATALOG_BIRDS_DATA } from '../data/birdsData';
 import { MINDAR_CHALLENGES } from '../data/mindarChallenges';
 import type { PlayerProfile } from '../types/game';
-import { getMindARStatus, isMindARTargetUnlocked, MindARActionResult } from '../utils/mindarProgress';
+import { getMindARStatus, MindARActionResult } from '../utils/mindarProgress';
 import { ArrowLeft, HelpCircle, LoaderCircle, ScanLine, Check, CheckCircle2, BookOpen, AlertTriangle, ChevronUp, ChevronDown, Volume2, Sparkles } from 'lucide-react';
 import { useLanguage } from '../utils/i18n';
 import { Button, IconButton } from './ui';
@@ -180,13 +180,6 @@ ${TARGET_SPECIES.map((_, index) => `<a-entity mindar-image-target="targetIndex: 
           {
             const targetIndex = Number(event.data.detail?.targetIndex);
             if (Number.isInteger(targetIndex) && targetIndex >= 0 && targetIndex < TARGET_BIRDS.length) {
-              if (!isMindARTargetUnlocked(profile, targetIndex)) {
-                const nextRequired = TARGET_BIRDS.find((_, index) => isMindARTargetUnlocked(profile, index));
-                setMessage(nextRequired
-                  ? `Primero descubrí al ${nextRequired.commonName}.`
-                  : 'Seguí la secuencia de descubrimientos para habilitar esta ave.');
-                break;
-              }
               if (recognizedRef.current !== targetIndex) {
                 recognizedRef.current = targetIndex;
                 setRecognizedTarget(targetIndex);

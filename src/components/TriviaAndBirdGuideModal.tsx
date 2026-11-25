@@ -29,6 +29,7 @@ import {
   Cloud
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
+import { getMindARDiscoveredSpecies } from '../utils/mindarProgress';
 import { CATALOG_BIRDS_DATA, PACK_EXTRA_BIRDS_DATA, TRIVIA_QUESTIONS, CHECKPOINTS_DATA } from '../data/birdsData';
 import { CatalogBird, JournalEntry, PlayerProfile } from '../types/game';
 import { useLanguage, localizeTriviaQuestions, localizeCatalogBird } from '../utils/i18n';
@@ -556,12 +557,13 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
   const allCatalogBirds = Array.from(
     new Map([...CATALOG_BIRDS_DATA, ...extraPackBirds].map((b) => [b.id, b])).values()
   );
+  const myScannedBirdIds = new Set(getMindARDiscoveredSpecies(playerProfile));
 
   // Filtered bird list for the collection grid
   const filteredBirds = allCatalogBirds.filter((b) => {
     const unlocked = isBirdUnlocked(b.id);
     if (catalogFilter === 'silhouettes') return !unlocked;
-    if (catalogFilter === 'illuminated') return unlocked;
+    if (catalogFilter === 'illuminated') return myScannedBirdIds.has(b.id);
     return true;
   });
 
@@ -809,7 +811,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                   {tx('Guía Oficial de Especies (001 - 021)', 'Official Species Guide (001 - 021)')}
                 </span>
                 <span className="text-[11px] font-extrabold text-teal-200">
-                  {allCatalogBirds.filter(b => isBirdUnlocked(b.id)).length}/{allCatalogBirds.length} {tx('Iluminadas', 'Illuminated')}
+                  {myScannedBirdIds.size}/{allCatalogBirds.length} {tx('Mis aves escaneadas', 'My scanned birds')}
                 </span>
               </div>
 
@@ -852,7 +854,7 @@ export const TriviaAndBirdGuideModal: React.FC<TriviaAndBirdGuideModalProps> = (
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {tx('Iluminadas', 'Illuminated')} ({allCatalogBirds.filter(b => isBirdUnlocked(b.id)).length})
+                  {tx('Mis aves', 'My birds')} ({myScannedBirdIds.size})
                 </button>
               </div>
 
